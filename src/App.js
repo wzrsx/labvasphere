@@ -1,24 +1,51 @@
-import logo from './logo.svg';
-import './App.css';
+// src/App.js
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
+import Header from "./components/Header";
+import LandingPage from "./pages/LandingPage";
+import AuthPage from "./pages/AuthPage";
+import MainPage from "./pages/MainPage";
+import PartnerPage from "./pages/PartnerPage";
+import GuidePage from "./pages/GuidePage";
+import SettingsPage from "./pages/SettingsPage";
+import ProjectView from "./pages/ProjectView";
+// Компонент-обёртка, чтобы получить доступ к location внутри Router
+const AppContent = () => {
+  const location = useLocation();
+
+  // Список путей, где НУЖЕН хедер
+  const routesWithHeader = ["/main", "/partner", "/guide", "/settings"];
+
+  const showHeader = routesWithHeader.includes(location.pathname);
+
+  return (
+    <>
+      {showHeader && <Header />}
+      <div className={showHeader ? "main-content" : ""}>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/main" element={<MainPage />} />
+          <Route path="/partner" element={<PartnerPage />} />
+          <Route path="/guide" element={<GuidePage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/project/:id" element={<ProjectView />} />
+        </Routes>
+      </div>
+    </>
+  );
+};
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <AppContent />
+    </Router>
   );
 }
 
