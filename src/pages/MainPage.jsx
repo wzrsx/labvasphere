@@ -65,11 +65,11 @@ const MainPage = () => {
                   </div>
                   <div className="project-actions">
                     <button onClick={() => handleViewProject(project.id)}>
-                      👁️ Просмотр
+                      Просмотр
                     </button>
-                    <button>📤 Поделиться</button>
-                    <button>✏️ Редактировать</button>
-                    <button>🗑️ Удалить</button>
+                    <button>Поделиться</button>
+                    <button>Редактировать</button>
+                    <button>Удалить</button>
                   </div>
                 </div>
               ))}
