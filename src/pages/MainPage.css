@@ -116,6 +116,110 @@
   background: rgb(153, 88, 42);
   border-radius: 25px;
 }
+
+/* Dialog*/
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.modal-content h2 {
+  margin-bottom: 1.5rem;
+  font-size: 1.4rem;
+  color: #333;
+}
+
+.modal-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.modal-cancel,
+.modal-create {
+  padding: 0.5rem 1.25rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.modal-cancel {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.modal-create {
+  background: #007bff;
+  color: white;
+}
+
+.modal-create:hover {
+  background: #0069d9;
+}
+
+/* Загрузка файла */
+.file-upload {
+  margin: 1.5rem 0;
+}
+
+.file-upload-label {
+  display: block;
+  padding: 0.75rem;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+  color: #555;
+  transition: all 0.2s;
+  background: #fafafa;
+}
+
+.file-upload-label:hover,
+.drag-over {
+  border-color: #007bff;
+  background: #f0f7ff;
+}
+
+.file-hint {
+  font-size: 0.85rem;
+  color: #888;
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+/* Кнопка создания неактивна, если нет данных */
+.modal-create:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
 /* Секция проектов */
 .projects-header {
   display: flex;

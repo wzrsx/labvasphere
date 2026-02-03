@@ -1,17 +1,22 @@
 // src/pages/MainPage.jsx
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import "./MainPage.css";
+import NewProjectModal from "../components/NewProjectModal";
 import ExitIcon from "../exit.svg";
 import { useNavigate } from "react-router-dom";
 
 const MainPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-
+  const [isModalOpen, setIsModalOpen] = useState(false);
   // Функция для проверки активности маршрута
   const isActive = (path) => location.pathname === path;
 
+  const handleCreateProject = (name) => {
+    console.log("Создан проект:", name);
+    alert(`Проект "${name}" создан!`);
+  };
   // Навигация к проекту
   const handleViewProject = (projectId) => {
     navigate(`/project/${projectId}`);
@@ -39,9 +44,15 @@ const MainPage = () => {
             Создайте свою первую 360° панораму или продолжите работу над
             проектом.
           </p>
-          <button className="btn-primary">+ Новый проект</button>
+          <button className="btn-primary" onClick={() => setIsModalOpen(true)}>
+            + Новый проект
+          </button>
         </div>
-
+        <NewProjectModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onCreate={handleCreateProject}
+        />
         <div className="projects-section">
           <div className="projects-header">
             <h2>Мои проекты</h2>
