@@ -10,27 +10,37 @@ const SphereViewer = ({ src, style = {} }) => {
   useEffect(() => {
     if (!src || !containerRef.current) return;
 
-    // Уничтожаем предыдущий экземпляр (на случай повторного рендера)
+    // Уничтожаем предыдущий viewer (если есть)
     if (viewerRef.current) {
       viewerRef.current.destroy();
+      viewerRef.current = null;
     }
 
-    // Создаём новый просмотрщик
-    viewerRef.current = new Viewer({
-      container: containerRef.current,
-      panorama: src,
-      loadingImg: "",
-      navbar: true, // панель управления (zoom, fullscreen и т.д.)
-      caption: "",
-      defaultZoomLvl: 0, // 0 = авто, 1 = 100%
-      mousewheel: true,
-      touchmoveTwoFingers: true,
-    });
-    // Подписка на ошибки (опционально)
-    viewerRef.current.addEventListener("error", (e) => {
-      console.error("PhotoSphereViewer error:", e);
-    });
+    // Откладываем инициализацию на следующий кадр (после layout)
+    const timer = setTimeout(() => {
+      try {
+        viewerRef.current = new Viewer({
+          container: containerRef.current,
+          panorama: src,
+          loadingImg: "",
+          navbar: true,
+          caption: "",
+          defaultZoomLvl: 0,
+          mousewheel: true,
+          touchmoveTwoFingers: true,
+        });
+
+        viewerRef.current.addEventListener("error", (e) => {
+          console.error("PhotoSphereViewer error:", e);
+        });
+      } catch (err) {
+        console.error("Failed to initialize PhotoSphereViewer:", err);
+      }
+    }, 0);
+
+    // Cleanup
     return () => {
+      clearTimeout(timer);
       if (viewerRef.current) {
         viewerRef.current.destroy();
         viewerRef.current = null;

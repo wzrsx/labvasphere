@@ -24,6 +24,7 @@ const ProjectView = () => {
       </header>
 
       <div className="panorama-container">
+        <img src={project.imageUrl} alt="test" style={{ display: "none" }} />
         <SphereViewer src={project.imageUrl} />
       </div>
 
