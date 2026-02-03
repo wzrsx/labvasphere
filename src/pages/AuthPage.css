@@ -50,7 +50,7 @@
 }
 .auth-form {
   width: min(700px, calc(100% - 40px));
-  height: 525px;
+  min-height: 525px;
   background: rgba(181, 181, 181, 0.2), rgba(67, 40, 24, 0.25);
   backdrop-filter: blur(5px);
   border-radius: 30px;
@@ -146,6 +146,7 @@
   height: 75px;
   padding: 14px;
   margin-top: 20px;
+  margin-bottom: 30px;
   background: rgba(153, 88, 42, 0.85);
   border: 2px solid rgba(255, 230, 167, 0.2);
   border-radius: 37.5px;

@@ -61,6 +61,7 @@ body {
   outline: none;
   padding: 0;
   margin: 0;
+  margin-left: 1rem;
   cursor: pointer;
   font: inherit;
   transition: background-color 0.3s ease;

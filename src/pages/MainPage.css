@@ -69,7 +69,6 @@
 .user-profile {
   display: flex;
   align-items: center;
-  gap: 1rem;
   font-size: 1.15rem;
 }
 
@@ -230,13 +229,12 @@
 .project-search {
   flex: 1;
   max-width: 300px;
-  padding: 0.5rem;
+  height: 40px;
   border: 1px solid #ccc;
-  border-radius: 4px;
+  border-radius: 20px;
+  padding-left: 10px;
   font-size: 1rem;
-}
-.projects-section h2 {
-  font-size: 1.4rem;
+  border: 1.5px solid #b07d62;
 }
 
 /* Сетка проектов */

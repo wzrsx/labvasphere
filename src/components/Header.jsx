@@ -41,6 +41,10 @@ const Header = () => {
             border: "none",
             cursor: "pointer",
             padding: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginLeft: "0.5rem",
           }}
         >
           <img src={ExitIcon} alt="" width="23" height="23" />
