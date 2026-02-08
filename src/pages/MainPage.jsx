@@ -1,45 +1,91 @@
-// src/pages/MainPage.jsx
-import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import "./MainPage.css";
+import React, { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { getProjects } from "../services/projectService";
+import { getCurrentUser } from "../services/authService";
+import Header from "../components/Header";
 import NewProjectModal from "../components/NewProjectModal";
-import ExitIcon from "../exit.svg";
-import { useNavigate } from "react-router-dom";
+import "./MainPage.css";
 
 const MainPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  // Функция для проверки активности маршрута
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [userName, setUserName] = useState("");
+
   const isActive = (path) => location.pathname === path;
+
+  // Получаем имя пользователя из ФИО
+  useEffect(() => {
+    const user = getCurrentUser();
+    if (user) {
+      try {
+        const userData = JSON.parse(localStorage.getItem('user'));
+        if (userData && userData.full_name) {
+          const words = userData.full_name.trim().split(/\s+/);
+          setUserName(words.length >= 2 ? words[1] : words[0]);
+        }
+      } catch (error) {
+        console.error('Ошибка получения имени:', error);
+      }
+    }
+  }, []);
+
+  // Загрузка проектов
+  useEffect(() => {
+    loadProjects();
+  }, []);
+
+  const loadProjects = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const result = await getProjects();
+      
+      if (result.success) {
+        setProjects(result.projects || []);
+      } else {
+        setError(result.error);
+      }
+    } catch (err) {
+      console.error("Ошибка загрузки проектов:", err);
+      setError("Не удалось загрузить список проектов");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCreateProject = (name) => {
     console.log("Создан проект:", name);
     alert(`Проект "${name}" создан!`);
+    // В будущем: вызов createProject из projectService
   };
-  // Навигация к проекту
+
   const handleViewProject = (projectId) => {
     navigate(`/project/${projectId}`);
   };
 
-  const projects = [
-    { id: 1, name: "Офис на Тверской", updatedAt: "2026-01-20" },
-    { id: 2, name: 'Квартира в ЖК "Небо"', updatedAt: "2026-01-24" },
-    { id: 3, name: 'Ресторан "Лето"', updatedAt: "2026-01-15" },
-  ];
-
-  // Обработчик выхода (заглушка)
   const handleLogout = () => {
-    // Например: очистить токен, редирект на /auth
-    window.location.href = "/auth";
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/auth');
   };
+
+  // Фильтрация по поиску 
+  const filteredProjects = projects.filter((p) =>
+    p.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="dashboard">
-      {/* Main Content */}
+      
       <main className="dashboard-main">
         <div className="hero-section">
-          <h1>Добро пожаловать, Name!</h1>
+          <h1>Добро пожаловать, {userName}!</h1>
           <p>
             Создайте свою первую 360° панораму или продолжите работу над
             проектом.
@@ -48,11 +94,13 @@ const MainPage = () => {
             + Новый проект
           </button>
         </div>
+
         <NewProjectModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onCreate={handleCreateProject}
         />
+
         <div className="projects-section">
           <div className="projects-header">
             <h2>Мои проекты</h2>
@@ -60,19 +108,50 @@ const MainPage = () => {
               type="text"
               placeholder="Поиск по проектам..."
               className="project-search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
-          {projects.length > 0 ? (
+          {error && (
+            <div className="error-message">
+              {error}
+            </div>
+          )}
+
+          {loading ? (
+            <div className="empty-state">Загрузка проектов...</div>
+          ) : filteredProjects.length > 0 ? (
             <div className="projects-grid">
-              {projects.map((project) => (
+              {filteredProjects.map((project) => (
                 <div key={project.id} className="project-card">
                   <div className="project-thumbnail">
-                    <div className="thumbnail-placeholder">360°</div>
+                    {project.cover_image_url ? (
+                      <img
+                        src={project.cover_image_url}
+                        alt={project.title}
+                        className="thumbnail-img"
+                      />
+                    ) : (
+                      <div className="thumbnail-placeholder">360°</div>
+                    )}
                   </div>
                   <div className="project-info">
-                    <h3>{project.name}</h3>
-                    <p>Обновлено: {project.updatedAt}</p>
+                    <h3>{project.title}</h3>
+                    <p>
+                      Обновлено:{" "}
+                      {new Date(project.updated_at).toLocaleDateString()}
+                    </p>
+                    <p>
+                      Описание: {project.description || 'Без описания'}
+                    </p>
+                    {/*Сделать иконками*/}
+                    <p>
+                      Просмотров: {project.views_count || 0}
+                    </p>
+                    <p>
+                      Статус: {project.status || 'draft'}
+                    </p>
                   </div>
                   <div className="project-actions">
                     <button onClick={() => handleViewProject(project.id)}>
