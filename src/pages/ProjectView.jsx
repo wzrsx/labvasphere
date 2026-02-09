@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "./ProjectView.css";
 import SphereViewer from "../components/SphereViewer";
+import api from '../services/api';
 
 const ProjectView = () => {
   const { id } = useParams();
@@ -14,15 +15,13 @@ const ProjectView = () => {
   useEffect(() => {
     const fetchProject = async () => {
       try {
-        const res = await fetch(`http://localhost:8080/api/v1/projects/${id}`);
-        if (!res.ok) {
-          throw new Error(`Ошибка ${res.status}: ${res.statusText}`);
-        }
-        const data = await res.json();
-        setProject(data);
+        // Используем axios вместо fetch
+        const response = await api.get(`/projects/${id}`);
+        setProject(response.data);
       } catch (err) {
         console.error("Не удалось загрузить проект:", err);
-        setError(err.message);
+        const message = err.response?.data?.error || 'Проект не найден';
+        setError(message);
       } finally {
         setLoading(false);
       }

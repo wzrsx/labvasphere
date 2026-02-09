@@ -4,6 +4,7 @@ import (
 	"context"
 	"labvasphere-api/internal/models"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -21,7 +22,7 @@ func (r *ProjectRepository) GetByID(ctx context.Context, id string) (*models.Pro
 		SELECT id, title, description, cover_image_url, panorama_url, author_id,
 		       status, views_count, created_at, published_at, updated_at
 		FROM projects
-		WHERE id = $1 AND status = 'published'
+		WHERE id = $1
 	`
 
 	row := r.db.QueryRow(ctx, query, id)
@@ -60,6 +61,98 @@ func (r *ProjectRepository) ListPublished(ctx context.Context, limit, offset int
 	`
 
 	rows, err := r.db.Query(ctx, query, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var projects []*models.Project
+	for rows.Next() {
+		var p models.Project
+		err := rows.Scan(
+			&p.ID,
+			&p.Title,
+			&p.Description,
+			&p.CoverImageURL,
+			&p.PanoramaURL,
+			&p.AuthorID,
+			&p.Status,
+			&p.ViewsCount,
+			&p.CreatedAt,
+			&p.PublishedAt,
+			&p.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		projects = append(projects, &p)
+	}
+
+	return projects, nil
+}
+func (r *ProjectRepository) Create(project *models.Project) error {
+	project.ID = uuid.New().String()
+
+	const query = `
+		INSERT INTO projects (
+			id, title, description, cover_image_url, panorama_url, 
+			author_id, status, views_count, created_at, updated_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+	`
+
+	_, err := r.db.Exec(context.Background(),
+		query,
+		project.ID,
+		project.Title,
+		project.Description,
+		project.CoverImageURL,
+		project.PanoramaURL,
+		project.AuthorID,
+		project.Status,
+		project.ViewsCount,
+		project.CreatedAt,
+		project.UpdatedAt,
+	)
+
+	return err
+}
+
+func (r *ProjectRepository) Update(project *models.Project) error {
+	const query = `
+		UPDATE projects
+		SET title = $1, description = $2, cover_image_url = $3, panorama_url = $4,
+		    status = $5, updated_at = $6
+		WHERE id = $7
+	`
+
+	_, err := r.db.Exec(context.Background(),
+		query,
+		project.Title,
+		project.Description,
+		project.CoverImageURL,
+		project.PanoramaURL,
+		project.Status,
+		project.UpdatedAt,
+		project.ID,
+	)
+
+	return err
+}
+func (r *ProjectRepository) Delete(id string) error {
+	const query = `DELETE FROM projects WHERE id = $1`
+	_, err := r.db.Exec(context.Background(), query, id)
+	return err
+}
+func (r *ProjectRepository) GetByAuthor(ctx context.Context, authorID string) ([]*models.Project, error) {
+	const query = `
+		SELECT id, title, description, cover_image_url, panorama_url, author_id,
+		       status, views_count, created_at, published_at, updated_at
+		FROM projects
+		WHERE author_id = $1
+		ORDER BY created_at DESC
+	`
+
+	rows, err := r.db.Query(ctx, query, authorID)
 	if err != nil {
 		return nil, err
 	}

@@ -1,12 +1,13 @@
 import api from './api.js';
 
-// Получение всех проектов пользователя
+// Получение всех проектов ТЕКУЩЕГО авторизованного пользователя
+// (ID автора берётся автоматически из JWT-токена на бэкенде)
 export const getProjects = async () => {
   try {
     const response = await api.get('/projects');
     return {
       success: true,
-      projects: response.data.projects || [],
+      projects: Array.isArray(response.data) ? response.data : [],
     };
   } catch (error) {
     const message =
@@ -18,13 +19,13 @@ export const getProjects = async () => {
   }
 };
 
-// Создание проекта
+// Создание проекта (автор — текущий пользователь из токена)
 export const createProject = async (projectData) => {
   try {
     const response = await api.post('/projects', projectData);
     return {
       success: true,
-      project: response.data.project,
+      project: response.data,
     };
   } catch (error) {
     const message =
@@ -36,13 +37,13 @@ export const createProject = async (projectData) => {
   }
 };
 
-// Обновление проекта
+// Обновление проекта (только своего)
 export const updateProject = async (projectId, projectData) => {
   try {
     const response = await api.put(`/projects/${projectId}`, projectData);
     return {
       success: true,
-      project: response.data.project,
+      project: response.data,
     };
   } catch (error) {
     const message =
@@ -54,7 +55,7 @@ export const updateProject = async (projectId, projectData) => {
   }
 };
 
-// Удаление проекта
+// Удаление проекта (только своего)
 export const deleteProject = async (projectId) => {
   try {
     await api.delete(`/projects/${projectId}`);

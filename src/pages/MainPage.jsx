@@ -59,10 +59,11 @@ const MainPage = () => {
     }
   };
 
-  const handleCreateProject = (name) => {
-    console.log("Создан проект:", name);
-    alert(`Проект "${name}" создан!`);
-    // В будущем: вызов createProject из projectService
+
+  const handleCreateProject = (project) => {
+    console.log("Создан проект:", project);
+    // Обновляем список проектов
+    loadProjects();
   };
 
   const handleViewProject = (projectId) => {

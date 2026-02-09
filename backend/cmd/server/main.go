@@ -43,7 +43,7 @@ func main() {
 	projectRepo := postgres.NewProjectRepository(db)
 
 	// Хендлеры
-
+	uploadHandler := handlers.NewUploadHandler("./uploads/panoramas")
 	projectHandler := handlers.NewProjectHandler(projectRepo)
 	authHandler := handlers.NewAuthHandler(userRepo)
 
@@ -74,6 +74,11 @@ func main() {
 			r.Post("/register", authHandler.Register)
 			r.Post("/login", authHandler.Login)
 			r.Post("/logout", authHandler.Logout)
+		})
+		// Загрузка файлов (требует аутентификации)
+		r.Route("/upload", func(r chi.Router) {
+			r.Use(middleware.AuthMiddleware)
+			r.Post("/", uploadHandler.UploadFile)
 		})
 		// Роуты проектов (требуют токен)
 		r.Route("/projects", func(r chi.Router) {

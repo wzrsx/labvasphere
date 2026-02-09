@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { createProject } from "../services/projectService";
+import api from '../services/api';
 
 const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
   const [projectName, setProjectName] = useState("");
@@ -62,7 +63,7 @@ const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
     if (result.success) {
       // Вызываем колбэк для обновления списка проектов
       if (onCreate) {
-        onCreate(result.project);
+        onCreate(result.project); // Передаём объект проекта
       }
       
       // Закрываем модалку и сбрасываем форму
@@ -71,8 +72,8 @@ const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
       setSelectedFile(null);
       onClose();
       
-      // Показываем уведомление
-      alert(`Проект "${projectName}" успешно создан!`);
+      // Показываем уведомление 
+      alert(`Проект "${result.project.title}" успешно создан!`);
     } else {
       setError(result.error || "Ошибка при создании проекта");
     }
@@ -80,37 +81,29 @@ const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
 
   // Загрузка файла на сервер
   const uploadFile = async (file) => {
-    // Создаем форму для загрузки файла
-    const formData = new FormData();
-    formData.append('file', file);
+  const formData = new FormData();
+  formData.append('file', file);
 
-    try {
-      const response = await fetch('http://localhost:8080/api/v1/upload', {
-        method: 'POST',
-        body: formData,
-      });
+  try {
+    const response = await api.post('/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        return {
-          success: false,
-          error: errorData.error || 'Ошибка при загрузке файла',
-        };
-      }
-
-      const data = await response.json();
-      return {
-        success: true,
-        fileUrl: data.file_url,
-      };
-    } catch (error) {
-      console.error('Ошибка загрузки файла:', error);
-      return {
-        success: false,
-        error: 'Ошибка подключения к серверу',
-      };
-    }
-  };
+    return {
+      success: true,
+      fileUrl: response.data.file_url,
+    };
+  } catch (error) {
+    console.error('Ошибка загрузки файла:', error);
+    const message = error.response?.data?.error || 'Ошибка при загрузке файла';
+    return {
+      success: false,
+      error: message,
+    };
+  }
+};
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
