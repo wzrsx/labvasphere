@@ -1,0 +1,60 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: labvasphere_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: q1w2e3
+      POSTGRES_DB: labvasphere
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg:/var/lib/postgresql/data        
+      - ./init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
+    networks:
+      - labvasphere_net
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: labvasphere_frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WDS_SOCKET_PORT=0
+    networks:
+      - labvasphere_net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: labvasphere_backend
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgresql://postgres:q1w2e3@db:5432/labvasphere?sslmode=disable
+    depends_on:
+      - db
+    volumes:
+      - ./backend:/app
+    networks:
+      - labvasphere_net
+
+networks:
+  labvasphere_net:
+    driver: bridge
+
+volumes:
+  pg: 
