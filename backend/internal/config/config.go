@@ -13,7 +13,7 @@ type Config struct {
 func MustLoad() *Config {
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "8081"
 	}
 
 	databaseURL := os.Getenv("DATABASE_URL")
