@@ -46,12 +46,6 @@ const ProjectView = () => {
       <div className="panorama-container">
         <SphereViewer src={project.panorama_url} /> 
       </div>
-
-      <div className="project-controls">
-        <button>📤 Поделиться</button>
-        <button>✏️ Редактировать</button>
-        <button>🗑️ Удалить</button>
-      </div>
     </div>
   );
 };

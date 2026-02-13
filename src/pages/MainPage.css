@@ -326,8 +326,33 @@
   border-radius: 20px;
   cursor: pointer;
   font-family: "BerlinSansFBCyrillic-Regular";
+  position: relative;
+  overflow: hidden;
+}
+.button-text,
+.button-icon {
+  display: inline-block;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+/* По умолчанию: показываем текст, скрываем иконку */
+.button-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
 }
 
+/* При наведении: скрываем текст, показываем иконку */
+.action-button:hover .button-text {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+.action-button:hover .button-icon {
+  opacity: 1;
+  transform: translate(-50%, -50%);
+}
 /* Пустое состояние */
 .empty-state {
   text-align: center;
@@ -354,3 +379,137 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Модальное окно подтверждения удаления */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.delete-modal-content {
+  background: white;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 500px;
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  color: #333;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s;
+}
+
+.modal-close:hover {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.modal-body {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.modal-body p {
+  margin: 8px 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.project-name {
+  font-size: 1.2rem;
+  color: #d32f2f;
+  margin: 12px 0;
+}
+
+.warning-text {
+  color: #ff6b35;
+  font-weight: 500;
+  font-style: italic;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn-secondary,
+.btn-danger {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: none;
+}
+
+.btn-secondary {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #e0e0e0;
+}
+
+.btn-danger {
+  background: #d32f2f;
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #b71c1c;
+}
+
+.btn-danger:disabled {
+  background: #ffcdd2;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+

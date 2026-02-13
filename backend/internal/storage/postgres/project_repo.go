@@ -3,6 +3,9 @@ package postgres
 import (
 	"context"
 	"labvasphere-api/internal/models"
+	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -10,11 +13,15 @@ import (
 )
 
 type ProjectRepository struct {
-	db *pgxpool.Pool
+	db        *pgxpool.Pool
+	uploadDir string
 }
 
 func NewProjectRepository(db *pgxpool.Pool) *ProjectRepository {
-	return &ProjectRepository{db: db}
+	return &ProjectRepository{
+		db:        db,
+		uploadDir: "./uploads/panoramas",
+	}
 }
 
 func (r *ProjectRepository) GetByID(ctx context.Context, id string) (*models.Project, error) {
@@ -139,9 +146,36 @@ func (r *ProjectRepository) Update(project *models.Project) error {
 	return err
 }
 func (r *ProjectRepository) Delete(id string) error {
-	const query = `DELETE FROM projects WHERE id = $1`
-	_, err := r.db.Exec(context.Background(), query, id)
-	return err
+	// Сначала получаем путь к файлу из БД
+	const getQuery = `SELECT panorama_url FROM projects WHERE id = $1`
+	var filename string
+	err := r.db.QueryRow(context.Background(), getQuery, id).Scan(&filename)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil // Проект уже удалён — ничего не делаем
+		}
+		return err
+	}
+
+	// Удаляем запись из БД
+	const deleteQuery = `DELETE FROM projects WHERE id = $1`
+	_, err = r.db.Exec(context.Background(), deleteQuery, id)
+	if err != nil {
+		return err
+	}
+
+	// Удаляем файл с диска
+	if filename != "" {
+		filePath := filepath.Join(r.uploadDir, filename)
+		if err := os.Remove(filePath); err != nil {
+			// Логируем ошибку, но не прерываем удаление из БД
+			log.Printf("⚠️ Не удалось удалить файл %s: %v", filePath, err)
+		} else {
+			log.Printf("✅ Файл %s успешно удалён", filePath)
+		}
+	}
+
+	return nil
 }
 func (r *ProjectRepository) GetByAuthor(ctx context.Context, authorID string) ([]*models.Project, error) {
 	const query = `

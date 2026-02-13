@@ -14,6 +14,7 @@ import PartnerPage from "./pages/PartnerPage";
 import GuidePage from "./pages/GuidePage";
 import SettingsPage from "./pages/SettingsPage";
 import ProjectView from "./pages/ProjectView";
+import EditorPage from "./pages/EditorPage";
 // Компонент-обёртка, чтобы получить доступ к location внутри Router
 const AppContent = () => {
   const location = useLocation();
@@ -35,6 +36,7 @@ const AppContent = () => {
           <Route path="/guide" element={<GuidePage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/project/:id" element={<ProjectView />} />
+          <Route path="/editor/:id" element={<EditorPage />} />
         </Routes>
       </div>
     </>
