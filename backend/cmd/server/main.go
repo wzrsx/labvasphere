@@ -46,6 +46,7 @@ func main() {
 	uploadHandler := handlers.NewUploadHandler("./uploads/panoramas")
 	projectHandler := handlers.NewProjectHandler(projectRepo)
 	authHandler := handlers.NewAuthHandler(userRepo)
+	userHandler := handlers.NewUserHandler(userRepo)
 
 	// Настраиваем роутер
 	r := chi.NewRouter()
@@ -84,6 +85,12 @@ func main() {
 		r.Route("/projects", func(r chi.Router) {
 			r.Use(middleware.AuthMiddleware) // ← Защита токеном
 			projectHandler.RegisterRoutes(r)
+		})
+		// Роуты профиля (требуют аутентификации)
+		r.Route("/profile", func(r chi.Router) {
+			r.Use(middleware.AuthMiddleware)
+			r.Get("/", userHandler.GetProfile)
+			r.Put("/", userHandler.UpdateProfile)
 		})
 	})
 

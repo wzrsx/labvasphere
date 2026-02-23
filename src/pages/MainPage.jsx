@@ -121,12 +121,6 @@ const MainPage = () => {
     setDeleteModal({ isOpen: false, projectId: null, projectName: '', isLoading: false });
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/auth');
-  };
-
   // Фильтрация по поиску 
   const filteredProjects = projects.filter((p) =>
     p.title.toLowerCase().includes(searchQuery.toLowerCase())

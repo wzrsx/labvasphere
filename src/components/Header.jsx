@@ -28,13 +28,9 @@ const Header = () => {
     return null;
   };
 
-  const handleLogout = () => {
-    // Очищаем токен и данные пользователя
-    logout();
-    // Перенаправляем на страницу входа
-    navigate("/auth");
-  };
-
+  const handleProfile = () =>{
+    navigate("/profile")
+  }
   const isActive = (path) => location.pathname === path;
 
   return (
@@ -56,23 +52,7 @@ const Header = () => {
       </nav>
       {isAuthenticated && (
         <div className="user-profile">
-          <span>{getUserName() || 'Пользователь'}</span>
-          <button
-            onClick={handleLogout}
-            aria-label="Выйти"
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: 0,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginLeft: "0.5rem",
-            }}
-          >
-            <img src={ExitIcon} alt="" width="23" height="23" />
-          </button>
+          <span onClick={handleProfile}>{getUserName() || 'Пользователь'}</span>
           <button className="lang-button">RU</button>
         </div>
       )}
