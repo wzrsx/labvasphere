@@ -1,133 +1,237 @@
-import React, { useRef, useEffect } from "react";
-import FeatureCard from "../components/FeatureCard";
-import ConnectionLine from "../utils/ConnectionLine";
-import useFadeInOnScroll from "../hooks/useFadeInOnScroll";
-import logo from "../logo.jpg";
-import "../App.css";
-import { useNavigate } from "react-router-dom";
+// src/pages/LandingPage.jsx
+import React, { useState, useEffect, useRef } from "react";
+import SphereViewer from "../components/SphereViewer";
+import { getPublishedProjects } from "../services/projectService";
+import "./LandingPage.css";
 
 const LandingPage = () => {
-  const navigate = useNavigate();
+  const [projects, setProjects] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [preloading, setPreloading] = useState(false);
+  const [preloadProgress, setPreloadProgress] = useState(0);
+  const [error, setError] = useState(null);
 
-  const handleTryClick = () => {
-    navigate("/auth");
+  // Ref для управления вьювером (вращение)
+  const viewerRef = useRef(null);
+
+  // Функция предзагрузки изображений
+  const preloadImages = (urls) => {
+    return Promise.all(
+      urls.map(
+        (url) =>
+          new Promise((resolve, reject) => {
+            const img = new Image();
+            img.src = url;
+            img.onload = () => resolve(url);
+            img.onerror = () => reject(url);
+          })
+      )
+    );
   };
 
-  const card1Ref = useRef(null);
-  const card2Ref = useRef(null);
-  const card3Ref = useRef(null);
-  const card4Ref = useRef(null);
-  const card5Ref = useRef(null);
-  const card6Ref = useRef(null);
-
-  const cardRefs = [card1Ref, card2Ref, card3Ref, card4Ref, card5Ref, card6Ref];
-  useFadeInOnScroll(cardRefs);
+  // 1. Загрузка опубликованных проектов
   useEffect(() => {
-    // Удаляем, если уже есть (защита от дублей при hot reload)
-    document.querySelectorAll(".pulse-circle").forEach((el) => el.remove());
+    const fetchProjects = async () => {
+      try {
+        setLoading(true);
+        const result = await getPublishedProjects(10, 0);
 
-    const circle = document.createElement("div");
-    circle.className = "pulse-circle";
-    document.body.appendChild(circle);
+        if (result.success) {
+          const loadedProjects = result.projects || [];
+          setProjects(loadedProjects);
 
-    // Очистка при размонтировании
-    return () => {
-      circle.remove();
+          // Если есть проекты - начинаем предзагрузку панорам
+          if (loadedProjects.length > 0) {
+            setPreloading(true);
+            const panoramaUrls = loadedProjects.map((p) => p.panorama_url);
+
+            try {
+              // Загружаем с отслеживанием прогресса
+              let loaded = 0;
+              await Promise.all(
+                panoramaUrls.map(
+                  (url) =>
+                    new Promise((resolve, reject) => {
+                      const img = new Image();
+                      img.src = url;
+                      img.onload = () => {
+                        loaded++;
+                        setPreloadProgress(Math.round((loaded / panoramaUrls.length) * 100));
+                        resolve(url);
+                      };
+                      img.onerror = () => {
+                        loaded++;
+                        setPreloadProgress(Math.round((loaded / panoramaUrls.length) * 100));
+                        console.warn(`Failed to load: ${url}`);
+                        resolve(url); // Продолжаем даже при ошибке
+                      };
+                    })
+                )
+              );
+            } catch (err) {
+              console.warn("Some images failed to load:", err);
+            }
+
+            setPreloading(false);
+            setError(null);
+          } else {
+            setPreloading(false);
+          }
+        } else {
+          setError(result.error);
+          setPreloading(false);
+        }
+      } catch (err) {
+        setError("Не удалось загрузить проекты");
+        console.error(err);
+        setPreloading(false);
+      } finally {
+        setLoading(false);
+      }
     };
+
+    fetchProjects();
   }, []);
+
+  // 2. Авто-переключение слайдов (каждые 8 секунд)
+  useEffect(() => {
+    if (projects.length === 0) return;
+
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % projects.length);
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, [projects.length]);
+
+  // 3. Управление авто-вращением при смене слайда
+  useEffect(() => {
+    if (viewerRef.current && projects.length > 0) {
+      const timer = setTimeout(() => {
+        viewerRef.current.startAutoRotate();
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [currentIndex, projects.length]);
+
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev + 1) % projects.length);
+  };
+
+  const handlePrev = () => {
+    setCurrentIndex((prev) => (prev - 1 + projects.length) % projects.length);
+  };
+
+  const currentProject = projects[currentIndex];
+
+  // --- LOADING STATE (Загрузка списка проектов) ---
+  if (loading) {
+    return (
+      <div className="hero-container loading">
+        <div className="loader">
+          <div className="spinner"></div>
+          <p>Загрузка проектов...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // --- PRELOADING STATE (Предзагрузка панорам) ---
+  if (preloading) {
+    return (
+      <div className="hero-container preloading">
+        <div className="preloader">
+          <div className="spinner"></div>
+          <p>Загрузка панорам...</p>
+          <div className="preload-progress-bar">
+            <div
+              className="preload-progress-fill"
+              style={{ width: `${preloadProgress}%` }}
+            />
+          </div>
+          <p className="preload-progress-text">{preloadProgress}%</p>
+        </div>
+      </div>
+    );
+  }
+
+  // --- ERROR STATE ---
+  if (error) {
+    return (
+      <div className="hero-container error">
+        <div className="error-message">
+          <h2>⚠️ {error}</h2>
+          <button onClick={() => window.location.reload()}>Попробовать снова</button>
+        </div>
+      </div>
+    );
+  }
+
+  // --- EMPTY STATE ---
+  if (projects.length === 0) {
+    return (
+      <div className="hero-container empty">
+        <div className="empty-message">
+          <h2>Нет опубликованных проектов</h2>
+          <p>Загляните позже!</p>
+        </div>
+      </div>
+    );
+  }
+
+  // --- MAIN CONTENT ---
   return (
-    <div className="app">
-      <header className="header">
-        <div className="logo-container">
-          <img src={logo} alt="logo" className="logo-img" />
-        </div>
-        <button className="lang-button">RU</button>
-      </header>
+    <div className="hero-container">
+      {/* 360 VIEWER */}
+      <div className="viewer-container">
+        <SphereViewer
+          ref={viewerRef}
+          src={currentProject?.panorama_url}
+          style={{ width: "100%", height: "100%" }}
+          navbar={false}
+        />
+      </div>
 
-      <main className="main">
-        <div className="hero">
-          <h1>360° Визуализация</h1>
-          <p>Создайте интерьер будущего</p>
-        </div>
-        <div className="features-grid">
-          <FeatureCard
-            ref={card1Ref}
-            title="Что это?"
-            subtitle="360°‑визуализация интерьеров"
-          >
-            Создавайте и показывайте проекты в интерактивной панораме — прямо из
-            профессиональных 3D‑программ, таких как LABVASPHERE.
-          </FeatureCard>
+      {/* СТРЕЛКИ НАВИГАЦИИ */}
+      <button className="nav-btn prev" onClick={handlePrev} aria-label="Предыдущий">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </button>
 
-          <FeatureCard
-            ref={card2Ref}
-            title="Для кого?"
-            subtitle="Дизайнеры, инженеры, архитекторы"
-          >
-            Идеально подходит тем, кто проектирует интерьеры, вентиляцию или
-            кондиционирование — и хочет наглядно продемонстрировать результат
-            заказчику.
-          </FeatureCard>
+      <button className="nav-btn next" onClick={handleNext} aria-label="Следующий">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </button>
 
-          <FeatureCard
-            ref={card3Ref}
-            title="Как это работает?"
-            subtitle="Просто, быстро, без перекодировки"
-          >
-            Загружайте 360°‑изображения напрямую или через бота. Поддержка
-            высокого разрешения, управление жестами (касание, тачпад, мышь).
-            Работает на Windows и macOS, а также на смартфонах и планшетах.
-          </FeatureCard>
+      {/* ИНФОРМАЦИЯ (ЛЕВЫЙ НИЖНИЙ УГОЛ) */}
+      <div className="info-overlay" key={currentProject?.id}>
+        <h1 className="project-title">{currentProject?.title}</h1>
+        <p className="designer-name">Автор ID: {currentProject?.author_id}</p>
+      </div>
 
-          <FeatureCard
-            ref={card4Ref}
-            title="Бесплатно и удобно"
-            subtitle="Первая версия — без оплаты"
-          >
-            Полностью на русском и английском языках. Фоновая музыка через
-            Яндекс.Музыку, Deezer и другие сервисы — по желанию.
-          </FeatureCard>
-
-          <FeatureCard
-            ref={card5Ref}
-            title="Зарабатывайте вместе с нами"
-            subtitle="Партнёрская программа до 3 уровней"
-          >
-            1‑й уровень: 7,5%
-            <br />
-            2‑й уровень: 5%
-            <br />
-            3‑й уровень: 2,5%
-            <br />
-            от всех подписок ваших рефералов.
-          </FeatureCard>
-
-          <FeatureCard
-            ref={card6Ref}
-            title="Где скачать?"
-            subtitle="Во всех магазинах приложений"
-          >
-            Скоро в App Store, Google Play и других платформах. Безопасная
-            загрузка, прозрачные условия.
-          </FeatureCard>
-        </div>
-
-        {cardRefs.slice(0, -1).map((_, i) => (
-          <ConnectionLine
-            key={i}
-            fromRef={cardRefs[i]}
-            toRef={cardRefs[i + 1]}
-            fromIndex={i}
+      {/* ИНДИКАТОРЫ (ТОЧКИ) */}
+      <div className="indicators">
+        {projects.map((_, index) => (
+          <button
+            key={index}
+            className={`dot ${index === currentIndex ? "active" : ""}`}
+            onClick={() => setCurrentIndex(index)}
+            aria-label={`Перейти к проекту ${index + 1}`}
           />
         ))}
-      </main>
-      <footer>
-        <div>
-          <button className="try-button" onClick={handleTryClick}>
-            Попробовать
-          </button>
-        </div>
-      </footer>
+      </div>
+
+      {/* ПРОГРЕСС БАР */}
+      <div className="progress-bar">
+        <div
+          className="progress-fill"
+          style={{ width: `${((currentIndex + 1) / projects.length) * 100}%` }}
+        />
+      </div>
     </div>
   );
 };

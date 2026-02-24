@@ -1,5 +1,24 @@
 import api from './api.js';
 
+//Получение опубликованных проектов (публично, для лендинга)
+export const getPublishedProjects = async (limit = 5, offset = 0) => {
+  try {
+    const response = await api.get(`/projects/published?limit=${limit}&offset=${offset}`);
+    return {
+      success: true,
+      projects: response.data?.data || [],
+      total: response.data?.total || 0,
+    };
+  } catch (error) {
+    const message = error.response?.data?.error || 'Ошибка при загрузке проектов';
+    return {
+      success: false,
+      error: message,
+    };
+  }
+};
+
+
 // Получение всех проектов ТЕКУЩЕГО авторизованного пользователя
 // (ID автора берётся автоматически из JWT-токена на бэкенде)
 export const getProjects = async () => {

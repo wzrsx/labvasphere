@@ -8,6 +8,7 @@ import (
 	"labvasphere-api/internal/storage/postgres"
 	"net/http"
 	"time"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -52,13 +53,50 @@ func toProjectResponse(p *models.Project) *dto.ProjectResponse {
 }
 
 func (h *ProjectHandler) RegisterRoutes(r chi.Router) {
+    r.Get("/published", h.ListPublished) 
+    r.Get("/{id}", h.GetByID)
 	r.Post("/", h.CreateProject)
-	r.Get("/", h.List)
-	r.Get("/{id}", h.GetByID)
-	r.Put("/{id}", h.UpdateProject)
-	r.Delete("/{id}", h.DeleteProject)
+    r.Get("/", h.List)
+    r.Put("/{id}", h.UpdateProject)
+    r.Delete("/{id}", h.DeleteProject)
 }
 
+func (h *ProjectHandler) ListPublished(w http.ResponseWriter, r *http.Request) {
+    // Пагинация
+    limit := 5
+    offset := 0
+
+    if l := r.URL.Query().Get("limit"); l != "" {
+        if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 50 {
+            limit = parsed
+        }
+    }
+
+    if o := r.URL.Query().Get("offset"); o != "" {
+        if parsed, err := strconv.Atoi(o); err == nil && parsed >= 0 {
+            offset = parsed
+        }
+    }
+
+    // Получаем опубликованные проекты 
+    projects, err := h.projectRepo.ListPublished(r.Context(), limit, offset)
+    if err != nil {
+        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+        return
+    }
+
+    // Преобразуем в DTO
+    var responses []*dto.ProjectResponse
+    for _, p := range projects {
+        responses = append(responses, toProjectResponse(p))
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "data":  responses,
+        "total": len(responses),
+    })
+}
 // List получает проекты ТЕКУЩЕГО авторизованного пользователя
 func (h *ProjectHandler) List(w http.ResponseWriter, r *http.Request) {
 	claims := middleware.GetUserFromContext(r.Context())

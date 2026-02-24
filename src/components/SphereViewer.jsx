@@ -1,36 +1,68 @@
 // src/components/SphereViewer.jsx
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useImperativeHandle, forwardRef } from "react";
 import { Viewer } from "@photo-sphere-viewer/core";
+import { AutorotatePlugin } from '@photo-sphere-viewer/autorotate-plugin';
 import "@photo-sphere-viewer/core/index.css";
 
-const SphereViewer = ({ src, style = {} }) => {
+const SphereViewer = forwardRef(({ src, style = {}, navbar = true }, ref) => {
   const containerRef = useRef(null);
-  const viewerRef = useRef(null);
+  const viewerInstance = useRef(null);
+  const autoRotatePluginRef = useRef(null);
+
+  // Передаем методы управления родителю
+  useImperativeHandle(ref, () => ({
+    startAutoRotate: () => {
+      if (autoRotatePluginRef.current) {
+        autoRotatePluginRef.current.start();
+      }
+    },
+    stopAutoRotate: () => {
+      if (autoRotatePluginRef.current) {
+        autoRotatePluginRef.current.stop();
+      }
+    },
+    getInstance: () => viewerInstance.current,
+  }));
 
   useEffect(() => {
     if (!src || !containerRef.current) return;
 
-    // Уничтожаем предыдущий viewer (если есть)
-    if (viewerRef.current) {
-      viewerRef.current.destroy();
-      viewerRef.current = null;
+    // Безопасное уничтожение предыдущего viewer
+    if (viewerInstance.current) {
+      try {
+        viewerInstance.current.destroy();
+      } catch (err) {
+        console.warn("Error destroying viewer:", err);
+      }
+      viewerInstance.current = null;
+      autoRotatePluginRef.current = null;
     }
 
-    // Откладываем инициализацию на следующий кадр (после layout)
+    // Откладываем инициализацию
     const timer = setTimeout(() => {
+      if (!containerRef.current) return;
+
       try {
-        viewerRef.current = new Viewer({
+
+        viewerInstance.current = new Viewer({
           container: containerRef.current,
           panorama: src,
           loadingImg: "",
-          navbar: true,
-          caption: "",
+          navbar: navbar,
+          caption: false,
+          zoomButtons: !navbar,
           defaultZoomLvl: 0,
           mousewheel: true,
           touchmoveTwoFingers: true,
+          plugins: [
+              AutorotatePlugin.withConfig({
+                  autostartDelay: 1000,
+              }),
+          ],
+
         });
 
-        viewerRef.current.addEventListener("error", (e) => {
+        viewerInstance.current.addEventListener("error", (e) => {
           console.error("PhotoSphereViewer error:", e);
         });
       } catch (err) {
@@ -41,12 +73,17 @@ const SphereViewer = ({ src, style = {} }) => {
     // Cleanup
     return () => {
       clearTimeout(timer);
-      if (viewerRef.current) {
-        viewerRef.current.destroy();
-        viewerRef.current = null;
+      if (viewerInstance.current) {
+        try {
+          viewerInstance.current.destroy();
+        } catch (err) {
+          console.warn("Error destroying viewer on cleanup:", err);
+        }
+        viewerInstance.current = null;
+        autoRotatePluginRef.current = null;
       }
     };
-  }, [src]);
+  }, [src, navbar]);
 
   return (
     <div
@@ -54,6 +91,6 @@ const SphereViewer = ({ src, style = {} }) => {
       style={{ width: "100%", height: "100%", ...style }}
     />
   );
-};
+});
 
 export default SphereViewer;
