@@ -18,7 +18,6 @@ export const getPublishedProjects = async (limit = 5, offset = 0) => {
   }
 };
 
-
 // Получение всех проектов ТЕКУЩЕГО авторизованного пользователя
 // (ID автора берётся автоматически из JWT-токена на бэкенде)
 export const getProjects = async () => {

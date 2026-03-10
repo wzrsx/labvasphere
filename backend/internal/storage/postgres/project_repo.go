@@ -59,11 +59,23 @@ func (r *ProjectRepository) GetByID(ctx context.Context, id string) (*models.Pro
 }
 func (r *ProjectRepository) ListPublished(ctx context.Context, limit, offset int) ([]*models.Project, error) {
 	const query = `
-		SELECT id, title, description, cover_image_url, panorama_url, author_id,
-		       status, views_count, created_at, published_at, updated_at
-		FROM projects
-		WHERE status = 'published'
-		ORDER BY created_at DESC
+		SELECT 
+			p.id, 
+			p.title, 
+			p.description, 
+			p.cover_image_url, 
+			p.panorama_url, 
+			p.author_id,
+			u.full_name,
+			p.status, 
+			p.views_count, 
+			p.created_at, 
+			p.published_at, 
+			p.updated_at
+		FROM projects p
+		INNER JOIN users u ON u.id = p.author_id
+		WHERE p.status = 'published'
+		ORDER BY p.created_at DESC
 		LIMIT $1 OFFSET $2
 	`
 
@@ -74,8 +86,11 @@ func (r *ProjectRepository) ListPublished(ctx context.Context, limit, offset int
 	defer rows.Close()
 
 	var projects []*models.Project
+
 	for rows.Next() {
 		var p models.Project
+		
+		// Порядок аргументов должен строго соответствовать порядку колонок в SELECT выше
 		err := rows.Scan(
 			&p.ID,
 			&p.Title,
@@ -83,6 +98,7 @@ func (r *ProjectRepository) ListPublished(ctx context.Context, limit, offset int
 			&p.CoverImageURL,
 			&p.PanoramaURL,
 			&p.AuthorID,
+			&p.AuthorName, // Сканируем имя автора
 			&p.Status,
 			&p.ViewsCount,
 			&p.CreatedAt,
@@ -92,7 +108,16 @@ func (r *ProjectRepository) ListPublished(ctx context.Context, limit, offset int
 		if err != nil {
 			return nil, err
 		}
+
 		projects = append(projects, &p)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if projects == nil {
+		return []*models.Project{}, nil
 	}
 
 	return projects, nil

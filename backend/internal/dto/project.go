@@ -25,6 +25,7 @@ type ProjectResponse struct {
 	CoverImageURL *string `json:"cover_image_url,omitempty"`
 	PanoramaURL   string  `json:"panorama_url"` // ← уже полный URL
 	AuthorID      string  `json:"author_id"`
+	AuthorName    string  `json:"author_name"`
 	Status        string  `json:"status"`
 	ViewsCount    int     `json:"views_count"`
 	CreatedAt     string  `json:"created_at"`

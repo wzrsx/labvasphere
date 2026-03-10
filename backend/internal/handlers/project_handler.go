@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 	"strconv"
-
+	"log"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -29,6 +29,7 @@ func toProjectResponse(p *models.Project) *dto.ProjectResponse {
 		Title:       p.Title,
 		Description: p.Description,
 		AuthorID:    p.AuthorID,
+		AuthorName:  p.AuthorName,
 		Status:      p.Status,
 		ViewsCount:  p.ViewsCount,
 		CreatedAt:   p.CreatedAt.Format(time.RFC3339),
@@ -89,6 +90,7 @@ func (h *ProjectHandler) ListPublished(w http.ResponseWriter, r *http.Request) {
     var responses []*dto.ProjectResponse
     for _, p := range projects {
         responses = append(responses, toProjectResponse(p))
+		log.Printf("Project ID: %s, AuthorName: '%s'\n", p.ID, p.AuthorName)
     }
 
     w.Header().Set("Content-Type", "application/json")

@@ -11,6 +11,7 @@ type Project struct {
 	CoverImageURL *string    `json:"cover_image_url,omitempty" db:"cover_image_url"`
 	PanoramaURL   string     `json:"panorama_url" db:"panorama_url"`
 	AuthorID      string     `json:"author_id" db:"author_id"`
+	AuthorName    string     `json:"author_name" db:"author_name"` 
 	Status        string     `json:"status" db:"status"`
 	ViewsCount    int        `json:"views_count" db:"views_count"`
 	CreatedAt     time.Time  `json:"created_at" db:"created_at"`

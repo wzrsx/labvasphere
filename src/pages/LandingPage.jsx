@@ -1,236 +1,248 @@
-// src/pages/LandingPage.jsx
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import SphereViewer from "../components/SphereViewer";
 import { getPublishedProjects } from "../services/projectService";
+import { preloadPanorama } from "../services/preload.js";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import "./LandingPage.css";
 
+const PRELOAD_AHEAD = 3;
+const TRANSITION_DURATION = 700; // Уменьшили для более отзывчивого интерфейса
+
 const LandingPage = () => {
+  const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
+  
+  const [initialLoading, setInitialLoading] = useState(true);
   const [preloading, setPreloading] = useState(false);
   const [preloadProgress, setPreloadProgress] = useState(0);
+  
   const [error, setError] = useState(null);
-
-  // Ref для управления вьювером (вращение)
+  
+  // Refs
   const viewerRef = useRef(null);
+  const preloadedUrls = useRef(new Set());
+  const currentIndexRef = useRef(0); // Ref для актуального индекса в интервале
+  const autoSwitchTimerRef = useRef(null); // Ref для управления таймером
 
-  // Функция предзагрузки изображений
-  const preloadImages = (urls) => {
-    return Promise.all(
-      urls.map(
-        (url) =>
-          new Promise((resolve, reject) => {
-            const img = new Image();
-            img.src = url;
-            img.onload = () => resolve(url);
-            img.onerror = () => reject(url);
-          })
-      )
-    );
+  // Синхронизируем ref с состоянием
+  useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
+
+  const handleAuthPage = (projectId) => {
+    navigate(`/auth`);
   };
-
-  // 1. Загрузка опубликованных проектов
+  // 1. Загрузка списка проектов
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        setLoading(true);
+        setInitialLoading(true);
         const result = await getPublishedProjects(10, 0);
 
-        if (result.success) {
-          const loadedProjects = result.projects || [];
-          setProjects(loadedProjects);
-
-          // Если есть проекты - начинаем предзагрузку панорам
-          if (loadedProjects.length > 0) {
-            setPreloading(true);
-            const panoramaUrls = loadedProjects.map((p) => p.panorama_url);
-
-            try {
-              // Загружаем с отслеживанием прогресса
-              let loaded = 0;
-              await Promise.all(
-                panoramaUrls.map(
-                  (url) =>
-                    new Promise((resolve, reject) => {
-                      const img = new Image();
-                      img.src = url;
-                      img.onload = () => {
-                        loaded++;
-                        setPreloadProgress(Math.round((loaded / panoramaUrls.length) * 100));
-                        resolve(url);
-                      };
-                      img.onerror = () => {
-                        loaded++;
-                        setPreloadProgress(Math.round((loaded / panoramaUrls.length) * 100));
-                        console.warn(`Failed to load: ${url}`);
-                        resolve(url); // Продолжаем даже при ошибке
-                      };
-                    })
-                )
-              );
-            } catch (err) {
-              console.warn("Some images failed to load:", err);
-            }
-
-            setPreloading(false);
-            setError(null);
-          } else {
-            setPreloading(false);
-          }
+        if (result.success && result.projects?.length > 0) {
+          setProjects(result.projects);
+          handlePreloadForIndex(0, result.projects);
         } else {
-          setError(result.error);
-          setPreloading(false);
+          setError(result.error || "Нет проектов");
         }
       } catch (err) {
-        setError("Не удалось загрузить проекты");
+        setError("Ошибка сети");
         console.error(err);
-        setPreloading(false);
       } finally {
-        setLoading(false);
+        setInitialLoading(false);
       }
     };
-
     fetchProjects();
   }, []);
 
-  // 2. Авто-переключение слайдов (каждые 8 секунд)
+  // 2. Логика предзагрузки
+  const handlePreloadForIndex = useCallback((index, projectsList) => {
+    if (!projectsList || projectsList.length === 0) return;
+
+    const indicesToPreload = [];
+    for (let i = 0; i < PRELOAD_AHEAD + 1; i++) {
+      const targetIdx = (index + i) % projectsList.length;
+      const url = projectsList[targetIdx]?.panorama_url;
+      
+      if (url && !preloadedUrls.current.has(url)) {
+        indicesToPreload.push({ idx: targetIdx, url });
+      }
+    }
+
+    if (indicesToPreload.length === 0) return;
+
+    setPreloading(true);
+    let completed = 0;
+    const total = indicesToPreload.length;
+
+    indicesToPreload.forEach(({ url }) => {
+      preloadPanorama(url)
+        .then(() => {
+          preloadedUrls.current.add(url);
+          completed++;
+          setPreloadProgress(Math.round((completed / total) * 100));
+        })
+        .catch((err) => {
+          console.warn(`Preload failed for ${url}`, err);
+          completed++; 
+          setPreloadProgress(Math.round((completed / total) * 100));
+        })
+        .finally(() => {
+          if (completed === total) {
+            setPreloading(false);
+          }
+        });
+    });
+  }, []);
+
+  useEffect(() => {
+    if (projects.length > 0) {
+      handlePreloadForIndex(currentIndex, projects);
+    }
+  }, [currentIndex, projects, handlePreloadForIndex]);
+
+  // 3. Автопереключение (ИСПРАВЛЕНО)
   useEffect(() => {
     if (projects.length === 0) return;
-
-    const interval = setInterval(() => {
+    
+    // Очищаем предыдущий таймер при пересоздании эффекта
+    if (autoSwitchTimerRef.current) {
+      clearInterval(autoSwitchTimerRef.current);
+    }
+    
+    autoSwitchTimerRef.current = setInterval(() => {
+      // Используем ref, чтобы получить актуальный индекс без перезапуска эффекта
       setCurrentIndex((prev) => (prev + 1) % projects.length);
-    }, 8000);
+    }, 5000);
+    
+    return () => {
+      if (autoSwitchTimerRef.current) {
+        clearInterval(autoSwitchTimerRef.current);
+      }
+    };
+  }, [projects.length]); // Убрали currentIndex из зависимостей!
 
-    return () => clearInterval(interval);
+  // 4. Управление авторотацией
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      viewerRef.current?.startAutoRotate?.();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [currentIndex]);
+
+  // --- Handlers (БЕЗ isTransitioning) ---
+  const handleNext = useCallback(() => {
+    setCurrentIndex((prev) => (prev + 1) % (projects.length || 1));
+    // Сбрасываем таймер автопереключения, если пользователь кликнул вручную
+    if (autoSwitchTimerRef.current) {
+      clearInterval(autoSwitchTimerRef.current);
+    }
   }, [projects.length]);
 
-  // 3. Управление авто-вращением при смене слайда
-  useEffect(() => {
-    if (viewerRef.current && projects.length > 0) {
-      const timer = setTimeout(() => {
-        viewerRef.current.startAutoRotate();
-      }, 500);
-
-      return () => clearTimeout(timer);
+  const handlePrev = useCallback(() => {
+    setCurrentIndex((prev) => (prev - 1 + (projects.length || 1)) % (projects.length || 1));
+    if (autoSwitchTimerRef.current) {
+      clearInterval(autoSwitchTimerRef.current);
     }
-  }, [currentIndex, projects.length]);
+  }, [projects.length]);
 
-  const handleNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % projects.length);
-  };
-
-  const handlePrev = () => {
-    setCurrentIndex((prev) => (prev - 1 + projects.length) % projects.length);
-  };
+  const handleDotClick = useCallback((index) => {
+    setCurrentIndex(index);
+    if (autoSwitchTimerRef.current) {
+      clearInterval(autoSwitchTimerRef.current);
+    }
+  }, []);
 
   const currentProject = projects[currentIndex];
 
-  // --- LOADING STATE (Загрузка списка проектов) ---
-  if (loading) {
+  // --- RENDER STATES ---
+  if (initialLoading) {
     return (
       <div className="hero-container loading">
         <div className="loader">
           <div className="spinner"></div>
-          <p>Загрузка проектов...</p>
+          <p>Загрузка каталога...</p>
         </div>
       </div>
     );
   }
 
-  // --- PRELOADING STATE (Предзагрузка панорам) ---
-  if (preloading) {
-    return (
-      <div className="hero-container preloading">
-        <div className="preloader">
-          <div className="spinner"></div>
-          <p>Загрузка панорам...</p>
-          <div className="preload-progress-bar">
-            <div
-              className="preload-progress-fill"
-              style={{ width: `${preloadProgress}%` }}
-            />
-          </div>
-          <p className="preload-progress-text">{preloadProgress}%</p>
-        </div>
-      </div>
-    );
-  }
-
-  // --- ERROR STATE ---
   if (error) {
     return (
       <div className="hero-container error">
         <div className="error-message">
           <h2>⚠️ {error}</h2>
-          <button onClick={() => window.location.reload()}>Попробовать снова</button>
+          <button onClick={() => window.location.reload()}>Обновить</button>
         </div>
       </div>
     );
   }
 
-  // --- EMPTY STATE ---
   if (projects.length === 0) {
     return (
       <div className="hero-container empty">
-        <div className="empty-message">
-          <h2>Нет опубликованных проектов</h2>
-          <p>Загляните позже!</p>
-        </div>
+        <p>Нет проектов для показа</p>
       </div>
     );
   }
 
-  // --- MAIN CONTENT ---
   return (
     <div className="hero-container">
-      {/* 360 VIEWER */}
+      
       <div className="viewer-container">
         <SphereViewer
           ref={viewerRef}
           src={currentProject?.panorama_url}
           style={{ width: "100%", height: "100%" }}
           navbar={false}
+          autoRotate={true}
+          mousemove={false}
+          touchmove={false}
+          transitionDuration={TRANSITION_DURATION} // Передаем длительность перехода
         />
       </div>
+    <div className="center-title-overlay">
+      <h1 className="center-title">LABVASPHERE</h1>
+      
+    </div>
+    <div className="center-button-overlay">
+      <button className="sign-btn" onClick={handleAuthPage}>
+        Войти
+      </button>
+    </div>
 
-      {/* СТРЕЛКИ НАВИГАЦИИ */}
-      <button className="nav-btn prev" onClick={handlePrev} aria-label="Предыдущий">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      {preloading && !initialLoading && (
+        <div className="preload-overlay">
+          <div className="preload-mini-spinner"></div>
+          <span>{preloadProgress}%</span>
+        </div>
+      )}
+
+      <button className="nav-btn prev" onClick={handlePrev} aria-label="Назад">
+        <svg width="24" height="24" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none">
           <path d="M15 18l-6-6 6-6"/>
         </svg>
       </button>
-
-      <button className="nav-btn next" onClick={handleNext} aria-label="Следующий">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <button className="nav-btn next" onClick={handleNext} aria-label="Вперед">
+        <svg width="24" height="24" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none">
           <path d="M9 18l6-6-6-6"/>
         </svg>
       </button>
 
-      {/* ИНФОРМАЦИЯ (ЛЕВЫЙ НИЖНИЙ УГОЛ) */}
       <div className="info-overlay" key={currentProject?.id}>
         <h1 className="project-title">{currentProject?.title}</h1>
-        <p className="designer-name">Автор ID: {currentProject?.author_id}</p>
+        <p className="designer-name">Автор: {currentProject?.author_name}</p>
       </div>
 
-      {/* ИНДИКАТОРЫ (ТОЧКИ) */}
       <div className="indicators">
         {projects.map((_, index) => (
           <button
             key={index}
             className={`dot ${index === currentIndex ? "active" : ""}`}
-            onClick={() => setCurrentIndex(index)}
-            aria-label={`Перейти к проекту ${index + 1}`}
+            onClick={() => handleDotClick(index)}
           />
         ))}
-      </div>
-
-      {/* ПРОГРЕСС БАР */}
-      <div className="progress-bar">
-        <div
-          className="progress-fill"
-          style={{ width: `${((currentIndex + 1) / projects.length) * 100}%` }}
-        />
       </div>
     </div>
   );
