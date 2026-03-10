@@ -63,15 +63,11 @@
 }
 /* Кнопка сворачивания */
 .collapse-btn {
-  position: absolute;
-  top: 15px;
-  right: 100%;
-  transform: translateX(50%);
   width: 32px;
   height: 32px;
-  background: #3a3a3a;
+  background: #bdbdbd;
   border: 2px solid #404040;
-  border-radius: 50%;
+  border-radius: 20%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -79,11 +75,6 @@
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   z-index: 100;
-}
-.collapse-btn:hover {
-  background: #667eea;
-  border-color: #667eea;
-  transform: translateX(50%) scale(1.1);
 }
 
 .collapse-btn.collapsed {
@@ -178,7 +169,6 @@
 /* Заголовок панели */
 .sidebar-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   margin-bottom: 25px;
   padding-bottom: 15px;
@@ -192,21 +182,8 @@
   margin: 0;
   font-weight: 600;
   white-space: nowrap;
+  margin-left: 10px;
   transition: opacity 0.3s ease;
-}
-.sidebar-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 25px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #404040;
-}
-
-.sidebar-header h3 {
-  font-size: 1.5rem;
-  margin: 0;
-  font-weight: 600;
 }
 
 /* Информация о проекте */

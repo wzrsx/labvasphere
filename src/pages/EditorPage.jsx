@@ -255,23 +255,22 @@ const EditorPage = () => {
 
       {/* Боковая панель инструментов */}
       <div className={`editor-sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
-        <button 
+        <div className="sidebar-header">
+          <button 
           className={`collapse-btn ${isSidebarCollapsed ? 'collapsed' : ''}`}
           onClick={toggleSidebar}
           title={isSidebarCollapsed ? 'Развернуть панель' : 'Свернуть панель'}
         >
           {isSidebarCollapsed ? (
             <svg viewBox="0 0 24 24" width="20" height="20">
-              <path fill="currentColor" d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+              <path fill="currentColor" d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/>
             </svg>
           ) : (
             <svg viewBox="0 0 24 24" width="20" height="20">
-              <path fill="currentColor" d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/>
+              <path fill="currentColor" d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
             </svg>
           )}
         </button>
-        
-        <div className="sidebar-header">
           <h3>Редактор проекта</h3>
         </div>
 
