@@ -3,6 +3,7 @@ import SphereViewer from "../components/SphereViewer";
 import { getPublishedProjects } from "../services/projectService";
 import { preloadPanorama } from "../services/preload.js";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import "../App.css";
 import "./LandingPage.css";
 
 const PRELOAD_AHEAD = 3;
