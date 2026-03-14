@@ -89,3 +89,55 @@ export const deleteProject = async (projectId) => {
     };
   }
 };
+
+//Загрузка панорамы
+export const uploadPanorama = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  try {
+    const response = await api.post('/upload/panorama', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
+    return {
+      success: true,
+      fileUrl: response.data.file_url,  // "panoramas/uuid_123.jpg"
+      filename: response.data.filename,
+    };
+  } catch (error) {
+    const message = error.response?.data?.error || 'Ошибка при загрузке панорамы';
+    return {
+      success: false,
+      error: message,
+    };
+  }
+};
+
+// Загрузка обложки
+export const uploadCover = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  try {
+    const response = await api.post('/upload/cover', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
+    return {
+      success: true,
+      fileUrl: response.data.file_url,  // "covers/uuid_456.jpg"
+      filename: response.data.filename,
+    };
+  } catch (error) {
+    const message = error.response?.data?.error || 'Ошибка при загрузке обложки';
+    return {
+      success: false,
+      error: message,
+    };
+  }
+};
