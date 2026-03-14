@@ -25,3 +25,71 @@ body {
   display: flex;
   flex-direction: column;
 }
+.main {
+  min-height: 150vh; /* или больше */
+}
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  padding: 30px;
+  padding-bottom: 0;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+}
+
+.logo-img {
+  width: 100px;
+}
+
+.logo-text {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #222;
+}
+
+.lang-button {
+  width: 50px;
+  height: 35px;
+  background: rgba(255, 230, 167, 0.14);
+  border: 2px solid rgba(153, 88, 42, 0.85);
+  border-radius: 17.5px;
+  font-size: 14px;
+  outline: none;
+  padding: 0;
+  margin: 0;
+  margin-left: 1rem;
+  cursor: pointer;
+  font: inherit;
+  transition: background-color 0.3s ease;
+}
+.lang-button:hover {
+  background-color: rgba(255, 183, 102, 0.25);
+}
+/* Main Content */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hero {
+  text-align: center;
+  margin-bottom: 3rem;
+  max-width: 600px;
+}
+
+.hero h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  color: #111;
+}
+
+.hero p {
+  font-size: 1.25rem;
+  color: #555;
+}
