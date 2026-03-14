@@ -56,6 +56,15 @@ const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [viewerStep, setViewerStep] = useState(false);
+  
+  const handleViewerReady = useCallback((viewer) => {
+    console.log('✅ Viewer ready');
+  }, []);
+
+  const handleViewerError = useCallback((err) => {
+    console.error('❌ Viewer error:', err);
+    setError(`Ошибка: ${err.message}`);
+  }, [setError]); 
 
   const sphereViewerRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -394,8 +403,8 @@ const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
                   navbar={['zoom', 'fullscreen']}
                   autoRotate={false}
                   mousemove={true}
-                  onViewerReady={() => {}}
-                  onError={(err) => setError(`Ошибка: ${err.message}`)}
+                  onViewerReady={handleViewerReady}
+                  onError={handleViewerError}
                 />
                 <div className="aspect-hint">
                   <span>16:9</span>

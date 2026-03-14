@@ -4,17 +4,18 @@ import { Viewer, EquirectangularAdapter } from "@photo-sphere-viewer/core";
 import { AutorotatePlugin } from '@photo-sphere-viewer/autorotate-plugin';
 import "@photo-sphere-viewer/core/index.css";
 
-const SphereViewer = forwardRef(({ 
-  src, 
-  style = {}, 
-  navbar = true, 
-  autoRotate = false, 
-  mousemove = true,  
-  onViewerReady, 
-  onPanoramaLoad,
-  onError,
-  transitionDuration = 700 
-}, ref) => {
+const SphereViewer = forwardRef((props, ref) => {
+  const {
+    src,
+    style = {},
+    navbar = true,
+    autoRotate = false,
+    mousemove = true,
+    onViewerReady,
+    onPanoramaLoad,
+    onError,
+    transitionDuration = 700
+  } = props;
   
   const containerRef = useRef(null);
   const viewerInstance = useRef(null);
@@ -243,4 +244,14 @@ const SphereViewer = forwardRef(({
   return <div ref={containerRef} style={{ width: "100%", height: "100%", ...style }} />;
 });
 
-export default SphereViewer;
+export default React.memo(SphereViewer, (prevProps, nextProps) => {
+  // 🔹 Сравниваем ТОЛЬКО те пропсы, которые влияют на ререндер
+  return (
+    prevProps.src === nextProps.src &&
+    prevProps.navbar === nextProps.navbar &&
+    prevProps.autoRotate === nextProps.autoRotate &&
+    prevProps.mousemove === nextProps.mousemove &&
+    // style сравниваем по ссылке (он мемоизирован в родителе через useMemo)
+    prevProps.style === nextProps.style
+  );
+});
