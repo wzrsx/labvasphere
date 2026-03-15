@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import SphereViewer from "./SphereViewer";
+import SphereViewer from "./SphereViewer"; 
 import { createProject, uploadPanorama, uploadCover } from "../services/projectService";
 import api from '../services/api';
 

@@ -517,3 +517,149 @@
     margin: 0;
   }
 }
+/* 🔹 Оверлей перехода */
+.transition-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(26, 26, 46, 0.85);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.transition-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+/* 🔹 Спиннер загрузки */
+.transition-spinner {
+  width: 48px;
+  height: 48px;
+  position: relative;
+}
+
+.spinner-ring {
+  width: 100%;
+  height: 100%;
+  border: 3px solid rgba(74, 144, 226, 0.3);
+  border-top-color: #4a90e2;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.transition-text {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.transition-subtext {
+  color: #94a3b8;
+  font-size: 13px;
+  margin: 0;
+}
+
+/* 🔹 Прогресс-бар */
+.transition-progress-bar {
+  width: 200px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.transition-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4a90e2, #7eb3f0);
+  border-radius: 2px;
+  transition: width 0.15s ease-out;
+}
+
+/* 🔹 Кнопка отмены */
+.transition-cancel-btn {
+  padding: 8px 20px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.transition-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* 🔹 Сообщение об ошибке */
+.transition-error {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ef4444;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  z-index: 1001;
+  animation: slideDown 0.3s ease-out;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.transition-error button {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 0 4px;
+  font-size: 16px;
+  margin-left: 8px;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.transition-error button:hover {
+  opacity: 1;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* 🔹 Плавное изменение прозрачности контейнера */
+.panorama-viewer {
+  position: relative;
+  transition: opacity 0.3s ease;
+}

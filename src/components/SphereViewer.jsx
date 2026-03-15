@@ -66,26 +66,30 @@ const SphereViewer = forwardRef((props, ref) => {
       return Promise.reject(new Error('Viewer not initialized'));
     }
     
-    console.log('[SV] Changing panorama...');
+    console.log('[SV] Changing panorama...', { newSrc, options });
     setIsPanoramaLoaded(false);
     setLoadProgress(0);
     
     try {
+      // 🔹 Поддержка опций перехода
       await viewerInstance.current.setPanorama(newSrc, {
-        transition: 'fade',
-        duration: transitionDuration,
+        transition: options.transition || 'fade',  // 'fade' | 'zoom' | 'none'
+        duration: options.duration || 700,          // длительность в мс
         ...options
       });
+      
       console.log('[SV] Panorama changed');
       setIsPanoramaLoaded(true);
       onPanoramaLoad?.();
+      return true;
+      
     } catch (err) {
       console.error('[SV] Change error:', err);
       setInitError(err);
       onError?.(err);
       throw err;
     }
-  }, [transitionDuration, onPanoramaLoad, onError]);
+  }, [onPanoramaLoad, onError]);
 
   // 🔹 Обработчик клика — e.data 
   const handleViewerClick = useCallback((e) => {

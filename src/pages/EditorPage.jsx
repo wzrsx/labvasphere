@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getProjects, updateProject, deleteProject } from "../services/projectService";
+import { getProjects, updateProject, deleteProject, uploadPanorama } from "../services/projectService";
 import SphereViewer from '../components/SphereViewer';
 import "./EditorPage.css";
 
@@ -16,7 +16,13 @@ const EditorPage = () => {
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [selectedHotspot, setSelectedHotspot] = useState(null);
+  const [selectedHotspot, setSelectedHotspot] = useState(null);// 🔹 Список доступных проектов для переходов
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [filePreview, setFilePreview] = useState(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [transitionProgress, setTransitionProgress] = useState(0);
+  const [transitionError, setTransitionError] = useState(null);
+  const fileInputRef = useRef(null);
   const sphereViewerRef = useRef(null);
   const activeToolRef = useRef(activeTool);
   // Состояние редактора
@@ -195,18 +201,187 @@ const EditorPage = () => {
         break;
     }
   };
-
+  // 🔹 Обработка выбора файла панорамы — ЗАГРУЗКА ЧЕРЕЗ API
+  const handleFileSelect = async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  
+  if (!file.type.startsWith('image/')) {
+    alert('Пожалуйста, выберите изображение (JPG, PNG, WebP)');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    return;
+  }
+  
+  if (file.size > 50 * 1024 * 1024) {
+    alert('Файл слишком большой. Максимальный размер: 50MB');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    return;
+  }
+  
+  setUploadingFile(true);
+  
+  try {
+    const result = await uploadPanorama(file);
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Ошибка загрузки файла');
+    }
+    
+    // 🔹 Бэкенд уже вернул полный URL — НЕ МЕНЯЕМ ЕГО!
+    const fileUrl = result.fileUrl; // Например: "http://localhost:8080/uploads/panoramas/abc.jpg"
+    
+    console.log('[Editor] ✅ File uploaded:', {
+      receivedUrl: result.fileUrl,
+      usingUrl: fileUrl
+    });
+    
+    if (selectedHotspot) {
+      const updates = {
+        targetProjectId: `file_${Date.now()}`,
+        targetProjectName: file.name,
+        targetFileUrl: fileUrl, // ← Сохраняем как есть!
+        type: 'transition'
+      };
+      
+      setSelectedHotspot(prev => ({ ...prev, ...updates }));
+      updateHotspot(selectedHotspot.id, updates);
+    }
+    
+  } catch (err) {
+    console.error('[Editor] ❌ Upload error:', err);
+    alert(`❌ ${err.message}`);
+  } finally {
+    setUploadingFile(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }
+};
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
   
   // 🔹 Обработчик клика по хотспоту
-  const handleHotspotClick = (hotspot) => {
+  const handleHotspotClick = async (hotspot) => {
     console.log('Hotspot clicked:', hotspot);
+    
+    // 🔹 Если это переход к другой панораме
+    if (hotspot.type === 'transition' && hotspot.targetFileUrl) {
+      await handlePanoramaTransition(hotspot.targetFileUrl, hotspot.targetProjectName);
+      return;
+    }
+    
+    // Обычное редактирование хотспота
     setSelectedHotspot(hotspot);
     setActiveTool('hotspot-edit');
   };
 
+  const handlePanoramaTransition = async (targetUrl, targetName) => {
+  console.log('[Transition] 🔄 Starting transition:', { targetUrl, targetName });
+  
+  if (!targetUrl) {
+    setTransitionError('Не указан URL панорамы');
+    setIsTransitioning(false);
+    return;
+  }
+  
+  // 🔹 Если URL уже абсолютный (с бэкенда) — используем как есть
+  // Если относительный — добавляем бэкенд-базу
+  const BACKEND_MEDIA_URL = 'http://localhost:8080'; // ← Ваш бэкенд
+  
+  let absoluteUrl = targetUrl;
+  
+  if (targetUrl && !targetUrl.startsWith('http')) {
+    // Относительный путь: "panoramas/abc.jpg" или "/uploads/panoramas/abc.jpg"
+    const cleanPath = targetUrl.replace(/^\/+/, '').replace(/^uploads\//, '');
+    absoluteUrl = `${BACKEND_MEDIA_URL}/uploads/panoramas/${cleanPath}`;
+  }
+  
+  console.log('[Transition] 📍 Final URL:', absoluteUrl);
+  
+  setIsTransitioning(true);
+  setTransitionProgress(0);
+  setTransitionError(null);
+  
+  try {
+    // 🔹 Предварительная проверка с кеш-бастингом
+    await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous'; // ← Важно для CORS!
+      img.onload = () => {
+        console.log('[Transition] ✅ Image preload successful');
+        resolve();
+      };
+      img.onerror = (err) => {
+        console.error('[Transition] ❌ Image preload failed:', { 
+          url: absoluteUrl, 
+          error: err 
+        });
+        reject(new Error(`Не удалось загрузить изображение. Проверьте CORS и доступность файла.`));
+      };
+      img.src = absoluteUrl + '?t=' + Date.now();
+    });
+    
+    // Затемнение перед переходом
+    const viewerContainer = document.querySelector('.panorama-viewer');
+    if (viewerContainer) {
+      viewerContainer.style.transition = 'opacity 0.3s ease';
+      viewerContainer.style.opacity = '0.7';
+    }
+    
+    // Прогресс-бар (имитация)
+    const progressInterval = setInterval(() => {
+      setTransitionProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return prev;
+        }
+        return prev + Math.random() * 15;
+      });
+    }, 100);
+    
+    // 🔹 Меняем панораму — с абсолютным URL с бэкенда
+    await sphereViewerRef.current.changePanorama(absoluteUrl, {
+      transition: 'fade',
+      duration: 800
+    });
+    
+    clearInterval(progressInterval);
+    setTransitionProgress(100);
+    
+    // Центрируем камеру
+    const viewer = sphereViewerRef.current.getInstance();
+    viewer?.animate({ yaw: 0, pitch: 0, zoom: 0 }, { duration: 600, easing: 'ease-out' });
+    
+    // Завершаем переход
+    setTimeout(() => {
+      if (viewerContainer) {
+        viewerContainer.style.opacity = '1';
+      }
+      setIsTransitioning(false);
+      setTransitionProgress(0);
+      console.log('[Transition] ✅ Complete');
+    }, 300);
+    
+  } catch (err) {
+    console.error('[Transition] ❌ Error:', err);
+    
+    // 🔹 Понятная ошибка для CORS
+    let userMessage = err.message || 'Не удалось загрузить панораму';
+    if (err.message?.includes('CORS') || err.message?.includes('NetworkError')) {
+      userMessage = 'Ошибка доступа к файлу. Проверьте настройки CORS на сервере.';
+    }
+    
+    setTransitionError(userMessage);
+    setIsTransitioning(false);
+    setTransitionProgress(0);
+    
+    const viewerContainer = document.querySelector('.panorama-viewer');
+    if (viewerContainer) {
+      viewerContainer.style.opacity = '1';
+    }
+    
+    alert(`❌ ${userMessage}`);
+  }
+};
   // 🔹 Обработчик клика по панораме для добавления нового хотспота
   const handlePositionClick = useCallback(async (position) => {
   console.log('[Editor] 🎯 handlePositionClick called', { 
@@ -370,6 +545,54 @@ const EditorPage = () => {
               </svg>
               <p>Панорама не загружена</p>
             </div>
+          </div>
+        )}
+        
+        {/* 🔹 Оверлей перехода между панорамами */}
+        {isTransitioning && (
+          <div className="transition-overlay">
+            <div className="transition-content">
+              <div className="transition-spinner">
+                <div className="spinner-ring" />
+              </div>
+              <p className="transition-text">
+                Загрузка: {Math.round(transitionProgress)}%
+              </p>
+              <p className="transition-subtext">
+                {editorData.hotspots.find(h => h.targetFileUrl === project.panorama_url)?.targetProjectName || 'Панорама'}
+              </p>
+            </div>
+            
+            {/* Прогресс-бар */}
+            <div className="transition-progress-bar">
+              <div 
+                className="transition-progress-fill"
+                style={{ width: `${transitionProgress}%` }}
+              />
+            </div>
+            
+            {/* Кнопка отмены */}
+            <button 
+              className="transition-cancel-btn"
+              onClick={() => {
+                setIsTransitioning(false);
+                setTransitionProgress(0);
+                // Можно вернуть предыдущую панораму если нужно
+              }}
+            >
+              Отмена
+            </button>
+          </div>
+        )}
+        
+        {/* 🔹 Сообщение об ошибке перехода */}
+        {transitionError && (
+          <div className="transition-error">
+            <svg viewBox="0 0 24 24" width="20" height="20">
+              <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+            </svg>
+            <span>{transitionError}</span>
+            <button onClick={() => setTransitionError(null)}>✕</button>
           </div>
         )}
       </div>
@@ -562,7 +785,110 @@ const EditorPage = () => {
                   <option value="link">🔗 Внешняя ссылка</option>
                 </select>
               </div>
-                            
+              {selectedHotspot.type === 'transition' && (
+                <div className="form-group" style={{ marginBottom: '12px' }}>
+                  <label style={{ fontSize: '12px', color: '#475569', display: 'block', marginBottom: '4px' }}>
+                    🔄 Целевая панорама
+                  </label>
+                  
+                  {/* 🔹 Скрытый input для файла */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    disabled={uploadingFile}
+                    style={{ display: 'none' }}
+                  />
+                  
+                  {/* 🔹 Кнопка загрузки */}
+                  <button
+                    onClick={() => !uploadingFile && fileInputRef.current?.click()}
+                    disabled={uploadingFile}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      background: uploadingFile ? '#94a3b8' : '#3b82f6',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      cursor: uploadingFile ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      marginBottom: '8px'
+                    }}
+                  >
+                    {uploadingFile ? (
+                      <>
+                        <div style={{
+                          width: '16px',
+                          height: '16px',
+                          border: '2px solid white',
+                          borderTopColor: 'transparent',
+                          borderRadius: '50%',
+                          animation: 'spin 0.8s linear infinite'
+                        }} />
+                        Загрузка...
+                      </>
+                    ) : (
+                      <>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                          <polyline points="17 8 12 3 7 8"/>
+                          <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        Загрузить файл панорамы
+                      </>
+                    )}
+                  </button>
+                  
+                  {/* 🔹 Индикатор загруженного файла */}
+                  {selectedHotspot.targetFileUrl && (
+                    <div style={{ 
+                      padding: '8px', 
+                      background: '#f0fdf4', 
+                      border: '1px solid #86efac',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      color: '#166534',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between'
+                    }}>
+                      <span>✓ {selectedHotspot.targetProjectName}</span>
+                      <button
+                        onClick={() => {
+                          setSelectedHotspot(prev => ({
+                            ...prev,
+                            targetProjectId: null,
+                            targetProjectName: null,
+                            targetFileUrl: null
+                          }));
+                          updateHotspot(selectedHotspot.id, {
+                            targetProjectId: null,
+                            targetProjectName: null,
+                            targetFileUrl: null
+                          });
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#dc2626',
+                          cursor: 'pointer',
+                          fontSize: '16px',
+                          padding: '0 4px'
+                        }}
+                        title="Удалить выбор"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}              
               {selectedHotspot.type === 'link' && (
                 <div className="form-group" style={{ marginBottom: '12px' }}>
                   <label style={{ fontSize: '12px', color: '#475569', display: 'block', marginBottom: '4px' }}>URL ссылки</label>
