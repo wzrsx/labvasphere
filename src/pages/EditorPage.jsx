@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getProjects, updateProject, deleteProject } from "../services/projectService";
 import SphereViewer from '../components/SphereViewer';
@@ -12,10 +12,13 @@ const EditorPage = () => {
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTool, setActiveTool] = useState('hotspot');
+  const [activeTool, setActiveTool] = useState('');
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [selectedHotspot, setSelectedHotspot] = useState(null);
+  const sphereViewerRef = useRef(null);
+  const activeToolRef = useRef(activeTool);
   // Состояние редактора
   const [editorData, setEditorData] = useState({
     title: '',
@@ -34,6 +37,10 @@ const EditorPage = () => {
     loadProject();
   }, [id]);
 
+  useEffect(() => {
+    activeToolRef.current = activeTool;
+  }, [activeTool]);
+  
   // Отслеживание изменений
   useEffect(() => {
     if (project) {
@@ -74,10 +81,8 @@ const EditorPage = () => {
         throw new Error(response.error || 'Ошибка загрузки проектов');
       }
 
-      // Находим проект по ID среди проектов текущего пользователя
       const foundProject = response.projects.find(p => p.id === id);
-      console.log(response.projects);
-      console.log(foundProject);
+      
       if (!foundProject) {
         setError('Проект не найден или у вас нет прав на его редактирование');
         setLoading(false);
@@ -86,7 +91,6 @@ const EditorPage = () => {
 
       setProject(foundProject);
       
-      // Инициализируем данные редактора
       setEditorData({
         title: foundProject.title || '',
         description: foundProject.description || '',
@@ -164,29 +168,28 @@ const EditorPage = () => {
   };
 
   const handlePreview = () => {
-    // Открыть предпросмотр в новом окне или на отдельной странице
     window.open(`/preview/${id}`, '_blank');
   };
 
   const handleToolClick = (tool) => {
     setActiveTool(tool);
+    // Сбрасываем выбранный хотспот при переключении на обычный режим
+    if (tool === 'hotspot' && selectedHotspot) {
+      setSelectedHotspot(null);
+    }
     
     switch(tool) {
       case 'hotspot':
         console.log('Режим добавления точек перехода');
-        // Логика добавления хотспота
         break;
       case 'annotation':
         console.log('Режим аннотаций');
-        // Логика добавления аннотаций
         break;
       case 'media':
         console.log('Добавление медиа');
-        // Логика добавления медиа
         break;
       case 'settings':
         console.log('Настройки панорамы');
-        // Логика настроек
         break;
       default:
         break;
@@ -197,6 +200,122 @@ const EditorPage = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
   
+  // 🔹 Обработчик клика по хотспоту
+  const handleHotspotClick = (hotspot) => {
+    console.log('Hotspot clicked:', hotspot);
+    setSelectedHotspot(hotspot);
+    setActiveTool('hotspot-edit');
+  };
+
+  // 🔹 Обработчик клика по панораме для добавления нового хотспота
+  const handlePositionClick = useCallback(async (position) => {
+  console.log('[Editor] 🎯 handlePositionClick called', { 
+    activeTool: activeToolRef.current,  // ← ✅ Актуальное значение из ref
+    selectedHotspot: !!selectedHotspot 
+  });
+  
+  // 🔹 Проверка: только в режиме добавления — ИСПОЛЬЗУЕМ REF!
+  if (activeToolRef.current !== 'hotspot') {  // ← ✅ Всегда актуально!
+    console.log('[Editor] ⚠️ Click ignored: activeTool is', activeToolRef.current);
+    return;
+  }
+  
+  const newHotspot = {
+    id: `hotspot_${Date.now()}`,
+    position,
+    image: '/logo.jpg',
+    title: 'Новая точка',
+    description: '',
+    type: 'transition',
+    targetProjectId: null,
+    icon: null,
+    tooltip: 'Новая точка перехода',
+    linkUrl: ''
+  };
+  
+  // 1. Обновляем состояние
+  setEditorData(prev => ({
+    ...prev,
+    hotspots: [...prev.hotspots, newHotspot]
+  }));
+  
+  // 2. Мгновенно добавляем маркер в viewer
+  if (sphereViewerRef.current?.isReady?.() && sphereViewerRef.current?.getMarkersPlugin) {
+    const plugin = sphereViewerRef.current.getMarkersPlugin();
+    if (plugin) {
+      plugin.addMarker({
+        id: newHotspot.id,
+        position: newHotspot.position,
+        image: '/logo.jpg',
+        size: { width: 40, height: 40 },
+        anchor: [50, 100],
+        tooltip: { content: '✨ Новая точка', position: 'top center' },
+        style: { cursor: 'pointer' },
+        data: { ...newHotspot }
+      });
+      
+      // Анимация подтверждения
+      requestAnimationFrame(() => {
+        const el = document.getElementById(`psv-marker-${newHotspot.id}`);
+        if (el) {
+          el.animate(
+            [
+              { transform: 'scale(1)', opacity: 1, offset: 0 },
+              { transform: 'scale(1.4)', opacity: 1, offset: 0.5 },
+              { transform: 'scale(1)', opacity: 1, offset: 1 }
+            ],
+            { duration: 250, easing: 'ease-out' }
+          );
+        }
+      });
+    }
+  }
+  
+  // 3. Переключаем режим
+  console.log('[Editor] 🔄 Setting activeTool to hotspot-edit');
+  setSelectedHotspot(newHotspot);
+  setActiveTool('hotspot-edit');
+  
+}, []); // ← Пустой массив — функция не пересоздаётся, но ref всегда актуален!
+
+  // 🔹 Обновление хотспота
+  const updateHotspot = (id, updates) => {
+    setEditorData(prev => ({
+      ...prev,
+      hotspots: prev.hotspots.map(h => 
+        h.id === id ? { ...h, ...updates } : h
+      )
+    }));
+  };
+
+  // 🔹 Удаление хотспота
+  const deleteHotspot = (hotspotId) => {
+    if (window.confirm('Удалить эту точку перехода?')) {
+      // Удаляем из состояния
+      setEditorData(prev => ({
+        ...prev,
+        hotspots: prev.hotspots.filter(h => h.id !== hotspotId)
+      }));
+      
+      // Мгновенно удаляем из viewer
+      if (sphereViewerRef.current?.getMarkersPlugin) {
+        const plugin = sphereViewerRef.current.getMarkersPlugin();
+        if (plugin) {
+          plugin.removeMarker(hotspotId);
+        }
+      }
+      
+      setSelectedHotspot(null);
+    }
+  };
+
+  // 🔹 Переход к хотспоту (для предпросмотра)
+  const goToHotspot = async (hotspotId) => {
+    if (sphereViewerRef.current?.gotoHotspot) {
+      await sphereViewerRef.current.gotoHotspot(hotspotId);
+    }
+  };
+
   if (loading) {
     return (
       <div className="editor-loading">
@@ -237,9 +356,11 @@ const EditorPage = () => {
       <div className="panorama-viewer">
         {project.panorama_url ? (
           <SphereViewer 
+            ref={sphereViewerRef}
             src={project.panorama_url} 
             hotspots={editorData.hotspots}
-            onHotspotClick={(hotspotId) => console.log('Hotspot clicked:', hotspotId)}
+            onHotspotClick={handleHotspotClick}
+            onPositionClick={handlePositionClick}
           />
         ) : (
           <div className="panorama-placeholder">
@@ -257,20 +378,20 @@ const EditorPage = () => {
       <div className={`editor-sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="sidebar-header">
           <button 
-          className={`collapse-btn ${isSidebarCollapsed ? 'collapsed' : ''}`}
-          onClick={toggleSidebar}
-          title={isSidebarCollapsed ? 'Развернуть панель' : 'Свернуть панель'}
-        >
-          {isSidebarCollapsed ? (
-            <svg viewBox="0 0 24 24" width="20" height="20">
-              <path fill="currentColor" d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/>
-            </svg>
-          ) : (
-            <svg viewBox="0 0 24 24" width="20" height="20">
-              <path fill="currentColor" d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
-            </svg>
-          )}
-        </button>
+            className={`collapse-btn ${isSidebarCollapsed ? 'collapsed' : ''}`}
+            onClick={toggleSidebar}
+            title={isSidebarCollapsed ? 'Развернуть панель' : 'Свернуть панель'}
+          >
+            {isSidebarCollapsed ? (
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <path fill="currentColor" d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/>
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <path fill="currentColor" d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+              </svg>
+            )}
+          </button>
           <h3>Редактор проекта</h3>
         </div>
 
@@ -344,6 +465,176 @@ const EditorPage = () => {
               <span>Настройки</span>
             </button>
           </div>
+
+          {/* 🔹 Панель редактирования хотспота */}
+          {(activeTool === 'hotspot' || activeTool === 'hotspot-edit') && selectedHotspot && (
+            <div className="hotspot-editor-panel" style={{ 
+              marginTop: '16px', 
+              paddingTop: '16px', 
+              borderTop: '1px solid #e2e8f0' 
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>✏️ Редактирование точки</h4>
+                <button 
+                  onClick={() => { setSelectedHotspot(null); setActiveTool(''); }}
+                  style={{ 
+                    background: 'none', 
+                    border: 'none', 
+                    color: '#64748b', 
+                    cursor: 'pointer', 
+                    padding: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  title="Закрыть"
+                >
+                  <svg viewBox="0 0 24 24" width="18" height="18">
+                    <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="form-group" style={{ marginBottom: '12px' }}>
+                <label style={{ fontSize: '12px', color: '#475569', display: 'block', marginBottom: '4px' }}>Название</label>
+                <input 
+                  type="text" 
+                  value={selectedHotspot.title || ''} 
+                  onChange={(e) => {
+                    setSelectedHotspot(prev => ({ ...prev, title: e.target.value }));
+                    updateHotspot(selectedHotspot.id, { title: e.target.value });
+                  }}
+                  placeholder="Название точки"
+                  style={{ 
+                    width: '100%', 
+                    padding: '8px 12px', 
+                    border: '1px solid #cbd5e1', 
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+              
+              <div className="form-group" style={{ marginBottom: '12px' }}>
+                <label style={{ fontSize: '12px', color: '#475569', display: 'block', marginBottom: '4px' }}>Подсказка (tooltip)</label>
+                <textarea 
+                  value={selectedHotspot.tooltip || ''}
+                  onChange={(e) => {
+                    setSelectedHotspot(prev => ({ ...prev, tooltip: e.target.value }));
+                    updateHotspot(selectedHotspot.id, { tooltip: e.target.value });
+                  }}
+                  placeholder="Текст подсказки при наведении"
+                  rows={2}
+                  style={{ 
+                    width: '100%', 
+                    padding: '8px 12px', 
+                    border: '1px solid #cbd5e1', 
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    resize: 'vertical',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+              
+              <div className="form-group" style={{ marginBottom: '12px' }}>
+                <label style={{ fontSize: '12px', color: '#475569', display: 'block', marginBottom: '4px' }}>Тип точки</label>
+                <select 
+                  value={selectedHotspot.type || 'transition'}
+                  onChange={(e) => {
+                    setSelectedHotspot(prev => ({ ...prev, type: e.target.value }));
+                    updateHotspot(selectedHotspot.id, { type: e.target.value });
+                  }}
+                  style={{ 
+                    width: '100%', 
+                    padding: '8px 12px', 
+                    border: '1px solid #cbd5e1', 
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    background: 'white',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <option value="transition">🔄 Переход к панораме</option>
+                  <option value="info">ℹ️ Информационная</option>
+                  <option value="media">🎬 Медиа-контент</option>
+                  <option value="link">🔗 Внешняя ссылка</option>
+                </select>
+              </div>
+                            
+              {selectedHotspot.type === 'link' && (
+                <div className="form-group" style={{ marginBottom: '12px' }}>
+                  <label style={{ fontSize: '12px', color: '#475569', display: 'block', marginBottom: '4px' }}>URL ссылки</label>
+                  <input 
+                    type="url" 
+                    value={selectedHotspot.linkUrl || ''}
+                    onChange={(e) => {
+                      setSelectedHotspot(prev => ({ ...prev, linkUrl: e.target.value }));
+                      updateHotspot(selectedHotspot.id, { linkUrl: e.target.value });
+                    }}
+                    placeholder="https://example.com"
+                    style={{ 
+                      width: '100%', 
+                      padding: '8px 12px', 
+                      border: '1px solid #cbd5e1', 
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+              )}
+              
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label style={{ fontSize: '11px', color: '#64748b', display: 'block', marginBottom: '4px' }}>Координаты</label>
+                <code style={{ 
+                  fontSize: '10px', 
+                  display: 'block', 
+                  background: '#f8fafc', 
+                  padding: '6px 8px', 
+                  borderRadius: '4px',
+                  color: '#475569',
+                  fontFamily: 'monospace'
+                }}>
+                  yaw: {selectedHotspot.position?.yaw || '—'}<br/>
+                  pitch: {selectedHotspot.position?.pitch || '—'}
+                </code>
+              </div>
+              
+              <div className="actions-buttons" style={{ display: 'flex', gap: '8px' }}>
+                <button 
+                  className="action-btn secondary"
+                  onClick={() => goToHotspot(selectedHotspot.id)}
+                  style={{ flex: 1, padding: '6px 12px', fontSize: '12px' }}
+                >
+                  🔍 Перейти
+                </button>
+                <button 
+                  className="action-btn danger"
+                  onClick={() => deleteHotspot(selectedHotspot.id)}
+                  style={{ flex: 1, padding: '6px 12px', fontSize: '12px' }}
+                >
+                  🗑️ Удалить
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 🔹 Подсказка для режима добавления */}
+          {activeTool === 'hotspot' && !selectedHotspot && (
+            <div className="hotspot-hint" style={{ 
+              marginTop: '12px', 
+              padding: '10px 12px', 
+              background: '#eff6ff', 
+              border: '1px solid #bfdbfe', 
+              borderRadius: '6px',
+              fontSize: '12px',
+              color: '#1e40af'
+            }}>
+              💡 Кликните по панораме, чтобы добавить новую точку перехода
+            </div>
+          )}
         </div>
 
         <div className="actions-section">

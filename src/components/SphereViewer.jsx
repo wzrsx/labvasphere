@@ -1,8 +1,10 @@
-// SphereViewer.jsx — ФИНАЛЬНАЯ ВЕРСИЯ С ОТЛАДКОЙ
+// SphereViewer.jsx
 import React, { useEffect, useRef, useImperativeHandle, forwardRef, useCallback, useState } from "react";
 import { Viewer, EquirectangularAdapter } from "@photo-sphere-viewer/core";
 import { AutorotatePlugin } from '@photo-sphere-viewer/autorotate-plugin';
+import { MarkersPlugin } from '@photo-sphere-viewer/markers-plugin';
 import "@photo-sphere-viewer/core/index.css";
+import "@photo-sphere-viewer/markers-plugin/index.css";
 
 const SphereViewer = forwardRef((props, ref) => {
   const {
@@ -11,6 +13,9 @@ const SphereViewer = forwardRef((props, ref) => {
     navbar = true,
     autoRotate = false,
     mousemove = true,
+    hotspots = [],
+    onHotspotClick,
+    onPositionClick,
     onViewerReady,
     onPanoramaLoad,
     onError,
@@ -20,13 +25,41 @@ const SphereViewer = forwardRef((props, ref) => {
   const containerRef = useRef(null);
   const viewerInstance = useRef(null);
   const autoRotatePluginRef = useRef(null);
+  const markersPluginRef = useRef(null);
   
   const [isViewerReady, setIsViewerReady] = useState(false);
   const [isPanoramaLoaded, setIsPanoramaLoaded] = useState(false);
   const [loadProgress, setLoadProgress] = useState(0);
   const [initError, setInitError] = useState(null);
 
-  // 🔹 Метод смены панорамы
+  // 🔹 Конвертация маркеров с кастомным логотипом
+  const convertToMarkers = useCallback((hotspotsList) => {
+    return hotspotsList.map(hotspot => ({
+      id: hotspot.id,
+      position: hotspot.position,
+      
+      // 🔹 Используем логотип из public/
+      image: hotspot.icon || '/finger-32.svg',
+      size: { width: 32, height: 32 },
+      tooltip: hotspot.tooltip 
+        ? { content: hotspot.tooltip, position: 'top' } 
+        : { content: hotspot.title || 'Точка перехода', position: 'top' },
+      style: { 
+        cursor: 'pointer',
+        transition: 'transform 0.2s',
+      },
+      data: { ...hotspot }
+    }));
+  }, []);
+
+  // 🔹 Синхронизация хотспотов
+  useEffect(() => {
+    if (!isViewerReady || !markersPluginRef.current) return;
+    const markers = convertToMarkers(hotspots);
+    markersPluginRef.current.setMarkers(markers);
+  }, [hotspots, isViewerReady, convertToMarkers]);
+
+  // 🔹 Смена панорамы
   const changePanorama = useCallback(async (newSrc, options = {}) => {
     if (!viewerInstance.current || !newSrc) {
       console.error('[SV] Cannot change: no viewer or src');
@@ -54,31 +87,61 @@ const SphereViewer = forwardRef((props, ref) => {
     }
   }, [transitionDuration, onPanoramaLoad, onError]);
 
+  // 🔹 Обработчик клика — e.data 
+  const handleViewerClick = useCallback((e) => {
+    console.log('[SV] 🖱️ Click event fired!');
+    console.log('[SV] 📍 e.data:', e.data);
+    
+    if (!onPositionClick) {
+      console.warn('[SV] ❌ onPositionClick callback not provided');
+      return;
+    }
+    
+    // 🔹 Координаты в e.data (документация PSV)
+    if (e.data?.yaw !== undefined && e.data?.pitch !== undefined) {
+      console.log('[SV] ✅ Valid coordinates:', {
+        yaw: e.data.yaw.toFixed(4) + 'rad',
+        pitch: e.data.pitch.toFixed(4) + 'rad',
+        yawDeg: (e.data.yaw * 180 / Math.PI).toFixed(2) + '°',
+        pitchDeg: (e.data.pitch * 180 / Math.PI).toFixed(2) + '°'
+      });
+      
+      onPositionClick({
+        yaw: `${e.data.yaw.toFixed(4)}rad`,
+        pitch: `${e.data.pitch.toFixed(4)}rad`
+      });
+    } else {
+      console.warn('[SV] ⚠️ No coordinates in e.data:', e.data);
+    }
+  }, [onPositionClick]);
+
   // 🔹 Экспорт методов
   useImperativeHandle(ref, () => ({
     startAutoRotate: () => autoRotatePluginRef.current?.start(),
     stopAutoRotate: () => autoRotatePluginRef.current?.stop(),
     getInstance: () => viewerInstance.current,
+    getMarkersPlugin: () => markersPluginRef.current,
     changePanorama,
     isReady: () => isViewerReady && isPanoramaLoaded,
+    gotoHotspot: (hotspotId) => {
+      if (markersPluginRef.current) {
+        return markersPluginRef.current.gotoMarker(hotspotId, '4rpm');
+      }
+      return Promise.reject('Markers plugin not ready');
+    }
   }), [changePanorama, isViewerReady, isPanoramaLoaded]);
 
-  // 🔹 Инициализация
+  // 🔹 Инициализация Viewer
   useEffect(() => {
     const startTime = Date.now();
     console.log('[SV] === INIT START ===');
-    console.log('[SV] src length:', src?.length);
-    console.log('[SV] container:', containerRef.current);
 
     if (!containerRef.current || !src) {
       console.log('[SV] Skip: no container or src');
       return;
     }
 
-    // 🔹 Проверка размеров контейнера
     const rect = containerRef.current.getBoundingClientRect();
-    console.log('[SV] container size:', { width: rect.width, height: rect.height });
-    
     if (rect.width === 0 || rect.height === 0) {
       console.error('[SV] Container has zero size!');
       setInitError(new Error('Container has zero dimensions'));
@@ -89,107 +152,106 @@ const SphereViewer = forwardRef((props, ref) => {
     if (autoRotate) {
       plugins.push([AutorotatePlugin, { speed: 0.1, delay: 0, autoplay: true }]);
     }
+    plugins.push([MarkersPlugin, {
+      markers: convertToMarkers(hotspots),
+      clickEventOnMarker: true,
+      clickEventOnCanvas: true,
+      defaultHoverScale: { amount: 1.2, duration: 150 }
+    }]);
 
     try {
-      // 🔹 Создаём Viewer
       console.log('[SV] Creating Viewer...');
       viewerInstance.current = new Viewer({
         container: containerRef.current,
-        adapter: EquirectangularAdapter,  // ← НЕ массив!
-        panorama: src,                     // ← на верхнем уровне
+        adapter: EquirectangularAdapter,
+        panorama: src,
         navbar: navbar,
         caption: false,
         defaultZoomLvl: 0,
         mousewheel: true,
         mousemove: mousemove,
-        // zoomButtons убран — вызывает warning в вашей версии
         plugins,
       });
 
-      console.log('[SV] Viewer instance created');
-      console.log('[SV] Has adapter:', !!viewerInstance.current.adapter);
-      console.log('[SV] Has renderer:', !!viewerInstance.current.renderer);
+      markersPluginRef.current = viewerInstance.current.getPlugin(MarkersPlugin);
+      autoRotatePluginRef.current = viewerInstance.current.getPlugin(AutorotatePlugin);
 
       let isReadyCalled = false;
 
-      // 🔹 ВСЕ события подряд
-      const events = ['ready', 'load-start', 'load', 'load-progress', 'load-error', 'error'];
-      events.forEach(eventName => {
-        const handler = (e) => {
-          const time = Date.now() - startTime;
-          console.log(`[SV] 📬 EVENT: ${eventName} (${time}ms)`, e?.detail || e?.type || '');
-        };
-        viewerInstance.current.addEventListener(eventName, handler);
-      });
-
-      // 🔹 Конкретные обработчики
-      const handleReady = () => {
-        if (isReadyCalled) {
-          console.log('[SV] ready already called, skipping');
-          return;
+      const handleMarkerSelect = ({ marker, doubleClick, rightClick }) => {
+        if (rightClick) return;
+        const hotspotData = marker.data;
+        console.log('[SV] Hotspot clicked:', hotspotData);
+        if (onHotspotClick && !doubleClick) {
+          onHotspotClick(hotspotData);
         }
+      };
+
+      const handleReady = () => {
+        if (isReadyCalled) return;
         isReadyCalled = true;
-        const total = Date.now() - startTime;
-        console.log(`[SV] ✅✅✅ READY! (${total}ms)`);
+        
         setIsViewerReady(true);
         setIsPanoramaLoaded(true);
+        
+        if (markersPluginRef.current) {
+          markersPluginRef.current.addEventListener('select-marker', handleMarkerSelect);
+        }
+        
+        // Подписка на клик
+        if (onPositionClick) {
+          viewerInstance.current.addEventListener('click', handleViewerClick);
+          console.log('[SV] ✅ Subscribed to click event');
+        }
+        
         onViewerReady?.(viewerInstance.current);
       };
 
-      const handleLoadProgress = (e) => {
-        console.log('[SV] load-progress:', e.detail);
-        setLoadProgress(e.detail);
-      };
-
-      const handleLoad = () => {
-        console.log('[SV] ✓ load event');
-        setIsPanoramaLoaded(true);
-      };
-
+      const handleLoadProgress = (e) => setLoadProgress(e.detail);
+      const handleLoad = () => setIsPanoramaLoaded(true);
       const handleLoadError = (e) => {
         console.error('[SV] ❌ load-error:', e);
         setInitError(e);
         onError?.(e);
       };
-
       const handleError = (e) => {
         console.error('[SV] ❌ error:', e);
         setInitError(e);
         onError?.(e);
       };
 
-      // Подписываемся
       viewerInstance.current.addEventListener('ready', handleReady);
       viewerInstance.current.addEventListener('load-progress', handleLoadProgress);
       viewerInstance.current.addEventListener('load', handleLoad);
       viewerInstance.current.addEventListener('load-error', handleLoadError);
       viewerInstance.current.addEventListener('error', handleError);
 
-      // 🔹 Fallback таймер
       const timeout = setTimeout(() => {
         if (!isReadyCalled && viewerInstance.current) {
           console.warn('[SV] ⚠️ Timeout 8s — forcing ready');
-          console.log('[SV] Final state:', {
-            hasAdapter: !!viewerInstance.current.adapter,
-            hasRenderer: !!viewerInstance.current.renderer,
-            hasScene: !!viewerInstance.current.scene,
-            hasCamera: !!viewerInstance.current.camera,
-          });
           setIsViewerReady(true);
           setIsPanoramaLoaded(true);
           onViewerReady?.(viewerInstance.current);
         }
       }, 8000);
 
-      // 🔹 Cleanup
       return () => {
         console.log('[SV] === CLEANUP ===');
         clearTimeout(timeout);
+        
+        if (markersPluginRef.current) {
+          markersPluginRef.current.removeEventListener('select-marker', handleMarkerSelect);
+        }
+        if (onPositionClick && viewerInstance.current) {
+          viewerInstance.current.removeEventListener('click', handleViewerClick);
+        }
+        
         if (viewerInstance.current) {
           viewerInstance.current.destroy();
-          console.log('[SV] Viewer destroyed');
         }
         viewerInstance.current = null;
+        markersPluginRef.current = null;
+        autoRotatePluginRef.current = null;
         setIsViewerReady(false);
         setIsPanoramaLoaded(false);
       };
@@ -199,11 +261,10 @@ const SphereViewer = forwardRef((props, ref) => {
       setInitError(err);
       onError?.(err);
     }
-  }, []); // ← Пустой массив! Только при маунте
+  }, []);
 
   // 🔹 Реакция на смену src
   useEffect(() => {
-    console.log('[SV] src changed, ready:', isViewerReady);
     if (!isViewerReady || !viewerInstance.current || !src) return;
     changePanorama(src).catch(() => {});
   }, [src, isViewerReady, changePanorama]);
@@ -225,6 +286,7 @@ const SphereViewer = forwardRef((props, ref) => {
           ...style 
         }}
       >
+      {/*
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
           <div style={{
             width: '40px', height: '40px',
@@ -236,7 +298,7 @@ const SphereViewer = forwardRef((props, ref) => {
             Загрузка... {loadProgress > 0 && `(${Math.round(loadProgress)}%)`}
           </span>
           {initError && <span style={{ fontSize: '12px', color: '#ef4444' }}>Ошибка</span>}
-        </div>
+        </div>*/}
       </div>
     );
   }
@@ -245,13 +307,17 @@ const SphereViewer = forwardRef((props, ref) => {
 });
 
 export default React.memo(SphereViewer, (prevProps, nextProps) => {
-  // 🔹 Сравниваем ТОЛЬКО те пропсы, которые влияют на ререндер
   return (
     prevProps.src === nextProps.src &&
     prevProps.navbar === nextProps.navbar &&
     prevProps.autoRotate === nextProps.autoRotate &&
     prevProps.mousemove === nextProps.mousemove &&
-    // style сравниваем по ссылке (он мемоизирован в родителе через useMemo)
-    prevProps.style === nextProps.style
+    prevProps.hotspots === nextProps.hotspots &&
+    prevProps.style === nextProps.style &&
+    prevProps.onHotspotClick === nextProps.onHotspotClick &&
+    prevProps.onPositionClick === nextProps.onPositionClick &&
+    prevProps.onViewerReady === nextProps.onViewerReady &&
+    prevProps.onPanoramaLoad === nextProps.onPanoramaLoad &&
+    prevProps.onError === nextProps.onError
   );
 });
