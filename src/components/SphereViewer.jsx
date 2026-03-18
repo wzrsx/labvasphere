@@ -26,40 +26,59 @@ const SphereViewer = forwardRef((props, ref) => {
   const viewerInstance = useRef(null);
   const autoRotatePluginRef = useRef(null);
   const markersPluginRef = useRef(null);
-  
+  const markerClickedRef = useRef(false);
   const [isViewerReady, setIsViewerReady] = useState(false);
   const [isPanoramaLoaded, setIsPanoramaLoaded] = useState(false);
   const [loadProgress, setLoadProgress] = useState(0);
   const [initError, setInitError] = useState(null);
 
-  // 🔹 Конвертация маркеров с кастомным логотипом
+  // Конвертация маркеров с обработкой иконки 'default'
   const convertToMarkers = useCallback((hotspotsList) => {
-    return hotspotsList.map(hotspot => ({
-      id: hotspot.id,
-      position: hotspot.position,
+    return hotspotsList.map(hotspot => {
+      // Если icon = 'default' или null/undefined — используем файл из public/
+      const iconUrl = !hotspot.icon || hotspot.icon === 'default'
+        ? '/finger-32.svg'
+        : hotspot.icon;
       
-      // 🔹 Используем логотип из public/
-      image: hotspot.icon || '/finger-32.svg',
-      size: { width: 32, height: 32 },
-      tooltip: hotspot.tooltip 
-        ? { content: hotspot.tooltip, position: 'top' } 
-        : { content: hotspot.title || 'Точка перехода', position: 'top' },
-      style: { 
-        cursor: 'pointer',
-        transition: 'transform 0.2s',
-      },
-      data: { ...hotspot }
-    }));
+      return {
+        id: hotspot.id,
+        position: hotspot.position,  // Должен быть { yaw: number, pitch: number }
+        image: iconUrl,
+        size: { width: 32, height: 32 },
+        tooltip: hotspot.tooltip 
+          ? { content: hotspot.tooltip, position: 'top' } 
+          : { content: hotspot.title || 'Точка перехода', position: 'top' },
+        style: { cursor: 'pointer', transition: 'transform 0.2s' },
+        data: { ...hotspot }
+      };
+    });
   }, []);
 
-  // 🔹 Синхронизация хотспотов
+  // Синхронизация хотспотов (с логированием)
   useEffect(() => {
-    if (!isViewerReady || !markersPluginRef.current) return;
+    console.log('[SV] 🔄 Sync effect:', { 
+      isViewerReady, 
+      hasMarkersPlugin: !!markersPluginRef.current, 
+      hotspotsCount: hotspots.length 
+    });
+    
+    if (!isViewerReady || !markersPluginRef.current) {
+      console.log('[SV] ⏳ Waiting for viewer readiness...');
+      return;
+    }
+    
     const markers = convertToMarkers(hotspots);
+    console.log('[SV] ✅ Setting markers:', markers.length);
     markersPluginRef.current.setMarkers(markers);
   }, [hotspots, isViewerReady, convertToMarkers]);
-
-  // 🔹 Смена панорамы
+  useEffect(() => {
+  if (isPanoramaLoaded && isViewerReady && markersPluginRef.current && hotspots.length > 0) {
+    console.log('[SV] 🎯 Panorama loaded, syncing', hotspots.length, 'markers');
+    const markers = convertToMarkers(hotspots);
+    markersPluginRef.current.setMarkers(markers);
+  }
+}, [isPanoramaLoaded, isViewerReady, hotspots.length, convertToMarkers]);
+  // Смена панорамы
   const changePanorama = useCallback(async (newSrc, options = {}) => {
     if (!viewerInstance.current || !newSrc) {
       console.error('[SV] Cannot change: no viewer or src');
@@ -71,7 +90,7 @@ const SphereViewer = forwardRef((props, ref) => {
     setLoadProgress(0);
     
     try {
-      // 🔹 Поддержка опций перехода
+      // Поддержка опций перехода
       await viewerInstance.current.setPanorama(newSrc, {
         transition: options.transition || 'fade',  // 'fade' | 'zoom' | 'none'
         duration: options.duration || 700,          // длительность в мс
@@ -91,35 +110,37 @@ const SphereViewer = forwardRef((props, ref) => {
     }
   }, [onPanoramaLoad, onError]);
 
-  // 🔹 Обработчик клика — e.data 
-  const handleViewerClick = useCallback((e) => {
-    console.log('[SV] 🖱️ Click event fired!');
-    console.log('[SV] 📍 e.data:', e.data);
+// Обработчик клика по панораме (для добавления новых хотспотов)
+const handleViewerClick = useCallback((e) => {
+  console.log('[SV] 🖱️ Click event fired!');
+  
+  // Если только что был клик по маркеру — игнорируем этот клик
+  if (markerClickedRef.current) {
+    console.log('[SV] ⚠️ Click ignored: marker was just clicked');
+    return;
+  }
+  
+  if (!onPositionClick) {
+    console.warn('[SV] ❌ onPositionClick callback not provided');
+    return;
+  }
+  
+  // Координаты в e.data
+  if (e.data?.yaw !== undefined && e.data?.pitch !== undefined) {
+    console.log('[SV] ✅ Valid coordinates:', {
+      yaw: e.data.yaw.toFixed(4) + 'rad',
+      pitch: e.data.pitch.toFixed(4) + 'rad'
+    });
     
-    if (!onPositionClick) {
-      console.warn('[SV] ❌ onPositionClick callback not provided');
-      return;
-    }
-    
-    // 🔹 Координаты в e.data (документация PSV)
-    if (e.data?.yaw !== undefined && e.data?.pitch !== undefined) {
-      console.log('[SV] ✅ Valid coordinates:', {
-        yaw: e.data.yaw.toFixed(4) + 'rad',
-        pitch: e.data.pitch.toFixed(4) + 'rad',
-        yawDeg: (e.data.yaw * 180 / Math.PI).toFixed(2) + '°',
-        pitchDeg: (e.data.pitch * 180 / Math.PI).toFixed(2) + '°'
-      });
-      
-      onPositionClick({
-        yaw: `${e.data.yaw.toFixed(4)}rad`,
-        pitch: `${e.data.pitch.toFixed(4)}rad`
-      });
-    } else {
-      console.warn('[SV] ⚠️ No coordinates in e.data:', e.data);
-    }
-  }, [onPositionClick]);
+    // ОТПРАВЛЯЕМ ЧИСЛА
+    onPositionClick({
+      yaw: e.data.yaw,
+      pitch: e.data.pitch
+    });
+  }
+}, [onPositionClick]);
 
-  // 🔹 Экспорт методов
+  // Экспорт методов
   useImperativeHandle(ref, () => ({
     startAutoRotate: () => autoRotatePluginRef.current?.start(),
     stopAutoRotate: () => autoRotatePluginRef.current?.stop(),
@@ -135,7 +156,7 @@ const SphereViewer = forwardRef((props, ref) => {
     }
   }), [changePanorama, isViewerReady, isPanoramaLoaded]);
 
-  // 🔹 Инициализация Viewer
+  // Инициализация Viewer
   useEffect(() => {
     const startTime = Date.now();
     console.log('[SV] === INIT START ===');
@@ -182,25 +203,13 @@ const SphereViewer = forwardRef((props, ref) => {
 
       let isReadyCalled = false;
 
-      const handleMarkerSelect = ({ marker, doubleClick, rightClick }) => {
-        if (rightClick) return;
-        const hotspotData = marker.data;
-        console.log('[SV] Hotspot clicked:', hotspotData);
-        if (onHotspotClick && !doubleClick) {
-          onHotspotClick(hotspotData);
-        }
-      };
-
+      
       const handleReady = () => {
         if (isReadyCalled) return;
         isReadyCalled = true;
         
         setIsViewerReady(true);
         setIsPanoramaLoaded(true);
-        
-        if (markersPluginRef.current) {
-          markersPluginRef.current.addEventListener('select-marker', handleMarkerSelect);
-        }
         
         // Подписка на клик
         if (onPositionClick) {
@@ -238,14 +247,36 @@ const SphereViewer = forwardRef((props, ref) => {
           onViewerReady?.(viewerInstance.current);
         }
       }, 8000);
-
+      
+      const markersPlugin = viewerInstance.current.getPlugin(MarkersPlugin);
+      if (markersPlugin && onHotspotClick) {
+        markersPlugin.addEventListener('select-marker', ({ marker, doubleClick, rightClick }) => {
+          console.log('[SV] 🎯 select-marker fired:', {
+            hasMarker: !!marker,
+            markerId: marker?.id,
+            hasData: !!marker?.data,
+            doubleClick,
+            rightClick
+          });
+          
+          // Игнорируем правый/двойной клик
+          if (rightClick || doubleClick) {
+            console.log('[SV] ⚠️ Ignoring right/double click');
+            return;
+          }
+          
+          if (marker?.data) {
+            console.log('[SV] ✅ Calling onHotspotClick with:', marker.data);
+            onHotspotClick(marker.data);  
+          } else {
+            console.warn('[SV] ⚠️ marker.data is undefined — check convertToMarkers!');
+          }
+        });
+      }
       return () => {
         console.log('[SV] === CLEANUP ===');
         clearTimeout(timeout);
         
-        if (markersPluginRef.current) {
-          markersPluginRef.current.removeEventListener('select-marker', handleMarkerSelect);
-        }
         if (onPositionClick && viewerInstance.current) {
           viewerInstance.current.removeEventListener('click', handleViewerClick);
         }
@@ -267,13 +298,13 @@ const SphereViewer = forwardRef((props, ref) => {
     }
   }, []);
 
-  // 🔹 Реакция на смену src
+  // Реакция на смену src
   useEffect(() => {
     if (!isViewerReady || !viewerInstance.current || !src) return;
     changePanorama(src).catch(() => {});
   }, [src, isViewerReady, changePanorama]);
 
-  // 🔹 Рендер
+  // Рендер
   if (!isViewerReady || !isPanoramaLoaded) {
     return (
       <div 

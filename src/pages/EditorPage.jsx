@@ -1,8 +1,20 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getProjects, updateProject, deleteProject, uploadPanorama } from "../services/projectService";
+import {
+  getProjects,
+  updateProject,
+  deleteProject,
+  uploadPanorama,
+  getHotspots,
+  createHotspot,
+  updateHotspotApi,
+  deleteHotspotApi,
+  registerPanorama,
+  getMainPanorama,  
+} from "../services/projectService";
 import SphereViewer from '../components/SphereViewer';
 import "./EditorPage.css";
+import { CONFIG } from '../config';
 
 const EditorPage = () => {
   const { id } = useParams();
@@ -16,27 +28,33 @@ const EditorPage = () => {
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [selectedHotspot, setSelectedHotspot] = useState(null);// 🔹 Список доступных проектов для переходов
+  const [selectedHotspot, setSelectedHotspot] = useState(null);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [filePreview, setFilePreview] = useState(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [transitionProgress, setTransitionProgress] = useState(0);
   const [transitionError, setTransitionError] = useState(null);
+  const [currentPanoramaId, setCurrentPanoramaId] = useState(null);
+
   const fileInputRef = useRef(null);
   const sphereViewerRef = useRef(null);
   const activeToolRef = useRef(activeTool);
+  
   // Состояние редактора
   const [editorData, setEditorData] = useState({
     title: '',
     description: '',
     hotspots: [],
     media: [],
-    settings: {
-      autoRotate: false,
-      rotationSpeed: 0.5,
-      zoomLevel: 1
-    }
+    settings: { autoRotate: false, rotationSpeed: 0.5, zoomLevel: 1 }
   });
+
+  // Формирование полного URL для медиафайлов
+  const getMediaUrl = (relativePath) => {
+    if (!relativePath) return null;
+    if (relativePath.startsWith('http')) return relativePath;
+    return `${CONFIG.MEDIA_BASE_URL}/${relativePath}`;
+  };
 
   // Загрузка проекта при монтировании
   useEffect(() => {
@@ -53,10 +71,9 @@ const EditorPage = () => {
       const hasChanges = 
         editorData.title !== project.title ||
         editorData.description !== project.description ||
-        JSON.stringify(editorData.hotspots) !== JSON.stringify(project.hotspots) ||
-        JSON.stringify(editorData.media) !== JSON.stringify(project.media) ||
-        JSON.stringify(editorData.settings) !== JSON.stringify(project.settings);
-      
+        JSON.stringify(editorData.hotspots) !== JSON.stringify(project.hotspots || []) ||
+        JSON.stringify(editorData.media) !== JSON.stringify(project.media || []) ||
+        JSON.stringify(editorData.settings) !== JSON.stringify(project.settings || {});
       setUnsavedChanges(hasChanges);
     }
   }, [editorData, project]);
@@ -69,75 +86,100 @@ const EditorPage = () => {
         e.returnValue = '';
       }
     };
-
     window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [unsavedChanges]);
-
-  const loadProject = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await getProjects();
-      
-      if (!response.success) {
-        throw new Error(response.error || 'Ошибка загрузки проектов');
-      }
-
-      const foundProject = response.projects.find(p => p.id === id);
-      
-      if (!foundProject) {
-        setError('Проект не найден или у вас нет прав на его редактирование');
-        setLoading(false);
-        return;
-      }
-
-      setProject(foundProject);
-      
-      setEditorData({
-        title: foundProject.title || '',
-        description: foundProject.description || '',
-        hotspots: foundProject.hotspots || [],
-        media: foundProject.media || [],
-        settings: foundProject.settings || {
-          autoRotate: false,
-          rotationSpeed: 0.5,
-          zoomLevel: 1
-        }
-      });
-
+  // добавляем маркеры загруженных хотспотов в viewer
+  
+  // Загрузка проекта + основной панорамы + хотспотов
+const loadProject = async () => {
+  try {
+    setLoading(true);
+    setError(null);
+    
+    const response = await getProjects();
+    if (!response.success) throw new Error(response.error);
+    
+    const foundProject = response.projects.find(p => p.id === id);
+    if (!foundProject) {
+      setError('Проект не найден');
       setLoading(false);
-    } catch (err) {
-      console.error('Ошибка загрузки проекта:', err);
-      setError(err.message || 'Не удалось загрузить проект');
-      setLoading(false);
+      return;
     }
-  };
 
-  const handleInputChange = (field, value) => {
+    // 1. Загружаем основную панораму
+    let mainPanorama = foundProject.main_panorama;
+    if (!mainPanorama) {
+      const mainResult = await getMainPanorama(id);
+      if (mainResult.success) {
+        mainPanorama = mainResult.panorama;
+      }
+    }
+
+    setProject({ ...foundProject, main_panorama: mainPanorama });
+    
+    // СОХРАНЯЕМ ID основной панорамы как текущей
+    setCurrentPanoramaId(mainPanorama?.id || null);
+    
+    // 2. Загружаем хотспоты для основной панорамы
+    const hotspotPanoramaId = mainPanorama?.id;
+    
+    if (hotspotPanoramaId) {
+      const hotspotResponse = await getHotspots(hotspotPanoramaId);
+      if (hotspotResponse.success) {
+        const editorHotspots = hotspotResponse.hotspots.map(h => ({
+          id: h.id,
+          position: {
+            yaw: typeof h.position_yaw === 'number' ? h.position_yaw : parseFloat(h.position_yaw) || 0,
+            pitch: typeof h.position_pitch === 'number' ? h.position_pitch : parseFloat(h.position_pitch) || 0,
+          },
+          title: h.title || '',
+          tooltip: h.tooltip || '',
+          type: h.target_type === 'panorama' ? 'transition' : 'info',
+          targetProjectId: h.target_panorama_id,
+          targetFileUrl: h.target_filename
+            ? getMediaUrl(`projects/${foundProject.id}/panoramas/${h.target_filename}`)
+            : null,
+          targetProjectName: h.target_filename || 'Панорама',
+          icon: h.icon,
+          color: h.color,
+        }));
+        
+        setEditorData(prev => ({ ...prev, hotspots: editorHotspots }));
+      }
+    }
+    
+    // 3. Обновляем метаданные
     setEditorData(prev => ({
       ...prev,
-      [field]: value
+      title: foundProject.title || '',
+      description: foundProject.description || '',
+      media: foundProject.media || [],
+      settings: foundProject.settings || { autoRotate: false, rotationSpeed: 0.5, zoomLevel: 1 }
     }));
+
+    setLoading(false);
+  } catch (err) {
+    console.error('Ошибка загрузки проекта:', err);
+    setError(err.message || 'Не удалось загрузить проект');
+    setLoading(false);
+  }
+};
+
+  const handleInputChange = (field, value) => {
+    setEditorData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Сохранение проекта (только метаданные, хотспоты уже в БД)
   const handleSave = async () => {
     try {
       setSaving(true);
-
       const updateData = {
         title: editorData.title,
         description: editorData.description,
-        hotspots: editorData.hotspots,
-        media: editorData.media,
         settings: editorData.settings
       };
-
       const response = await updateProject(id, updateData);
-
       if (response.success) {
         setProject(response.project);
         setUnsavedChanges(false);
@@ -154,13 +196,9 @@ const EditorPage = () => {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Вы уверены, что хотите удалить этот проект? Это действие нельзя отменить.')) {
-      return;
-    }
-
+    if (!window.confirm('Вы уверены, что хотите удалить этот проект?')) return;
     try {
       const response = await deleteProject(id);
-
       if (response.success) {
         alert('Проект успешно удален');
         navigate('/projects');
@@ -178,30 +216,37 @@ const EditorPage = () => {
   };
 
   const handleToolClick = (tool) => {
+    // Если кликнули по уже активному инструменту — выключаем его
+    if (activeTool === tool) {
+      setActiveTool('');
+      setSelectedHotspot(null);
+      return;
+    }
+    
     setActiveTool(tool);
-    // Сбрасываем выбранный хотспот при переключении на обычный режим
-    if (tool === 'hotspot' && selectedHotspot) {
+    
+    // Сбрасываем выбранный хотспот при переключении режимов
+    if (tool !== 'hotspot-edit') {
       setSelectedHotspot(null);
     }
     
+    // Логи для отладки
     switch(tool) {
       case 'hotspot':
-        console.log('Режим добавления точек перехода');
+        console.log('🛠️ Режим: добавление новых точек');
         break;
-      case 'annotation':
-        console.log('Режим аннотаций');
+      case 'transition':
+        console.log('👁️ Режим: тестирование переходов (клик по хотспоту = переход)');
         break;
-      case 'media':
-        console.log('Добавление медиа');
-        break;
-      case 'settings':
-        console.log('Настройки панорамы');
+      case 'hotspot-edit':
+        console.log('✏️ Режим: редактирование хотспота');
         break;
       default:
-        break;
+        console.log('🔓 Режим: обычный просмотр');
     }
   };
-  // 🔹 Обработка выбора файла панорамы — ЗАГРУЗКА ЧЕРЕЗ API
+
+  // Обработка выбора файла панорамы для хотспота-перехода
   const handleFileSelect = async (e) => {
   const file = e.target.files?.[0];
   if (!file) return;
@@ -211,328 +256,327 @@ const EditorPage = () => {
     if (fileInputRef.current) fileInputRef.current.value = '';
     return;
   }
-  
   if (file.size > 50 * 1024 * 1024) {
     alert('Файл слишком большой. Максимальный размер: 50MB');
     if (fileInputRef.current) fileInputRef.current.value = '';
     return;
   }
+
+  const projectId = project?.id;
+  const panoramaId = currentPanoramaId || project?.main_panorama?.id;
   
+  if (!projectId || !panoramaId) {
+    alert('❌ Проект или панорама не загружены');
+    return;
+  }
+
   setUploadingFile(true);
   
   try {
-    const result = await uploadPanorama(file);
+    const uploadResult = await uploadPanorama(file, projectId);
+    if (!uploadResult.success) throw new Error(uploadResult.error);
     
-    if (!result.success) {
-      throw new Error(result.error || 'Ошибка загрузки файла');
-    }
+    const fileUrl = uploadResult.fileUrl;
+    const filename = fileUrl.split('/').pop();
     
-    // 🔹 Бэкенд уже вернул полный URL — НЕ МЕНЯЕМ ЕГО!
-    const fileUrl = result.fileUrl; // Например: "http://localhost:8080/uploads/panoramas/abc.jpg"
-    
-    console.log('[Editor] ✅ File uploaded:', {
-      receivedUrl: result.fileUrl,
-      usingUrl: fileUrl
+    const registerResult = await registerPanorama({
+      project_id: projectId,
+      filename: filename,
+      original_filename: file.name,
+      title: `Панорама: ${file.name}`,
+      description: '',
+      is_main: false,  // это доп. панорама для перехода
     });
     
+    if (!registerResult.success) {
+      throw new Error(`Не удалось зарегистрировать панораму: ${registerResult.error}`);
+    }
+    
+    const targetPanoramaId = registerResult.panorama.panorama_id;
+    
     if (selectedHotspot) {
-      const updates = {
-        targetProjectId: `file_${Date.now()}`,
-        targetProjectName: file.name,
-        targetFileUrl: fileUrl, // ← Сохраняем как есть!
-        type: 'transition'
+      const parseCoord = (val) => {
+        if (typeof val === 'number') return val;
+        if (typeof val === 'string') {
+          const num = parseFloat(val.replace(/[^\d.\-]/g, ''));
+          return isNaN(num) ? 0 : num;
+        }
+        return 0;
       };
       
-      setSelectedHotspot(prev => ({ ...prev, ...updates }));
-      updateHotspot(selectedHotspot.id, updates);
+      const hotspotData = {
+        panorama_id: panoramaId,  // ← ← ← Текущая панорама
+        position_yaw: parseCoord(selectedHotspot.position?.yaw),
+        position_pitch: parseCoord(selectedHotspot.position?.pitch),
+        target_type: 'panorama',
+        target_panorama_id: targetPanoramaId,
+        target_filename: filename,  
+        title: selectedHotspot.title || null,
+        tooltip: selectedHotspot.tooltip || null,
+        icon: selectedHotspot.icon || 'default',
+        color: selectedHotspot.color || '#3498db',
+        is_active: true,
+      };
+      
+      const saveResult = await createHotspot(hotspotData);
+      if (!saveResult.success) {
+        throw new Error(`Не удалось создать хотспот: ${saveResult.error}`);
+      }
+      
+      const dbHotspot = saveResult.hotspot;
+      const updatedHotspot = {
+        ...selectedHotspot,
+        id: dbHotspot.id,
+        targetProjectId: targetPanoramaId,
+        targetProjectName: file.name,
+        targetFileUrl: fileUrl,
+        type: 'transition',
+      };
+      
+      setSelectedHotspot(updatedHotspot);
+      updateHotspotLocal(selectedHotspot.id, updatedHotspot);
+      alert('✅ Точка перехода сохранена!');
     }
-    
-  } catch (err) {
-    console.error('[Editor] ❌ Upload error:', err);
-    alert(`❌ ${err.message}`);
-  } finally {
-    setUploadingFile(false);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  }
-};
-  const toggleSidebar = () => {
-    setIsSidebarCollapsed(!isSidebarCollapsed);
-  };
-  
-  // 🔹 Обработчик клика по хотспоту
-  const handleHotspotClick = async (hotspot) => {
-    console.log('Hotspot clicked:', hotspot);
-    
-    // 🔹 Если это переход к другой панораме
-    if (hotspot.type === 'transition' && hotspot.targetFileUrl) {
-      await handlePanoramaTransition(hotspot.targetFileUrl, hotspot.targetProjectName);
-      return;
+    } catch (err) {
+      console.error('[Editor] ❌ Error:', err);
+      alert(`❌ ${err.message}`);
+    } finally {
+      setUploadingFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
-    
-    // Обычное редактирование хотспота
-    setSelectedHotspot(hotspot);
-    setActiveTool('hotspot-edit');
   };
 
-  const handlePanoramaTransition = async (targetUrl, targetName) => {
-  console.log('[Transition] 🔄 Starting transition:', { targetUrl, targetName });
+  const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
   
-  if (!targetUrl) {
-    setTransitionError('Не указан URL панорамы');
-    setIsTransitioning(false);
+  // Обработчик клика по хотспоту
+const handleHotspotClick = async (hotspot) => {
+  console.log('Hotspot clicked:', {
+    id: hotspot.id,
+    type: hotspot.type,
+    activeTool: activeToolRef.current,
+    targetFileUrl: hotspot.targetFileUrl,
+    targetProjectId: hotspot.targetProjectId
+  });
+  
+  // РЕЖИМ ПЕРЕХОДОВ
+  if (activeToolRef.current === 'transition' && 
+      hotspot.type === 'transition' && 
+      hotspot.targetFileUrl) {
+    console.log('[Editor] 🔄 Transition mode: navigating to', hotspot.targetFileUrl);
+    // Передаём targetPanoramaId для обновления currentPanoramaId
+    await handlePanoramaTransition(
+      hotspot.targetFileUrl, 
+      hotspot.targetProjectName || 'Панорама',
+      hotspot.targetProjectId  // ← ← ← КЛЮЧЕВОЕ: ID целевой панорамы
+    );
     return;
   }
   
-  // 🔹 Если URL уже абсолютный (с бэкенда) — используем как есть
-  // Если относительный — добавляем бэкенд-базу
-  const BACKEND_MEDIA_URL = 'http://localhost:8080'; // ← Ваш бэкенд
-  
-  let absoluteUrl = targetUrl;
-  
-  if (targetUrl && !targetUrl.startsWith('http')) {
-    // Относительный путь: "panoramas/abc.jpg" или "/uploads/panoramas/abc.jpg"
-    const cleanPath = targetUrl.replace(/^\/+/, '').replace(/^uploads\//, '');
-    absoluteUrl = `${BACKEND_MEDIA_URL}/uploads/panoramas/${cleanPath}`;
+  // Открытие редактора
+  setSelectedHotspot(hotspot);
+  setActiveTool('hotspot-edit');
+};
+
+  // Переход к другой панораме
+const handlePanoramaTransition = async (targetUrl, targetName, targetPanoramaId = null) => {
+  if (!targetUrl) {
+    setTransitionError('Не указан URL панорамы');
+    return;
   }
   
-  console.log('[Transition] 📍 Final URL:', absoluteUrl);
+  let absoluteUrl = targetUrl;
+  if (!targetUrl.startsWith('http')) {
+    absoluteUrl = `${CONFIG.MEDIA_BASE_URL}/${targetUrl}`;
+  }
+  
+  console.log('[Transition] 📍 Loading:', absoluteUrl);
   
   setIsTransitioning(true);
   setTransitionProgress(0);
   setTransitionError(null);
   
   try {
-    // 🔹 Предварительная проверка с кеш-бастингом
+    // Предзагрузка с проверкой
     await new Promise((resolve, reject) => {
       const img = new Image();
-      img.crossOrigin = 'anonymous'; // ← Важно для CORS!
-      img.onload = () => {
-        console.log('[Transition] ✅ Image preload successful');
-        resolve();
-      };
-      img.onerror = (err) => {
-        console.error('[Transition] ❌ Image preload failed:', { 
-          url: absoluteUrl, 
-          error: err 
-        });
-        reject(new Error(`Не удалось загрузить изображение. Проверьте CORS и доступность файла.`));
-      };
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve();
+      img.onerror = (err) => reject(new Error('Не удалось загрузить изображение'));
       img.src = absoluteUrl + '?t=' + Date.now();
     });
     
-    // Затемнение перед переходом
-    const viewerContainer = document.querySelector('.panorama-viewer');
-    if (viewerContainer) {
-      viewerContainer.style.transition = 'opacity 0.3s ease';
-      viewerContainer.style.opacity = '0.7';
-    }
-    
-    // Прогресс-бар (имитация)
-    const progressInterval = setInterval(() => {
-      setTransitionProgress(prev => {
-        if (prev >= 90) {
-          clearInterval(progressInterval);
-          return prev;
-        }
-        return prev + Math.random() * 15;
-      });
-    }, 100);
-    
-    // 🔹 Меняем панораму — с абсолютным URL с бэкенда
+    // Переход
     await sphereViewerRef.current.changePanorama(absoluteUrl, {
       transition: 'fade',
       duration: 800
     });
     
-    clearInterval(progressInterval);
     setTransitionProgress(100);
-    
-    // Центрируем камеру
-    const viewer = sphereViewerRef.current.getInstance();
-    viewer?.animate({ yaw: 0, pitch: 0, zoom: 0 }, { duration: 600, easing: 'ease-out' });
-    
-    // Завершаем переход
     setTimeout(() => {
-      if (viewerContainer) {
-        viewerContainer.style.opacity = '1';
-      }
       setIsTransitioning(false);
       setTransitionProgress(0);
-      console.log('[Transition] ✅ Complete');
     }, 300);
+    
+    // Обновляем currentPanoramaId и загружаем хотспоты новой панорамы
+    if (targetPanoramaId) {
+      console.log('[Transition] 🔄 Updating current panorama:', targetPanoramaId);
+      
+      // Обновляем текущую панораму
+      setCurrentPanoramaId(targetPanoramaId);
+      
+      // Загружаем хотспоты для новой панорамы
+      const hotspotResponse = await getHotspots(targetPanoramaId);
+      if (hotspotResponse.success) {
+        const newHotspots = hotspotResponse.hotspots.map(h => ({
+          id: h.id,
+          position: {
+            yaw: typeof h.position_yaw === 'number' ? h.position_yaw : parseFloat(h.position_yaw) || 0,
+            pitch: typeof h.position_pitch === 'number' ? h.position_pitch : parseFloat(h.position_pitch) || 0,
+          },
+          title: h.title || '',
+          tooltip: h.tooltip || '',
+          type: h.target_type === 'panorama' ? 'transition' : 'info',
+          targetProjectId: h.target_panorama_id,
+          targetFileUrl: h.target_filename
+            ? getMediaUrl(`projects/${project.id}/panoramas/${h.target_filename}`)
+            : null,
+          targetProjectName: h.target_filename || 'Панорама',
+          icon: h.icon,
+          color: h.color,
+        }));
+        
+        console.log('[Transition] ✅ Loaded', newHotspots.length, 'hotspots for new panorama');
+        setEditorData(prev => ({ ...prev, hotspots: newHotspots }));
+        
+        // Сбрасываем выбранный хотспот
+        setSelectedHotspot(null);
+        setActiveTool('');
+      } else {
+        console.warn('[Transition] ⚠️ Failed to load hotspots:', hotspotResponse.error);
+        setEditorData(prev => ({ ...prev, hotspots: [] }));
+      }
+    }
     
   } catch (err) {
     console.error('[Transition] ❌ Error:', err);
-    
-    // 🔹 Понятная ошибка для CORS
-    let userMessage = err.message || 'Не удалось загрузить панораму';
-    if (err.message?.includes('CORS') || err.message?.includes('NetworkError')) {
-      userMessage = 'Ошибка доступа к файлу. Проверьте настройки CORS на сервере.';
-    }
-    
-    setTransitionError(userMessage);
+    setTransitionError(err.message || 'Ошибка загрузки панорамы');
     setIsTransitioning(false);
     setTransitionProgress(0);
-    
-    const viewerContainer = document.querySelector('.panorama-viewer');
-    if (viewerContainer) {
-      viewerContainer.style.opacity = '1';
-    }
-    
-    alert(`❌ ${userMessage}`);
   }
 };
-  // 🔹 Обработчик клика по панораме для добавления нового хотспота
-  const handlePositionClick = useCallback(async (position) => {
-  console.log('[Editor] 🎯 handlePositionClick called', { 
-    activeTool: activeToolRef.current,  // ← ✅ Актуальное значение из ref
-    selectedHotspot: !!selectedHotspot 
-  });
-  
-  // 🔹 Проверка: только в режиме добавления — ИСПОЛЬЗУЕМ REF!
-  if (activeToolRef.current !== 'hotspot') {  // ← ✅ Всегда актуально!
-    console.log('[Editor] ⚠️ Click ignored: activeTool is', activeToolRef.current);
-    return;
-  }
-  
-  const newHotspot = {
-    id: `hotspot_${Date.now()}`,
-    position,
-    image: '/logo.jpg',
-    title: 'Новая точка',
-    description: '',
-    type: 'transition',
-    targetProjectId: null,
-    icon: null,
-    tooltip: 'Новая точка перехода',
-    linkUrl: ''
-  };
-  
-  // 1. Обновляем состояние
-  setEditorData(prev => ({
-    ...prev,
-    hotspots: [...prev.hotspots, newHotspot]
-  }));
-  
-  // 2. Мгновенно добавляем маркер в viewer
-  if (sphereViewerRef.current?.isReady?.() && sphereViewerRef.current?.getMarkersPlugin) {
-    const plugin = sphereViewerRef.current.getMarkersPlugin();
-    if (plugin) {
-      plugin.addMarker({
-        id: newHotspot.id,
-        position: newHotspot.position,
-        image: '/logo.jpg',
-        size: { width: 40, height: 40 },
-        anchor: [50, 100],
-        tooltip: { content: '✨ Новая точка', position: 'top center' },
-        style: { cursor: 'pointer' },
-        data: { ...newHotspot }
-      });
-      
-      // Анимация подтверждения
-      requestAnimationFrame(() => {
-        const el = document.getElementById(`psv-marker-${newHotspot.id}`);
-        if (el) {
-          el.animate(
-            [
-              { transform: 'scale(1)', opacity: 1, offset: 0 },
-              { transform: 'scale(1.4)', opacity: 1, offset: 0.5 },
-              { transform: 'scale(1)', opacity: 1, offset: 1 }
-            ],
-            { duration: 250, easing: 'ease-out' }
-          );
-        }
-      });
-    }
-  }
-  
-  // 3. Переключаем режим
-  console.log('[Editor] 🔄 Setting activeTool to hotspot-edit');
-  setSelectedHotspot(newHotspot);
-  setActiveTool('hotspot-edit');
-  
-}, []); // ← Пустой массив — функция не пересоздаётся, но ref всегда актуален!
 
-  // 🔹 Обновление хотспота
-  const updateHotspot = (id, updates) => {
+  // 🔹 Клик по панораме для добавления хотспота
+  const handlePositionClick = useCallback(async (position) => {
+    console.log('[Editor] 🎯 handlePositionClick called', {
+      activeTool: activeToolRef.current,
+      selectedHotspot: !!selectedHotspot
+    });
+    // Проверка: только в режиме добавления новых хотспотов
+      if (activeToolRef.current !== 'hotspot') {
+        console.log('[Editor] ⚠️ Click ignored: activeTool is', activeToolRef.current);
+        return;  // ← просто игнорируем клик, не вызываем handleHotspotClick!
+      }
+  
+    // Парсим координаты в ЧИСЛА (убираем "rad" если есть)
+    const parseCoord = (val) => {
+      if (typeof val === 'number') return val;
+      if (typeof val === 'string') {
+        const num = parseFloat(val.replace(/[^\d.\-]/g, ''));
+        return isNaN(num) ? 0 : num;
+      }
+      return 0;
+    };
+  
+    const newHotspot = {
+      id: `hotspot_${Date.now()}`,
+      position: {
+        yaw: parseCoord(position.yaw),
+        pitch: parseCoord(position.pitch),
+      },
+      title: 'Новая точка',
+      tooltip: 'Новая точка перехода',
+      type: 'transition',
+      targetProjectId: null,
+      icon: null,
+      color: '#3498db',
+      targetFileUrl: null,
+      linkUrl: ''
+    };
+    
+    console.log('[Editor] 📍 New hotspot position:', newHotspot.position);
+    
+    // 1. Обновляем состояние — SphereViewer синхронизирует маркеры автоматически
     setEditorData(prev => ({
       ...prev,
-      hotspots: prev.hotspots.map(h => 
-        h.id === id ? { ...h, ...updates } : h
-      )
+      hotspots: [...prev.hotspots, newHotspot]
+    }));
+    
+    // 2. Переключаем в режим редактирования НОВОГО хотспота
+    setSelectedHotspot(newHotspot);
+    setActiveTool('hotspot-edit');  // ← ← ← переключаем в режим редактирования!
+  }, []);
+
+  // Локальное обновление хотспота (без отправки на сервер)
+  const updateHotspotLocal = (id, updates) => {
+    setEditorData(prev => ({
+      ...prev,
+      hotspots: prev.hotspots.map(h => h.id === id ? { ...h, ...updates } : h)
     }));
   };
 
-  // 🔹 Удаление хотспота
-  const deleteHotspot = (hotspotId) => {
-    if (window.confirm('Удалить эту точку перехода?')) {
-      // Удаляем из состояния
+  // Удаление хотспота
+  const deleteHotspot = async (hotspotId) => {
+    if (!window.confirm('Удалить эту точку перехода?')) return;
+    
+    try {
+      // Если хотспот в БД — удаляем там
+      if (!hotspotId.startsWith('hotspot_')) {
+        const result = await deleteHotspotApi(hotspotId);
+        if (!result.success) throw new Error(result.error);
+      }
+      
+      // Удаляем из локального состояния
       setEditorData(prev => ({
         ...prev,
         hotspots: prev.hotspots.filter(h => h.id !== hotspotId)
       }));
       
-      // Мгновенно удаляем из viewer
+      // Удаляем маркер из viewer
       if (sphereViewerRef.current?.getMarkersPlugin) {
         const plugin = sphereViewerRef.current.getMarkersPlugin();
-        if (plugin) {
-          plugin.removeMarker(hotspotId);
-        }
+        plugin?.removeMarker(hotspotId);
       }
       
       setSelectedHotspot(null);
+    } catch (err) {
+      console.error('Ошибка удаления хотспота:', err);
+      alert(err.message || 'Не удалось удалить точку');
     }
   };
 
-  // 🔹 Переход к хотспоту (для предпросмотра)
+  // Переход к хотспоту (для предпросмотра)
   const goToHotspot = async (hotspotId) => {
     if (sphereViewerRef.current?.gotoHotspot) {
       await sphereViewerRef.current.gotoHotspot(hotspotId);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="editor-loading">
-        <div className="spinner"></div>
-        <p>Загрузка проекта...</p>
-      </div>
-    );
-  }
+  if (loading) return <div className="editor-loading"><div className="spinner"></div><p>Загрузка проекта...</p></div>;
+  if (error) return <div className="editor-error"><p>{error}</p><button onClick={() => navigate('/projects')}>Вернуться к проектам</button></div>;
+  if (!project) return <div className="editor-error"><p>Проект не найден</p><button onClick={() => navigate('/projects')}>Вернуться к проектам</button></div>;
 
-  if (error) {
-    return (
-      <div className="editor-error">
-        <svg className="error-icon" viewBox="0 0 24 24">
-          <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-        </svg>
-        <p>{error}</p>
-        <button onClick={() => navigate('/projects')} className="back-btn">
-          Вернуться к проектам
-        </button>
-      </div>
-    );
-  }
-
-  if (!project) {
-    return (
-      <div className="editor-error">
-        <p>Проект не найден</p>
-        <button onClick={() => navigate('/projects')} className="back-btn">
-          Вернуться к проектам
-        </button>
-      </div>
-    );
-  }
-
+  // Формируем URL основной панорамы
+  const mainPanoramaUrl = project.main_panorama?.filename
+    ? getMediaUrl(`projects/${project.id}/panoramas/${project.main_panorama.filename}`)
+    : null;
   return (
     <div className="editor-container">
       {/* Основная область панорамы */}
       <div className="panorama-viewer">
-        {project.panorama_url ? (
+        {mainPanoramaUrl ? (
           <SphereViewer 
             ref={sphereViewerRef}
-            src={project.panorama_url} 
+            src={mainPanoramaUrl}  // ← main_panorama.filename
             hotspots={editorData.hotspots}
             onHotspotClick={handleHotspotClick}
             onPositionClick={handlePositionClick}
@@ -577,7 +621,6 @@ const EditorPage = () => {
               onClick={() => {
                 setIsTransitioning(false);
                 setTransitionProgress(0);
-                // Можно вернуть предыдущую панораму если нужно
               }}
             >
               Отмена
@@ -688,7 +731,29 @@ const EditorPage = () => {
               <span>Настройки</span>
             </button>
           </div>
-
+          {/* 🔹 Кнопка переключения режима переходов */}
+          <div className="mode-toggle" style={{ 
+            marginTop: '12px', 
+            padding: '8px', 
+            background: '#f8fafc', 
+            borderRadius: '6px',
+            border: '1px solid #e2e8f0'
+          }}>
+            <label style={{ fontSize: '12px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input
+                type="checkbox"
+                checked={activeTool === 'transition'}
+                onChange={(e) => handleToolClick(e.target.checked ? 'transition' : '')}
+                style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+              />
+              <span>👁️ Режим переходов</span>
+            </label>
+            <span style={{ fontSize: '10px', color: '#64748b', display: 'block', marginTop: '4px', marginLeft: '24px' }}>
+              {activeTool === 'transition' 
+                ? 'Клик по хотспоту = переход к панораме' 
+                : 'Клик по хотспоту = открыть редактор'}
+            </span>
+          </div>
           {/* 🔹 Панель редактирования хотспота */}
           {(activeTool === 'hotspot' || activeTool === 'hotspot-edit') && selectedHotspot && (
             <div className="hotspot-editor-panel" style={{ 
@@ -725,7 +790,7 @@ const EditorPage = () => {
                   value={selectedHotspot.title || ''} 
                   onChange={(e) => {
                     setSelectedHotspot(prev => ({ ...prev, title: e.target.value }));
-                    updateHotspot(selectedHotspot.id, { title: e.target.value });
+                    updateHotspotLocal(selectedHotspot.id, { title: e.target.value });
                   }}
                   placeholder="Название точки"
                   style={{ 
@@ -745,7 +810,7 @@ const EditorPage = () => {
                   value={selectedHotspot.tooltip || ''}
                   onChange={(e) => {
                     setSelectedHotspot(prev => ({ ...prev, tooltip: e.target.value }));
-                    updateHotspot(selectedHotspot.id, { tooltip: e.target.value });
+                    updateHotspotLocal(selectedHotspot.id, { tooltip: e.target.value });
                   }}
                   placeholder="Текст подсказки при наведении"
                   rows={2}
@@ -767,7 +832,7 @@ const EditorPage = () => {
                   value={selectedHotspot.type || 'transition'}
                   onChange={(e) => {
                     setSelectedHotspot(prev => ({ ...prev, type: e.target.value }));
-                    updateHotspot(selectedHotspot.id, { type: e.target.value });
+                    updateHotspotLocal(selectedHotspot.id, { type: e.target.value });
                   }}
                   style={{ 
                     width: '100%', 
@@ -867,7 +932,7 @@ const EditorPage = () => {
                             targetProjectName: null,
                             targetFileUrl: null
                           }));
-                          updateHotspot(selectedHotspot.id, {
+                          updateHotspotLocal(selectedHotspot.id, {
                             targetProjectId: null,
                             targetProjectName: null,
                             targetFileUrl: null
@@ -897,7 +962,7 @@ const EditorPage = () => {
                     value={selectedHotspot.linkUrl || ''}
                     onChange={(e) => {
                       setSelectedHotspot(prev => ({ ...prev, linkUrl: e.target.value }));
-                      updateHotspot(selectedHotspot.id, { linkUrl: e.target.value });
+                      updateHotspotLocal(selectedHotspot.id, { linkUrl: e.target.value });
                     }}
                     placeholder="https://example.com"
                     style={{ 
@@ -1014,7 +1079,7 @@ const EditorPage = () => {
             </button>
           </div>
         </div>
-
+        
         <div className="project-stats">
           <div className="stat-item">
             <span className="stat-label">Точки перехода:</span>

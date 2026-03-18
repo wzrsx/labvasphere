@@ -1,8 +1,10 @@
+// internal/handlers/panorama_upload.go
 package handlers
 
 import (
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -17,13 +19,25 @@ type PanoramaUploadHandler struct {
 }
 
 func NewPanoramaUploadHandler(baseDir string) *PanoramaUploadHandler {
-	os.MkdirAll(filepath.Join(baseDir, "panoramas"), 0755)
+	os.MkdirAll(filepath.Join(baseDir, "projects"), 0755)
 	return &PanoramaUploadHandler{baseDir: baseDir}
 }
 
 func (h *PanoramaUploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusMethodNotAllowed, "Метод не разрешён")
+		return
+	}
+
+	projectIDStr := r.FormValue("project_id")
+	if projectIDStr == "" {
+		writeError(w, http.StatusBadRequest, "project_id обязателен")
+		return
+	}
+
+	projectID, err := uuid.Parse(projectIDStr)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "Неверный формат project_id")
 		return
 	}
 
@@ -34,30 +48,33 @@ func (h *PanoramaUploadHandler) UploadFile(w http.ResponseWriter, r *http.Reques
 	}
 	defer file.Close()
 
-	fileUrl, err := saveUploadedFile(file, header, h.baseDir, "panoramas")
+	// Сохраняем файл
+	fileUrl, err := saveUploadedFile(file, header, h.baseDir, projectID, "panoramas")
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
+	log.Printf("DEBUG: File saved: %s", fileUrl)
+
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"message":  "Панорама загружена",
-		"file_url": filepath.Base(fileUrl),
+		"file_url": fileUrl,
 		"filename": filepath.Base(fileUrl),
 	})
 }
 
-// Вспомогательная функция (можно вынести в utils.go)
-func saveUploadedFile(file io.Reader, header *multipart.FileHeader, baseDir string, subDir string) (string, error) {
-	fullDir := filepath.Join(baseDir, subDir)
-	os.MkdirAll(fullDir, 0755)
+func saveUploadedFile(file io.Reader, header *multipart.FileHeader, baseDir string, projectID uuid.UUID, subDir string) (string, error) {
+	fullDir := filepath.Join(baseDir, "projects", projectID.String(), subDir)
+	if err := os.MkdirAll(fullDir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create directory: %w", err)
+	}
 
 	allowedTypes := map[string]bool{
 		"image/jpeg": true,
 		"image/jpg":  true,
 		"image/png":  true,
 	}
-
 	if !allowedTypes[header.Header.Get("Content-Type")] {
 		return "", fmt.Errorf("неподдерживаемый тип файла")
 	}
@@ -82,10 +99,10 @@ func saveUploadedFile(file io.Reader, header *multipart.FileHeader, baseDir stri
 	}
 	defer uploadedFile.Close()
 
-	_, err = uploadedFile.Write(contents)
-	if err != nil {
+	if _, err := uploadedFile.Write(contents); err != nil {
 		return "", err
 	}
 
-	return filepath.Join(subDir, newFilename), nil
+	// Возвращаем относительный путь: "projects/{uuid}/panoramas/file.jpg"
+	return filepath.Join("projects", projectID.String(), subDir, newFilename), nil
 }

@@ -4,6 +4,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import "./ProjectView.css";
 import SphereViewer from "../components/SphereViewer";
 import api from '../services/api';
+import { CONFIG } from '../config';
+import { getMainPanorama } from '../services/projectService';
 
 const ProjectView = () => {
   const { id } = useParams();
@@ -12,12 +14,28 @@ const ProjectView = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const getMediaUrl = (relativePath) => {
+    if (!relativePath) return null;
+    if (relativePath.startsWith('http')) return relativePath;
+    return `${CONFIG.MEDIA_BASE_URL}/${relativePath}`;
+  };
+
   useEffect(() => {
     const fetchProject = async () => {
       try {
-        // Используем axios вместо fetch
+        setLoading(true);
         const response = await api.get(`/projects/${id}`);
-        setProject(response.data);
+        const projectData = response.data;
+        
+        // Если нет main_panorama — запрашиваем отдельно
+        if (!projectData.main_panorama) {
+          const mainResult = await getMainPanorama(id);
+          if (mainResult.success) {
+            projectData.main_panorama = mainResult.panorama;
+          }
+        }
+        
+        setProject(projectData);
       } catch (err) {
         console.error("Не удалось загрузить проект:", err);
         const message = err.response?.data?.error || 'Проект не найден';
@@ -27,14 +45,17 @@ const ProjectView = () => {
       }
     };
 
-    if (id) {
-      fetchProject();
-    }
+    if (id) fetchProject();
   }, [id]);
 
   if (loading) return <div className="project-view">Загрузка...</div>;
   if (error) return <div className="project-view">Ошибка: {error}</div>;
   if (!project) return <div className="project-view">Проект не найден</div>;
+
+  // 🔹 Формируем URL основной панорамы
+  const mainPanoramaUrl = project.main_panorama?.filename
+    ? getMediaUrl(`projects/${project.id}/panoramas/${project.main_panorama.filename}`)
+    : null;
 
   return (
     <div className="project-view">
@@ -44,7 +65,13 @@ const ProjectView = () => {
       </header>
 
       <div className="panorama-container">
-        <SphereViewer src={project.panorama_url} /> 
+        {mainPanoramaUrl ? (
+          <SphereViewer src={mainPanoramaUrl} />
+        ) : (
+          <div className="panorama-placeholder">
+            <p>Панорама не найдена</p>
+          </div>
+        )}
       </div>
     </div>
   );

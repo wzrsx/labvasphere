@@ -1,13 +1,18 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import SphereViewer from "./SphereViewer"; 
-import { createProject, uploadPanorama, uploadCover } from "../services/projectService";
+import { 
+  createProject, 
+  uploadPanorama, 
+  uploadCover, 
+  updateProject,
+  registerPanorama  
+} from "../services/projectService";
 import api from '../services/api';
 
 const ASPECT_RATIO = 16 / 9;
 const COVER_WIDTH = 1280;
 const COVER_HEIGHT = Math.round(COVER_WIDTH / ASPECT_RATIO);
 
-// 🔹 Функция создания сжатого превью
 const createPreview = (file) => {
   return new Promise((resolve, reject) => {
     const canvas = document.createElement('canvas');
@@ -17,10 +22,8 @@ const createPreview = (file) => {
     img.onload = () => {
       const maxWidth = 2048;
       const scale = Math.min(1, maxWidth / img.width);
-      
       canvas.width = img.width * scale;
       canvas.height = img.height * scale;
-      
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       
       canvas.toBlob(
@@ -30,22 +33,17 @@ const createPreview = (file) => {
             reader.onload = () => resolve(reader.result);
             reader.onerror = reject;
             reader.readAsDataURL(blob);
-          } else {
-            reject(new Error('Failed to create preview'));
-          }
+          } else reject(new Error('Failed to create preview'));
         },
-        'image/jpeg',
-        0.75
+        'image/jpeg', 0.75
       );
     };
-    
     img.onerror = reject;
     img.src = URL.createObjectURL(file);
   });
 };
 
 const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
-  // 🔹 ВСЕ ХУКИ — СТРОГО В НАЧАЛЕ
   const [projectName, setProjectName] = useState("");
   const [description, setDescription] = useState("");
   const [panoramaFile, setPanoramaFile] = useState(null);
@@ -57,166 +55,85 @@ const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [viewerStep, setViewerStep] = useState(false);
   
-  const handleViewerReady = useCallback((viewer) => {
-    console.log('✅ Viewer ready');
-  }, []);
-
-  const handleViewerError = useCallback((err) => {
-    console.error('❌ Viewer error:', err);
-    setError(`Ошибка: ${err.message}`);
-  }, [setError]); 
-
   const sphereViewerRef = useRef(null);
   const fileInputRef = useRef(null);
-  
-  // 🔹 РЕФ для отслеживания перетаскивания
   const isDraggingRef = useRef(false);
   const dragTimeoutRef = useRef(null);
 
-  // 🔹 Стабилизированный стиль для viewer
-  const viewerStyle = useMemo(() => ({ 
-    height: '225px', 
-    borderRadius: '8px' 
-  }), []);
+  const handleViewerReady = useCallback((viewer) => console.log('✅ Viewer ready'), []);
+  const handleViewerError = useCallback((err) => {
+    console.error('❌ Viewer error:', err);
+    setError(`Ошибка: ${err.message}`);
+  }, []);
 
-  // 🔹 Очистка объектных URL
+  const viewerStyle = useMemo(() => ({ height: '225px', borderRadius: '8px' }), []);
+
   useEffect(() => {
     return () => {
-      if (coverPreview && coverPreview.startsWith('blob:')) {
-        URL.revokeObjectURL(coverPreview);
-      }
+      if (coverPreview && coverPreview.startsWith('blob:')) URL.revokeObjectURL(coverPreview);
     };
   }, [coverPreview]);
 
-  // 🔹 Глобальные слушатели для перетаскивания
   useEffect(() => {
     const handleGlobalMouseUp = () => {
       if (isDraggingRef.current) {
-        dragTimeoutRef.current = setTimeout(() => {
-          isDraggingRef.current = false;
-        }, 200);
+        dragTimeoutRef.current = setTimeout(() => { isDraggingRef.current = false; }, 200);
       }
     };
-
     const handleGlobalMouseDown = () => {
-      if (dragTimeoutRef.current) {
-        clearTimeout(dragTimeoutRef.current);
-      }
+      if (dragTimeoutRef.current) clearTimeout(dragTimeoutRef.current);
     };
-
     document.addEventListener('mouseup', handleGlobalMouseUp);
     document.addEventListener('mousedown', handleGlobalMouseDown);
-
     return () => {
       document.removeEventListener('mouseup', handleGlobalMouseUp);
       document.removeEventListener('mousedown', handleGlobalMouseDown);
-      if (dragTimeoutRef.current) {
-        clearTimeout(dragTimeoutRef.current);
-      }
+      if (dragTimeoutRef.current) clearTimeout(dragTimeoutRef.current);
     };
   }, []);
 
-  // 🔹 Захват обложки 16:9
   const captureCoverImage = useCallback(async () => {
-  const viewer = sphereViewerRef.current?.getInstance?.();
-  if (!viewer) {
-    setError("Viewer ещё не готов. Попробуйте ещё раз.");
-    return;
-  }
-
-  try {
-    console.log('[Cover] Starting capture...');
-
-    // 🔹 Ждём событие render и делаем скриншот
-    const screenshot = await new Promise((resolve, reject) => {
-      // Слушаем один раз событие render
-      const onRender = () => {
-        try {
-          // 🔹 Правильный путь к canvas: renderer.renderer.domElement
-          const canvas = viewer.renderer?.renderer?.domElement;
-          
-          if (!canvas) {
-            reject(new Error('Canvas not found'));
-            return;
-          }
-          
-          console.log('[Cover] Canvas:', { width: canvas.width, height: canvas.height });
-          
-          // Конвертируем в DataURL
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-          resolve(dataUrl);
-        } catch (err) {
-          reject(err);
-        }
-      };
-      
-      // Подписываемся на render (один раз)
-      viewer.addEventListener('render', onRender, { once: true });
-      
-      // 🔹 Запрашиваем перерисовку — это триггерит событие render
-      viewer.needsUpdate();
-      
-      // 🔹 Таймаут на случай если render не сработает
-      setTimeout(() => {
-        viewer.removeEventListener('render', onRender);
-        reject(new Error('Render timeout'));
-      }, 3000);
-    });
-
-    console.log('[Cover] Screenshot created, length:', screenshot.length);
-    
-    // 🔹 Конвертируем DataURL в Blob
-    const blob = await fetch(screenshot).then(r => r.blob());
-    console.log('[Cover] Blob size:', blob.size);
-    
-    const file = new File([blob], `cover_${Date.now()}.jpg`, { type: 'image/jpeg' });
-    
-    setCoverFile(file);
-    setCoverPreview(URL.createObjectURL(file));
-    setError("");
-    console.log('[Cover] Success!');
-    
-  } catch (err) {
-    console.error('[Cover] Error:', err);
-    setError('Не удалось создать обложку. Попробуйте ещё раз.');
-  }
-}, []);
-
-  // 🔹 Загрузка файла на сервер
-  const uploadFile = async (file, endpoint = '/upload') => {
-    const formData = new FormData();
-    formData.append('file', file);
+    const viewer = sphereViewerRef.current?.getInstance?.();
+    if (!viewer) { setError("Viewer ещё не готов"); return; }
 
     try {
-      const response = await api.post(endpoint, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      const screenshot = await new Promise((resolve, reject) => {
+        const onRender = () => {
+          try {
+            const canvas = viewer.renderer?.renderer?.domElement;
+            if (!canvas) { reject(new Error('Canvas not found')); return; }
+            resolve(canvas.toDataURL('image/jpeg', 0.92));
+          } catch (err) { reject(err); }
+        };
+        viewer.addEventListener('render', onRender, { once: true });
+        viewer.needsUpdate();
+        setTimeout(() => {
+          viewer.removeEventListener('render', onRender);
+          reject(new Error('Render timeout'));
+        }, 3000);
       });
-      return { success: true, fileUrl: response.data.file_url };
-    } catch (error) {
-      console.error('Ошибка загрузки:', error);
-      return {
-        success: false,
-        error: error.response?.data?.error || 'Ошибка загрузки',
-      };
-    }
-  };
 
-  // 🔹 Ранний возврат
+      const blob = await fetch(screenshot).then(r => r.blob());
+      const file = new File([blob], `cover_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      setCoverFile(file);
+      setCoverPreview(URL.createObjectURL(file));
+      setError("");
+    } catch (err) {
+      console.error('[Cover] Error:', err);
+      setError('Не удалось создать обложку');
+    }
+  }, []);
+
   if (!isOpen) return null;
 
-  // 🔹 Закрытие модалки
   const handleClose = () => {
     if (isDraggingRef.current) return;
-    
     if (panoramaPreview) URL.revokeObjectURL(panoramaPreview);
-    if (coverPreview && coverPreview.startsWith('blob:')) {
-      URL.revokeObjectURL(coverPreview);
-    }
+    if (coverPreview && coverPreview.startsWith('blob:')) URL.revokeObjectURL(coverPreview);
     resetForm();
     onClose();
   };
 
-  // 🔹 Отправка формы
   const handleSubmit = async (e) => {
   e.preventDefault();
   setError("");
@@ -237,79 +154,116 @@ const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
   setIsLoading(true);
 
   try {
-    // 🔹 1. Загружаем панораму
-    const panoramaResult = await uploadPanorama(panoramaFile);
-    if (!panoramaResult.success) {
-      throw new Error(panoramaResult.error);
-    }
-
-    // 🔹 2. Загружаем обложку
-    const coverResult = await uploadCover(coverFile);
-    if (!coverResult.success) {
-      throw new Error(coverResult.error);
-    }
-
-    // 🔹 3. Создаём проект с путями из ответов
-    const result = await createProject({
+    console.log('🔹 Шаг 1: Создаём проект (без файлов)...');
+    
+    // 1. Сначала создаём проект — получаем project_id
+    const projectResult = await createProject({
       title: projectName.trim(),
       description: description.trim() || null,
-      panorama_url: panoramaResult.fileUrl,      // "panoramas/uuid_123.jpg"
-      cover_image_url: coverResult.fileUrl,      // "covers/uuid_456.jpg"
+      cover_image_url: null,  
+      panorama_filename: null,  
+      panorama_original_name: null,
+      status: "draft",
     });
 
-    if (result.success) {
-      if (onCreate) onCreate(result.project);
-      resetForm();
-      onClose();
-      alert(`Проект "${result.project.title}" успешно создан!`);
-    } else {
-      throw new Error(result.error);
+    console.log('🔹 Ответ от createProject:', projectResult);
+    
+    if (!projectResult.success) {
+      throw new Error(`createProject failed: ${projectResult.error}`);
     }
+
+    const project = projectResult.project;
+    const projectId = project?.id;
+    
+    console.log('🔹 Проект создан, ID:', projectId);
+    
+    if (!projectId) {
+      throw new Error('Project ID is missing in response');
+    }
+
+    // 2. Загружаем панораму с project_id
+    console.log('🔹 Шаг 2: Загружаем панораму...', { projectId });
+    
+    const panoramaResult = await uploadPanorama(panoramaFile, projectId);
+    console.log('🔹 Ответ от uploadPanorama:', panoramaResult);
+    
+    if (!panoramaResult.success) {
+      throw new Error(`uploadPanorama failed: ${panoramaResult.error}`);
+    }
+
+    const panoramaFilename = panoramaResult.filename;
+    
+    // 3. Загружаем обложку с project_id
+    console.log('🔹 Шаг 3: Загружаем обложку...', { projectId });
+    
+    const coverResult = await uploadCover(coverFile, projectId);
+    console.log('🔹 Ответ от uploadCover:', coverResult);
+    
+    if (!coverResult.success) {
+      throw new Error(`uploadCover failed: ${coverResult.error}`);
+    }
+
+    // 4. Регистрируем основную панораму в БД (is_main: true)
+    console.log('🔹 Шаг 4: Регистрируем основную панораму...');
+    
+    const registerResult = await registerPanorama({
+      project_id: projectId,
+      filename: panoramaFilename,
+      original_filename: panoramaFile.name,
+      title: `${projectName.trim()} - Основная панорама`,
+      description: '',
+      is_main: true,  
+    });
+    
+    console.log('🔹 Ответ от registerPanorama:', registerResult);
+    
+    if (!registerResult.success) {
+      console.warn('⚠️ Не удалось зарегистрировать панораму:', registerResult.error);
+      // Не прерываем — проект создан, панораму можно добавить позже
+    }
+
+    // 5. Обновляем проект с cover_image_url
+    console.log('🔹 Шаг 5: Обновляем проект...');
+    
+    const updateResult = await updateProject(projectId, {
+      cover_image_url: coverResult.fileUrl,
+      status: "published",
+    });
+    
+    console.log('🔹 Ответ от updateProject:', updateResult);
+    
+    if (!updateResult.success) {
+      throw new Error(`updateProject failed: ${updateResult.error}`);
+    }
+
+    // ✅ Успех
+    if (onCreate) onCreate(updateResult.project);
+    resetForm();
+    onClose();
+    alert(`Проект "${projectName.trim()}" успешно создан!`);
+    
   } catch (err) {
+    console.error('❌ Ошибка в handleSubmit:', err);
     setError(err.message || "Ошибка при создании проекта");
   } finally {
     setIsLoading(false);
   }
 };
 
-  // 🔹 Сброс формы
   const resetForm = () => {
-    setProjectName("");
-    setDescription("");
-    setPanoramaFile(null);
-    setCoverFile(null);
-    setPanoramaPreview(null);
-    setCoverPreview(null);
-    setViewerStep(false);
+    setProjectName(""); setDescription(""); setPanoramaFile(null); setCoverFile(null);
+    setPanoramaPreview(null); setCoverPreview(null); setViewerStep(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // 🔹 Валидация панорамы
   const validateAndSetPanorama = async (file) => {
     if (!file) return;
-    
-    if (!file.type.match("image/(jpeg|jpg|png)")) {
-      setError("Поддерживаются только JPG и PNG");
-      return;
-    }
-    if (file.size > 50 * 1024 * 1024) {
-      setError("Максимальный размер файла: 50 МБ");
-      return;
-    }
-    
+    if (!file.type.match("image/(jpeg|jpg|png)")) { setError("Поддерживаются только JPG и PNG"); return; }
+    if (file.size > 50 * 1024 * 1024) { setError("Максимальный размер: 50 МБ"); return; }
     try {
-      setError("");
-      setViewerStep(true);
-      
-      const previewStart = Date.now();
+      setError(""); setViewerStep(true);
       const previewUrl = await createPreview(file);
-      
-      console.log(`✅ Preview created in ${Date.now() - previewStart}ms`);
-      console.log('Preview size:', (previewUrl.length / 1024 / 1024).toFixed(2), 'MB');
-      
-      setPanoramaFile(file);
-      setPanoramaPreview(previewUrl);
-      
+      setPanoramaFile(file); setPanoramaPreview(previewUrl);
     } catch (err) {
       console.error('Error creating preview:', err);
       setError('Не удалось обработать изображение');
@@ -320,121 +274,55 @@ const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
   const handleFileChange = (e) => validateAndSetPanorama(e.target.files[0]);
   const handleDragOver = (e) => { e.preventDefault(); setDragActive(true); };
   const handleDragLeave = () => setDragActive(false);
-  
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setDragActive(false);
-    validateAndSetPanorama(e.dataTransfer.files[0]);
-  };
+  const handleDrop = (e) => { e.preventDefault(); setDragActive(false); validateAndSetPanorama(e.dataTransfer.files[0]); };
+  const handleViewerMouseDown = (e) => { if (e.button === 0) isDraggingRef.current = true; };
 
-  // 🔹 Обработчик mousedown на viewer
-  const handleViewerMouseDown = (e) => {
-    if (e.button === 0) {
-      isDraggingRef.current = true;
-    }
-  };
-
-  // 🔹 Рендер
   return (
     <div className="modal-overlay" onClick={handleClose}>
-      <div 
-        className={`modal-content ${dragActive ? "drag-over" : ""}`}
+      <div className={`modal-content ${dragActive ? "drag-over" : ""}`}
         onClick={(e) => e.stopPropagation()}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
+        onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
         <h2>Создать новый проект</h2>
         <form onSubmit={handleSubmit} className="modal-form">
           {error && <div className="error-message">{error}</div>}
           
-          <input
-            type="text"
-            placeholder="Название проекта *"
-            value={projectName}
-            onChange={(e) => setProjectName(e.target.value)}
-            className="modal-input"
-            disabled={isLoading}
-            required
-            autoFocus
-          />
+          <input type="text" placeholder="Название проекта *" value={projectName}
+            onChange={(e) => setProjectName(e.target.value)} className="modal-input"
+            disabled={isLoading} required autoFocus />
           
-          <textarea
-            placeholder="Описание проекта (необязательно)"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="modal-textarea"
-            rows="3"
-            disabled={isLoading}
-          />
+          <textarea placeholder="Описание проекта" value={description}
+            onChange={(e) => setDescription(e.target.value)} className="modal-textarea"
+            rows="3" disabled={isLoading} />
 
-          {/* Загрузка панорамы */}
           {!viewerStep && (
             <div className="file-upload-section">
               <label className="file-upload-label">
                 {panoramaFile ? panoramaFile.name : "Выберите панораму (JPG/PNG)"}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".jpg,.jpeg,.png,image/*"
-                  onChange={handleFileChange}
-                  hidden
-                />
+                <input ref={fileInputRef} type="file" accept=".jpg,.jpeg,.png,image/*"
+                  onChange={handleFileChange} hidden />
               </label>
             </div>
           )}
 
-          {/* Viewer + выбор обложки */}
           {viewerStep && panoramaPreview && (
             <div className="viewer-section">
-              <div className="viewer-header">
-                <h4>Настройте ракурс для обложки</h4>
+              <div className="viewer-header"><h4>Настройте ракурс для обложки</h4></div>
+              <div className="viewer-wrapper" onMouseDown={handleViewerMouseDown}>
+                <SphereViewer key={panoramaPreview} ref={sphereViewerRef} src={panoramaPreview}
+                  style={viewerStyle} navbar={['zoom', 'fullscreen']} autoRotate={false}
+                  mousemove={true} onViewerReady={handleViewerReady} onError={handleViewerError} />
+                <div className="aspect-hint"><span>16:9</span></div>
               </div>
-              
-              <div 
-                className="viewer-wrapper"
-                onMouseDown={handleViewerMouseDown}
-              >
-                <SphereViewer
-                  key={panoramaPreview}
-                  ref={sphereViewerRef}
-                  src={panoramaPreview}
-                  style={viewerStyle}
-                  navbar={['zoom', 'fullscreen']}
-                  autoRotate={false}
-                  mousemove={true}
-                  onViewerReady={handleViewerReady}
-                  onError={handleViewerError}
-                />
-                <div className="aspect-hint">
-                  <span>16:9</span>
-                </div>
-              </div>
-              
               <div className="viewer-controls">
-                {/*Выбрать обложку */}
                 {!coverFile ? (
-                  <button
-                    type="button"
-                    className="btn-capture"
-                    onClick={captureCoverImage}
-                    disabled={isLoading}
-                  >
+                  <button type="button" className="btn-capture" onClick={captureCoverImage} disabled={isLoading}>
                     Сохранить выбор
                   </button>
                 ) : (
                   <div className="cover-preview">
                     <span>Обложка выбрана</span>
-                    <button
-                      type="button"
-                      className="btn-remove-cover"
-                      onClick={() => {
-                        setCoverFile(null);
-                        setCoverPreview(null);
-                      }}
-                      disabled={isLoading}
-                      title="Выбрать другой ракурс"
-                    >
+                    <button type="button" className="btn-remove-cover"
+                      onClick={() => { setCoverFile(null); setCoverPreview(null); }} disabled={isLoading}>
                       Удалить
                     </button>
                   </div>
@@ -443,22 +331,9 @@ const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
             </div>
           )}
 
-          {/* Кнопки действий */}
           <div className="modal-actions">
-            <button 
-              type="button" 
-              onClick={handleClose} 
-              className="modal-cancel"
-              disabled={isLoading}
-            >
-              Отмена
-            </button>
-            
-            <button
-              type="submit"
-              className="modal-create"
-              disabled={isLoading || !projectName || !coverFile}
-            >
+            <button type="button" onClick={handleClose} className="modal-cancel" disabled={isLoading}>Отмена</button>
+            <button type="submit" className="modal-create" disabled={isLoading || !projectName || !coverFile}>
               {isLoading ? "Создание..." : "Создать проект"}
             </button>
           </div>

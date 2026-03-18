@@ -9,6 +9,7 @@ import ViewIcon from '../show.svg';
 import ShareIcon from '../share.svg';
 import EditIcon from '../edit.svg';
 import DeleteIcon from '../delete.svg';
+import { CONFIG } from '../config';
 const MainPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -26,7 +27,11 @@ const MainPage = () => {
     projectName: '',
     isLoading: false
   });
-
+  const getMediaUrl = (relativePath) => {
+    if (!relativePath) return null;
+    if (relativePath.startsWith('http')) return relativePath;
+    return `${CONFIG.MEDIA_BASE_URL}/${relativePath}`;
+  };
   const isActive = (path) => location.pathname === path;
 
   // Получаем имя пользователя из ФИО
@@ -212,7 +217,7 @@ const MainPage = () => {
                   <div className="project-thumbnail">
                     {project.cover_image_url ? (
                       <img
-                        src={project.cover_image_url}
+                        src={getMediaUrl(project.cover_image_url)}
                         alt={project.title}
                         className="thumbnail-img"
                       />

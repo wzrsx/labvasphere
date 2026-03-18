@@ -41,13 +41,17 @@ func main() {
 	// Репозитории
 	userRepo := postgres.NewUserRepository(db)
 	projectRepo := postgres.NewProjectRepository(db)
+	hotspotRepo := postgres.NewHotspotRepository(db)
+	panoramaRepo := postgres.NewPanoramaRepository(db)
 
 	// Хендлеры
-	panoramaHandler := handlers.NewPanoramaUploadHandler("uploads")
-	coverHandler := handlers.NewCoverUploadHandler("uploads")
-	projectHandler := handlers.NewProjectHandler(projectRepo)
+	panoramaUploadHandler := handlers.NewPanoramaUploadHandler("./uploads")
+	coverHandler := handlers.NewCoverUploadHandler("./uploads")
+	projectHandler := handlers.NewProjectHandler(projectRepo, panoramaRepo, "./uploads")
+	panoramaHandler := handlers.NewPanoramaHandler(panoramaRepo)
 	authHandler := handlers.NewAuthHandler(userRepo)
 	userHandler := handlers.NewUserHandler(userRepo)
+	hotspotHandler := handlers.NewHotspotHandler(hotspotRepo)
 
 	// Настраиваем роутер
 	r := chi.NewRouter()
@@ -64,7 +68,8 @@ func main() {
 	})
 	r.Use(corsMiddleware.Handler)
 
-	r.Handle("/uploads/*", http.StripPrefix("/uploads", http.FileServer(http.Dir("./uploads"))))
+	r.Handle("/uploads/projects/*", http.StripPrefix("/uploads/projects/",
+		http.FileServer(http.Dir("./uploads/projects"))))
 	// Роуты
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -80,7 +85,7 @@ func main() {
 		// Загрузка файлов (требует аутентификации)
 		r.Route("/upload", func(r chi.Router) {
 			r.Use(middleware.AuthMiddleware)
-			r.Post("/panorama", panoramaHandler.UploadFile)
+			r.Post("/panorama", panoramaUploadHandler.UploadFile)
 			r.Post("/cover", coverHandler.UploadFile)
 		})
 		// Роуты проектов (требуют токен)
@@ -93,6 +98,15 @@ func main() {
 			r.Use(middleware.AuthMiddleware)
 			r.Get("/", userHandler.GetProfile)
 			r.Put("/", userHandler.UpdateProfile)
+		})
+		// Роуты хотспотов
+		r.Route("/hotspots", func(r chi.Router) {
+			r.Use(middleware.AuthMiddleware)
+			hotspotHandler.RegisterRoutes(r)
+		})
+		r.Route("/panoramas", func(r chi.Router) {
+			r.Use(middleware.AuthMiddleware)
+			panoramaHandler.RegisterRoutes(r)
 		})
 	})
 

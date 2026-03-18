@@ -663,3 +663,7 @@
   position: relative;
   transition: opacity 0.3s ease;
 }
+.psv-marker {
+  pointer-events: auto !important;  /* ← обязательно! */
+  z-index: 1000 !important;
+}

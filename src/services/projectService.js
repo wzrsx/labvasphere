@@ -1,6 +1,6 @@
 import api from './api.js';
 
-//Получение опубликованных проектов (публично, для лендинга)
+// Получение опубликованных проектов
 export const getPublishedProjects = async (limit = 5, offset = 0) => {
   try {
     const response = await api.get(`/projects/published?limit=${limit}&offset=${offset}`);
@@ -11,15 +11,11 @@ export const getPublishedProjects = async (limit = 5, offset = 0) => {
     };
   } catch (error) {
     const message = error.response?.data?.error || 'Ошибка при загрузке проектов';
-    return {
-      success: false,
-      error: message,
-    };
+    return { success: false, error: message };
   }
 };
 
-// Получение всех проектов ТЕКУЩЕГО авторизованного пользователя
-// (ID автора берётся автоматически из JWT-токена на бэкенде)
+// Получение проектов текущего пользователя
 export const getProjects = async () => {
   try {
     const response = await api.get('/projects');
@@ -28,116 +24,231 @@ export const getProjects = async () => {
       projects: Array.isArray(response.data) ? response.data : [],
     };
   } catch (error) {
-    const message =
-      error.response?.data?.error || 'Ошибка при загрузке проектов';
-    return {
-      success: false,
-      error: message,
-    };
+    const message = error.response?.data?.error || 'Ошибка при загрузке проектов';
+    return { success: false, error: message };
   }
 };
 
-// Создание проекта (автор — текущий пользователь из токена)
+// 🔹 Создание проекта (без panorama_url — панорама регистрируется отдельно)
 export const createProject = async (projectData) => {
   try {
-    const response = await api.post('/projects', projectData);
-    return {
-      success: true,
-      project: response.data,
-    };
+    // projectData может содержать:
+    // - panorama_filename, panorama_original_name (для регистрации основной панорамы)
+    const response = await api.post('/projects', {
+      title: projectData.title,
+      description: projectData.description,
+      cover_image_url: projectData.cover_image_url,
+      // panorama_url удалён
+      panorama_filename: projectData.panorama_filename,      // ← новое
+      panorama_original_name: projectData.panorama_original_name, // ← новое
+      status: projectData.status,
+    });
+    
+    return { success: true, project: response.data };
   } catch (error) {
-    const message =
-      error.response?.data?.error || 'Ошибка при создании проекта';
-    return {
-      success: false,
-      error: message,
-    };
+    const message = error.response?.data?.error || 'Ошибка при создании проекта';
+    return { success: false, error: message };
   }
 };
 
-// Обновление проекта (только своего)
+// Обновление проекта (без panorama_url)
 export const updateProject = async (projectId, projectData) => {
   try {
-    const response = await api.put(`/projects/${projectId}`, projectData);
-    return {
-      success: true,
-      project: response.data,
-    };
+    const response = await api.put(`/projects/${projectId}`, {
+      title: projectData.title,
+      description: projectData.description,
+      cover_image_url: projectData.cover_image_url,
+      // panorama_url удалён
+      status: projectData.status,
+    });
+    return { success: true, project: response.data };
   } catch (error) {
-    const message =
-      error.response?.data?.error || 'Ошибка при обновлении проекта';
-    return {
-      success: false,
-      error: message,
-    };
+    const message = error.response?.data?.error || 'Ошибка при обновлении проекта';
+    return { success: false, error: message };
   }
 };
 
-// Удаление проекта (только своего)
+// Удаление проекта
 export const deleteProject = async (projectId) => {
   try {
     await api.delete(`/projects/${projectId}`);
-    return {
-      success: true,
-    };
+    return { success: true };
   } catch (error) {
-    const message =
-      error.response?.data?.error || 'Ошибка при удалении проекта';
-    return {
-      success: false,
-      error: message,
-    };
+    const message = error.response?.data?.error || 'Ошибка при удалении проекта';
+    return { success: false, error: message };
   }
 };
 
-//Загрузка панорамы
-export const uploadPanorama = async (file) => {
+// Загрузка панорамы (файл → сервер)
+export const uploadPanorama = async (file, projectId) => {
+  if (!projectId) return { success: false, error: 'project_id обязателен' };
+
   const formData = new FormData();
   formData.append('file', file);
+  formData.append('project_id', projectId);
   
   try {
     const response = await api.post('/upload/panorama', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+      headers: { 'Content-Type': 'multipart/form-data' },
     });
-    
     return {
       success: true,
-      fileUrl: response.data.file_url,  // "panoramas/uuid_123.jpg"
+      fileUrl: response.data.file_url,  // "projects/uuid/panoramas/file.jpg"
       filename: response.data.filename,
     };
   } catch (error) {
     const message = error.response?.data?.error || 'Ошибка при загрузке панорамы';
-    return {
-      success: false,
-      error: message,
-    };
+    return { success: false, error: message };
   }
 };
 
 // Загрузка обложки
-export const uploadCover = async (file) => {
+export const uploadCover = async (file, projectId) => {
+  if (!projectId) return { success: false, error: 'project_id обязателен' };
+
   const formData = new FormData();
   formData.append('file', file);
+  formData.append('project_id', projectId);
   
   try {
     const response = await api.post('/upload/cover', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+      headers: { 'Content-Type': 'multipart/form-data' },
     });
-    
     return {
       success: true,
-      fileUrl: response.data.file_url,  // "covers/uuid_456.jpg"
+      fileUrl: response.data.file_url,
       filename: response.data.filename,
     };
   } catch (error) {
     const message = error.response?.data?.error || 'Ошибка при загрузке обложки';
+    return { success: false, error: message };
+  }
+};
+
+// 🔹 Регистрация панорамы в БД (после загрузки файла)
+export const registerPanorama = async (panoramaData) => {
+  try {
+    const response = await api.post('/panoramas/register', {
+      project_id: panoramaData.project_id,
+      filename: panoramaData.filename,
+      original_filename: panoramaData.original_filename,
+      title: panoramaData.title,
+      description: panoramaData.description,
+      is_main: panoramaData.is_main,  // ← true для основной панорамы
+    });
+    return { success: true, panorama: response.data };
+  } catch (error) {
+    const message = error.response?.data?.error || 'Ошибка регистрации панорамы';
+    return { success: false, error: message };
+  }
+};
+
+// 🔹 Получить все панорамы проекта
+export const getPanoramasByProject = async (projectId) => {
+  try {
+    const response = await api.get(`/panoramas/project/${projectId}`);
     return {
-      success: false,
-      error: message,
+      success: true,
+      panoramas: Array.isArray(response.data) ? response.data : [],
     };
+  } catch (error) {
+    const message = error.response?.data?.error || 'Ошибка загрузки панорам';
+    return { success: false, error: message, panoramas: [] };
+  }
+};
+
+// Хотспоты
+export const getHotspots = async (panoramaId) => {
+  try {
+    const response = await api.get(`/hotspots/panorama/${panoramaId}`);
+    return {
+      success: true,
+      hotspots: Array.isArray(response.data) ? response.data : [],
+    };
+  } catch (error) {
+    const message = error.response?.data?.error || 'Ошибка загрузки хотспотов';
+    return { success: false, error: message, hotspots: [] };
+  }
+};
+
+export const createHotspot = async (hotspotData) => {
+  try {
+    const response = await api.post('/hotspots', hotspotData);
+    return { success: true, hotspot: response.data };
+  } catch (error) {
+    console.error('createHotspot error:', error.response?.data || error.message);
+    const message = error.response?.data?.error || 'Ошибка создания хотспота';
+    return { success: false, error: message };
+  }
+};
+
+export const updateHotspotApi = async (hotspotId, hotspotData) => {
+  try {
+    const response = await api.put(`/hotspots/${hotspotId}`, hotspotData);
+    return { success: true, hotspot: response.data };
+  } catch (error) {
+    const message = error.response?.data?.error || 'Ошибка обновления хотспота';
+    return { success: false, error: message };
+  }
+};
+
+export const deleteHotspotApi = async (hotspotId) => {
+  try {
+    await api.delete(`/hotspots/${hotspotId}`);
+    return { success: true };
+  } catch (error) {
+    const message = error.response?.data?.error || 'Ошибка удаления хотспота';
+    return { success: false, error: message };
+  }
+};
+
+export const saveHotspotsBatch = async (panoramaId, hotspots) => {
+  try {
+    const results = await Promise.all(
+      hotspots.map(async (h) => {
+        if (h.id && h.id.startsWith('hotspot_')) {
+          const payload = {
+            panorama_id: panoramaId,
+            position_yaw: h.position?.yaw || 0,
+            position_pitch: h.position?.pitch || 0,
+            target_type: h.type === 'transition' ? 'panorama' : 'info',
+            target_panorama_id: h.targetProjectId && !h.targetProjectId.startsWith('file_') 
+              ? h.targetProjectId : null,
+            title: h.title || null,
+            tooltip: h.tooltip || null,
+            icon: h.icon || 'default',
+            color: h.color || '#3498db',
+          };
+          return await createHotspot(payload);
+        } else {
+          const payload = {
+            position_yaw: h.position?.yaw || 0,
+            position_pitch: h.position?.pitch || 0,
+            target_type: h.type === 'transition' ? 'panorama' : 'info',
+            target_panorama_id: h.targetProjectId && !h.targetProjectId.startsWith('file_')
+              ? h.targetProjectId : null,
+            title: h.title || null,
+            tooltip: h.tooltip || null,
+            icon: h.icon || 'default',
+            color: h.color || '#3498db',
+          };
+          return await updateHotspotApi(h.id, payload);
+        }
+      })
+    );
+    const hasError = results.some(r => !r.success);
+    if (hasError) throw new Error('Не все хотспоты сохранены');
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
+export const getMainPanorama = async (projectId) => {
+  try {
+    const response = await api.get(`/panoramas/project/${projectId}/main`);
+    return { success: true, panorama: response.data };
+  } catch (error) {
+    const message = error.response?.data?.error || 'Ошибка получения основной панорамы';
+    return { success: false, error: message };
   }
 };
