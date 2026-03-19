@@ -21,12 +21,15 @@ func (r *PanoramaRepository) Create(ctx context.Context, p *models.Panorama) err
 	query := `
 		INSERT INTO panoramas (
 			id, project_id, filename, original_filename,
-			title, description, is_main, is_active, sort_order, created_at, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+			title, description, is_main, is_active, sort_order,
+			file_size, mime_type, thumbnail_url, 
+			created_at, updated_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
 	`
 	_, err := r.pool.Exec(ctx, query,
 		p.ID, p.ProjectID, p.Filename, p.OriginalFilename,
 		p.Title, p.Description, p.IsMain, p.IsActive, p.SortOrder,
+		p.FileSize, p.MimeType, p.ThumbnailURL,
 	)
 	return err
 }

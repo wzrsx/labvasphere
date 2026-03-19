@@ -11,6 +11,7 @@ import {
   deleteHotspotApi,
   registerPanorama,
   getMainPanorama,  
+  getPanoramasByProject,
 } from "../services/projectService";
 import SphereViewer from '../components/SphereViewer';
 import "./EditorPage.css";
@@ -35,6 +36,10 @@ const EditorPage = () => {
   const [transitionProgress, setTransitionProgress] = useState(0);
   const [transitionError, setTransitionError] = useState(null);
   const [currentPanoramaId, setCurrentPanoramaId] = useState(null);
+  // Список всех панорам проекта (медиа-галерея)
+  const [projectPanoramas, setProjectPanoramas] = useState([]);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [selectedPanoramaForTransition, setSelectedPanoramaForTransition] = useState(null);
 
   const fileInputRef = useRef(null);
   const sphereViewerRef = useRef(null);
@@ -148,7 +153,12 @@ const loadProject = async () => {
         setEditorData(prev => ({ ...prev, hotspots: editorHotspots }));
       }
     }
-    
+    const panoramasResponse = await getPanoramasByProject(foundProject.id);
+    if (panoramasResponse.success) {
+      setProjectPanoramas(panoramasResponse.panoramas);
+      console.log('[Editor] 📸 Loaded', panoramasResponse.panoramas.length, 'panoramas');
+    }
+
     // 3. Обновляем метаданные
     setEditorData(prev => ({
       ...prev,
@@ -286,6 +296,9 @@ const loadProject = async () => {
       title: `Панорама: ${file.name}`,
       description: '',
       is_main: false,  // это доп. панорама для перехода
+      file_size: file.size,                    // размер в байтах
+      mime_type: file.type || 'image/jpeg',    // MIME-тип (например, "image/jpeg")
+      thumbnail_url: '',  // пока без миниатюры (можно добавить позже)
     });
     
     if (!registerResult.success) {
@@ -336,6 +349,11 @@ const loadProject = async () => {
       setSelectedHotspot(updatedHotspot);
       updateHotspotLocal(selectedHotspot.id, updatedHotspot);
       alert('✅ Точка перехода сохранена!');
+
+      const panoramasResponse = await getPanoramasByProject(projectId);
+      if (panoramasResponse.success) {
+        setProjectPanoramas(panoramasResponse.panoramas);
+      }
     }
     } catch (err) {
       console.error('[Editor] ❌ Error:', err);
@@ -851,109 +869,201 @@ const handlePanoramaTransition = async (targetUrl, targetName, targetPanoramaId 
                 </select>
               </div>
               {selectedHotspot.type === 'transition' && (
-                <div className="form-group" style={{ marginBottom: '12px' }}>
-                  <label style={{ fontSize: '12px', color: '#475569', display: 'block', marginBottom: '4px' }}>
-                    🔄 Целевая панорама
-                  </label>
-                  
-                  {/* 🔹 Скрытый input для файла */}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileSelect}
-                    disabled={uploadingFile}
-                    style={{ display: 'none' }}
-                  />
-                  
-                  {/* 🔹 Кнопка загрузки */}
-                  <button
-                    onClick={() => !uploadingFile && fileInputRef.current?.click()}
-                    disabled={uploadingFile}
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      background: uploadingFile ? '#94a3b8' : '#3b82f6',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      fontSize: '13px',
-                      cursor: uploadingFile ? 'not-allowed' : 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      marginBottom: '8px'
-                    }}
-                  >
-                    {uploadingFile ? (
-                      <>
-                        <div style={{
-                          width: '16px',
-                          height: '16px',
-                          border: '2px solid white',
-                          borderTopColor: 'transparent',
-                          borderRadius: '50%',
-                          animation: 'spin 0.8s linear infinite'
-                        }} />
-                        Загрузка...
-                      </>
-                    ) : (
-                      <>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                          <polyline points="17 8 12 3 7 8"/>
-                          <line x1="12" y1="3" x2="12" y2="15"/>
-                        </svg>
-                        Загрузить файл панорамы
-                      </>
-                    )}
-                  </button>
-                  
-                  {/* 🔹 Индикатор загруженного файла */}
-                  {selectedHotspot.targetFileUrl && (
-                    <div style={{ 
-                      padding: '8px', 
-                      background: '#f0fdf4', 
-                      border: '1px solid #86efac',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      color: '#166534',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between'
-                    }}>
-                      <span>✓ {selectedHotspot.targetProjectName}</span>
-                      <button
-                        onClick={() => {
-                          setSelectedHotspot(prev => ({
-                            ...prev,
-                            targetProjectId: null,
-                            targetProjectName: null,
-                            targetFileUrl: null
-                          }));
-                          updateHotspotLocal(selectedHotspot.id, {
-                            targetProjectId: null,
-                            targetProjectName: null,
-                            targetFileUrl: null
-                          });
-                        }}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: '#dc2626',
-                          cursor: 'pointer',
-                          fontSize: '16px',
-                          padding: '0 4px'
-                        }}
-                        title="Удалить выбор"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}              
+  <div className="form-group" style={{ marginBottom: '12px' }}>
+    <label style={{ fontSize: '12px', color: '#475569', display: 'block', marginBottom: '4px' }}>
+      🔄 Целевая панорама
+    </label>
+    
+    {/* 🔹 Кнопка загрузки нового файла */}
+    <input
+      ref={fileInputRef}
+      type="file"
+      accept="image/*"
+      onChange={handleFileSelect}
+      disabled={uploadingFile}
+      style={{ display: 'none' }}
+    />
+    
+    <button
+      onClick={() => !uploadingFile && fileInputRef.current?.click()}
+      disabled={uploadingFile}
+      style={{
+        width: '100%',
+        padding: '10px 12px',
+        background: uploadingFile ? '#94a3b8' : '#3b82f6',
+        color: 'white',
+        border: 'none',
+        borderRadius: '6px',
+        fontSize: '13px',
+        cursor: uploadingFile ? 'not-allowed' : 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '8px',
+        marginBottom: '8px'
+      }}
+    >
+      {uploadingFile ? (
+        <>
+          <div style={{
+            width: '16px', height: '16px',
+            border: '2px solid white',
+            borderTopColor: 'transparent',
+            borderRadius: '50%',
+            animation: 'spin 0.8s linear infinite'
+          }} />
+          Загрузка...
+        </>
+      ) : (
+        <>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          Загрузить новую панораму
+        </>
+      )}
+    </button>
+    
+    {/* 🔹 Индикатор выбранной панорамы */}
+    {selectedHotspot.targetFileUrl && (
+      <div style={{ 
+        padding: '8px', 
+        background: '#f0fdf4', 
+        border: '1px solid #86efac',
+        borderRadius: '6px',
+        fontSize: '12px',
+        color: '#166534',
+        marginBottom: '8px'
+      }}>
+        <span>✓ {selectedHotspot.targetProjectName}</span>
+      </div>
+    )}
+    
+    {/* 🔹 Разделитель */}
+    <div style={{ 
+      margin: '12px 0', 
+      borderTop: '1px solid #e2e8f0',
+      position: 'relative'
+    }}>
+      <span style={{
+        position: 'absolute',
+        top: '-10px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        background: 'white',
+        padding: '0 8px',
+        fontSize: '11px',
+        color: '#64748b'
+      }}>
+        или выбрать из загруженных
+      </span>
+    </div>
+    
+      {/* 🔹 Список панорам проекта */}
+        <div style={{ 
+          maxHeight: '200px', 
+          overflowY: 'auto',
+          border: '1px solid #e2e8f0',
+          borderRadius: '6px'
+        }}>
+          {projectPanoramas.length === 0 ? (
+            <div style={{ padding: '12px', fontSize: '12px', color: '#64748b', textAlign: 'center' }}>
+              Нет загруженных панорам
+            </div>
+          ) : (
+            projectPanoramas.map(panorama => (
+              <button
+                key={panorama.id}
+                onClick={() => {
+                  const updatedHotspot = {
+                    ...selectedHotspot,
+                    targetProjectId: panorama.id,
+                    targetProjectName: panorama.original_filename || panorama.filename,
+                    targetFileUrl: getMediaUrl(`projects/${project.id}/panoramas/${panorama.filename}`),
+                    type: 'transition',
+                  };
+                  setSelectedHotspot(updatedHotspot);
+                  updateHotspotLocal(selectedHotspot.id, updatedHotspot);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  background: selectedHotspot.targetProjectId === panorama.id ? '#eff6ff' : 'white',
+                  border: 'none',
+                  borderBottom: '1px solid #e2e8f0',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'background 0.2s'
+                }}
+                onMouseEnter={(e) => e.target.style.background = '#f8fafc'}
+                onMouseLeave={(e) => e.target.style.background = selectedHotspot.targetProjectId === panorama.id ? '#eff6ff' : 'white'}
+              >
+                {/* 🔹 Иконка статуса */}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill={panorama.is_main ? '#fbbf24' : '#94a3b8'}>
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+                
+                {/* 🔹 Имя файла (оригинальное!) */}
+                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {panorama.original_filename || panorama.filename}
+                </span>
+                
+                {/* 🔹 Бейдж "Основная" */}
+                {panorama.is_main && (
+                  <span style={{
+                    fontSize: '9px',
+                    padding: '2px 6px',
+                    background: '#fef3c7',
+                    color: '#92400e',
+                    borderRadius: '4px'
+                  }}>
+                    Основная
+                  </span>
+                )}
+              </button>
+            ))
+          )}
+        </div>
+        
+        {/* 🔹 Кнопка очистки выбора */}
+        {selectedHotspot.targetFileUrl && (
+          <button
+            onClick={() => {
+              setSelectedHotspot(prev => ({
+                ...prev,
+                targetProjectId: null,
+                targetProjectName: null,
+                targetFileUrl: null
+              }));
+              updateHotspotLocal(selectedHotspot.id, {
+                targetProjectId: null,
+                targetProjectName: null,
+                targetFileUrl: null
+              });
+            }}
+            style={{
+              width: '100%',
+              marginTop: '8px',
+              padding: '6px 12px',
+              background: '#fef2f2',
+              color: '#dc2626',
+              border: '1px solid #fecaca',
+              borderRadius: '6px',
+              fontSize: '12px',
+              cursor: 'pointer'
+            }}
+          >
+            ✕ Очистить выбор
+          </button>
+        )}
+      </div>
+    )}            
               {selectedHotspot.type === 'link' && (
                 <div className="form-group" style={{ marginBottom: '12px' }}>
                   <label style={{ fontSize: '12px', color: '#475569', display: 'block', marginBottom: '4px' }}>URL ссылки</label>
@@ -976,6 +1086,7 @@ const handlePanoramaTransition = async (targetUrl, targetName, targetPanoramaId 
                   />
                 </div>
               )}
+              
               
               <div className="form-group" style={{ marginBottom: '16px' }}>
                 <label style={{ fontSize: '11px', color: '#64748b', display: 'block', marginBottom: '4px' }}>Координаты</label>
@@ -1026,6 +1137,145 @@ const handlePanoramaTransition = async (targetUrl, targetName, targetPanoramaId 
               💡 Кликните по панораме, чтобы добавить новую точку перехода
             </div>
           )}
+          {/* 🔹 Панель Медиа-галереи */}
+{activeTool === 'media' && (
+  <div className="media-panel" style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+      <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>📸 Медиа-галерея</h4>
+      
+      {/* 🔹 Кнопка загрузки */}
+      <input
+        type="file"
+        accept="image/jpeg, image/jpg, image/png"
+        multiple
+        onChange={async (e) => {
+          const files = Array.from(e.target.files || []);
+          if (files.length === 0) return;
+          
+          setUploadingMedia(true);
+          let successCount = 0;
+          
+          try {
+            for (const file of files) {
+              // 1. Загрузка файла
+              const formData = new FormData();
+              formData.append('file', file);
+              formData.append('project_id', project.id);
+              
+              // Используем fetch напрямую или ваш wrapper, если он поддерживает FormData
+              const uploadRes = await uploadPanorama(file, project.id);
+              if (!uploadRes.success) throw new Error(uploadRes.error);
+            
+              console.log("upload:", file);
+              const regRes = await registerPanorama({
+                project_id: project.id,
+                filename: uploadRes.filename,
+                original_filename: file.name,
+                title: file.name.split('.')[0], // Имя без расширения
+                is_main: false,
+                file_size: file.size,
+                mime_type: file.type,
+                // thumbnail_url придет с бэкенда, если мы доработаем ответ uploadPanorama, 
+                // либо можно сгенерировать его здесь, зная логику именования (thumb_<filename>)
+                thumbnail_url: `projects/${project.id}/panoramas/thumb_${uploadRes.filename}` 
+              });
+              if (regRes.success) successCount++;
+            }
+            
+            await getPanoramasByProject(project.id);
+            alert(`✅ Успешно загружено: ${successCount}`);
+          } catch (err) {
+            alert(`❌ Ошибка: ${err.message}`);
+          } finally {
+            setUploadingMedia(false);
+            e.target.value = ''; // Сброс инпута
+          }
+        }}
+        disabled={uploadingMedia}
+        style={{ display: 'none' }}
+        id="media-upload-input"
+      />
+      
+      <button
+        onClick={() => document.getElementById('media-upload-input').click()}
+        disabled={uploadingMedia}
+        style={{
+          padding: '6px 12px',
+          background: uploadingMedia ? '#94a3b8' : '#3b82f6',
+          color: 'white',
+          border: 'none',
+          borderRadius: '6px',
+          fontSize: '12px',
+          cursor: uploadingMedia ? 'not-allowed' : 'pointer'
+        }}
+      >
+        {uploadingMedia ? 'Загрузка...' : '+ Добавить'}
+      </button>
+    </div>
+    
+    {/* 🔹 Список панорам */}
+    <div style={{ maxHeight: '400px', overflowY: 'auto', display: 'grid', gap: '8px' }}>
+      {projectPanoramas.length === 0 ? (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="#cbd5e1" style={{ marginBottom: '8px' }}>
+            <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+          </svg>
+          <p>Нет загруженных панорам</p>
+          <p style={{ fontSize: '11px', marginTop: '4px' }}>Загрузите файлы через кнопку «Добавить»</p>
+        </div>
+      ) : (
+        projectPanoramas.map(panorama => (
+          <div
+            key={panorama.id}
+            style={{
+              padding: '10px',
+              background: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}
+          >
+            <div style={{ width: '50px', height: '50px', background: '#e2e8f0', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
+              📷
+            </div>
+            <div style={{ flex: 1, overflow: 'hidden' }}>
+              <div style={{ fontSize: '12px', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {panorama.original_filename || panorama.filename}
+              </div>
+              <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>
+                {panorama.is_main ? '🏠 Основная' : '📁 Дополнительная'}
+              </div>
+            </div>
+            <button
+              onClick={async () => {
+                const targetUrl = getMediaUrl(`projects/${project.id}/panoramas/${panorama.filename}`);
+                await handlePanoramaTransition(targetUrl, panorama.original_filename || panorama.filename, panorama.id);
+              }}
+              style={{
+                padding: '6px 10px',
+                background: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                fontSize: '11px',
+                cursor: 'pointer'
+              }}
+            >
+              Перейти
+            </button>
+          </div>
+        ))
+      )}
+    </div>
+    
+    {/* 🔹 Статистика */}
+    <div style={{ marginTop: '12px', padding: '8px', background: '#f1f5f9', borderRadius: '6px', fontSize: '11px', color: '#64748b' }}>
+      <strong>Всего панорам:</strong> {projectPanoramas.length}
+    </div>
+  </div>
+)}
         </div>
 
         <div className="actions-section">

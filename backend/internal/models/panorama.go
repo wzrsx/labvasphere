@@ -17,7 +17,7 @@ type Panorama struct {
 	FileSize         int64     `json:"file_size,omitempty" db:"file_size"`
 	MimeType         string    `json:"mime_type,omitempty" db:"mime_type"`
 	ThumbnailURL     string    `json:"thumbnail_url,omitempty" db:"thumbnail_url"`
-	IsMain           bool      `json:"is_main" db:"is_main"`  
+	IsMain           bool      `json:"is_main" db:"is_main"`
 	IsActive         bool      `json:"is_active" db:"is_active"`
 	SortOrder        int       `json:"sort_order" db:"sort_order"`
 	CreatedAt        time.Time `json:"created_at" db:"created_at"`
@@ -31,14 +31,17 @@ type PanoramaCreateRequest struct {
 	OriginalFilename string    `json:"original_filename"`
 	Title            string    `json:"title,omitempty"`
 	Description      string    `json:"description,omitempty"`
-	IsMain           bool      `json:"is_main,omitempty"`  
+	IsMain           bool      `json:"is_main,omitempty"`
+	FileSize         int64     `json:"file_size,omitempty"`
+	MimeType         string    `json:"mime_type,omitempty"`
+	ThumbnailURL     string    `json:"thumbnail_url,omitempty"`
 }
 
 // PanoramaUpdateRequest — запрос на обновление панорамы
 type PanoramaUpdateRequest struct {
 	Title       *string `json:"title,omitempty"`
 	Description *string `json:"description,omitempty"`
-	IsMain      *bool   `json:"is_main,omitempty"` 
+	IsMain      *bool   `json:"is_main,omitempty"`
 	SortOrder   *int    `json:"sort_order,omitempty"`
 	IsActive    *bool   `json:"is_active,omitempty"`
 }
@@ -54,7 +57,7 @@ type PanoramaResponse struct {
 	FileSize         int64     `json:"file_size,omitempty"`
 	MimeType         string    `json:"mime_type,omitempty"`
 	ThumbnailURL     string    `json:"thumbnail_url,omitempty"`
-	IsMain           bool      `json:"is_main"`  
+	IsMain           bool      `json:"is_main"`
 	IsActive         bool      `json:"is_active"`
 	SortOrder        int       `json:"sort_order"`
 	CreatedAt        string    `json:"created_at"`
@@ -73,7 +76,7 @@ func (p *Panorama) ToResponse() *PanoramaResponse {
 		FileSize:         p.FileSize,
 		MimeType:         p.MimeType,
 		ThumbnailURL:     p.ThumbnailURL,
-		IsMain:           p.IsMain,  
+		IsMain:           p.IsMain,
 		IsActive:         p.IsActive,
 		SortOrder:        p.SortOrder,
 		CreatedAt:        p.CreatedAt.Format(time.RFC3339),

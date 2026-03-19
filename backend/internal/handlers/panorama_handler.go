@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -40,14 +41,7 @@ func (h *PanoramaHandler) RegisterRoutes(r chi.Router) {
 
 // Register регистрирует панораму в БД после загрузки файла
 func (h *PanoramaHandler) Register(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		ProjectID        uuid.UUID `json:"project_id"`
-		Filename         string    `json:"filename"`
-		OriginalFilename string    `json:"original_filename"`
-		Title            string    `json:"title,omitempty"`
-		Description      string    `json:"description,omitempty"`
-		IsMain           bool      `json:"is_main,omitempty"`
-	}
+	var req models.PanoramaCreateRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "Неверный формат запроса")
@@ -75,6 +69,9 @@ func (h *PanoramaHandler) Register(w http.ResponseWriter, r *http.Request) {
 		SortOrder:        0,
 		CreatedAt:        time.Now(),
 		UpdatedAt:        time.Now(),
+		FileSize:         req.FileSize,
+		MimeType:         req.MimeType,
+		ThumbnailURL:     req.ThumbnailURL,
 	}
 
 	if err := h.repo.Create(r.Context(), panorama); err != nil {
@@ -111,7 +108,8 @@ func (h *PanoramaHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PanoramaHandler) GetByProject(w http.ResponseWriter, r *http.Request) {
-	projectID, err := uuid.Parse(chi.URLParam(r, "project_id"))
+	projectIDStr := chi.URLParam(r, "project_id")
+	projectID, err := uuid.Parse(projectIDStr)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "Неверный ID проекта")
 		return
@@ -119,11 +117,15 @@ func (h *PanoramaHandler) GetByProject(w http.ResponseWriter, r *http.Request) {
 
 	panoramas, err := h.repo.GetByProject(r.Context(), projectID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "Ошибка получения панорам")
+		// 🔹 ВАЖНО: Пишем полную ошибку в консоль сервера
+		// Смотрите в терминал, где запущен go run ...
+		fmt.Printf("❌ DB ERROR GetByProject: %v\n", err)
+
+		// И возвращаем детальную ошибку клиенту (для отладки)
+		writeError(w, http.StatusInternalServerError, "Ошибка БД: "+err.Error())
 		return
 	}
 
-	// Конвертируем в responses
 	responses := make([]*models.PanoramaResponse, len(panoramas))
 	for i, p := range panoramas {
 		responses[i] = p.ToResponse()

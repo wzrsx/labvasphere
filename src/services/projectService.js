@@ -134,7 +134,10 @@ export const registerPanorama = async (panoramaData) => {
       original_filename: panoramaData.original_filename,
       title: panoramaData.title,
       description: panoramaData.description,
-      is_main: panoramaData.is_main,  // ← true для основной панорамы
+      is_main: panoramaData.is_main,
+      file_size: panoramaData.file_size,
+      mime_type: panoramaData.mime_type,
+      thumbnail_url: panoramaData.thumbnail_url,
     });
     return { success: true, panorama: response.data };
   } catch (error) {
@@ -249,6 +252,28 @@ export const getMainPanorama = async (projectId) => {
     return { success: true, panorama: response.data };
   } catch (error) {
     const message = error.response?.data?.error || 'Ошибка получения основной панорамы';
+    return { success: false, error: message };
+  }
+};
+// Обновление панорамы (смена заголовка, обложки и т.д.)
+export const updatePanorama = async (panoramaId, updates) => {
+  try {
+    // updates может содержать: { is_main: true, title: "...", is_active: false }
+    const response = await api.put(`/panoramas/${panoramaId}`, updates);
+    return { success: true, panorama: response.data };
+  } catch (error) {
+    const message = error.response?.data?.error || 'Ошибка обновления панорамы';
+    return { success: false, error: message };
+  }
+};
+
+// Удаление панорамы
+export const deletePanorama = async (panoramaId) => {
+  try {
+    await api.delete(`/panoramas/${panoramaId}`);
+    return { success: true };
+  } catch (error) {
+    const message = error.response?.data?.error || 'Ошибка удаления панорамы';
     return { success: false, error: message };
   }
 };
