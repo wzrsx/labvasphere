@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getProfile, updateProfile } from '../services/userService';
+import {
+  getProfile,
+  updateProfile,
+  changePassword,
+} from '../services/userService';
 import Header from '../components/Header';
 import './ProfilePage.css';
 
@@ -18,7 +22,24 @@ const ProfilePage = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [passwordError, setPasswordError] = useState(null);
+  const [passwordSuccess, setPasswordSuccess] = useState(null);
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+    setPasswordError(null);
+    setPasswordSuccess(null);
+  };
   // Загрузка данных пользователя
   useEffect(() => {
     loadUserProfile();
@@ -60,7 +81,71 @@ const ProfilePage = () => {
     setError(null);
     setSuccess(null);
   };
+  const handleSubmitPassword = async (e) => {
+    e.preventDefault();
 
+    // Валидация
+    if (
+      !passwordData.currentPassword ||
+      !passwordData.newPassword ||
+      !passwordData.confirmPassword
+    ) {
+      setPasswordError('Заполните все поля');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      setPasswordError('Новый пароль должен содержать минимум 6 символов');
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError('Новые пароли не совпадают');
+      return;
+    }
+
+    if (passwordData.currentPassword === passwordData.newPassword) {
+      setPasswordError('Новый пароль должен отличаться от текущего');
+      return;
+    }
+
+    setPasswordSaving(true);
+    setPasswordError(null);
+    setPasswordSuccess(null);
+    console.log("pass ", passwordData);
+    try {
+      const result = await changePassword(passwordData);
+
+      if (result.success) {
+        setPasswordSuccess(result.message);
+        setPasswordData({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: '',
+        });
+        setShowPasswordForm(false);
+        setTimeout(() => setPasswordSuccess(null), 3000);
+      } else {
+        setPasswordError(result.error);
+      }
+    } catch (err) {
+      console.error('Ошибка при смене пароля:', err);
+      setPasswordError('Не удалось изменить пароль. Попробуйте снова.');
+    } finally {
+      setPasswordSaving(false);
+    }
+  };
+
+  const handleCancelPasswordChange = () => {
+    setPasswordData({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: '',
+    });
+    setPasswordError(null);
+    setPasswordSuccess(null);
+    setShowPasswordForm(false);
+  };
   const handleSave = async () => {
     if (!formData.fullName.trim()) {
       setError('ФИО обязательно для заполнения');
@@ -216,7 +301,106 @@ const ProfilePage = () => {
                 Роль назначается при регистрации и не может быть изменена
               </small>
             </div>
+            {/* 🔐 Секция смены пароля */}
+            <div className="form-section">
+              <div className="section-header">
+                {!showPasswordForm ? (
+                  <button
+                    type="button"
+                    className="change-pass-button"
+                    onClick={() => setShowPasswordForm(true)}
+                    disabled={saving}
+                  >
+                    Изменить пароль
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="change-pass-button"
+                    onClick={handleCancelPasswordChange}
+                    disabled={passwordSaving}
+                  >
+                    Отмена
+                  </button>
+                )}
+              </div>
 
+              {showPasswordForm && (
+                <form onSubmit={handleSubmitPassword} className="password-form">
+                  {passwordError && (
+                    <div className="error-message">{passwordError}</div>
+                  )}
+                  {passwordSuccess && (
+                    <div className="success-message">{passwordSuccess}</div>
+                  )}
+
+                  <div className="form-group">
+                    <label htmlFor="currentPassword">Текущий пароль *</label>
+                    <input
+                      id="currentPassword"
+                      name="currentPassword"
+                      type="password"
+                      value={passwordData.currentPassword}
+                      onChange={handlePasswordChange}
+                      className="form-input"
+                      disabled={passwordSaving}
+                      autoComplete="current-password"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="newPassword">Новый пароль *</label>
+                    <input
+                      id="newPassword"
+                      name="newPassword"
+                      type="password"
+                      value={passwordData.newPassword}
+                      onChange={handlePasswordChange}
+                      className="form-input"
+                      disabled={passwordSaving}
+                      autoComplete="new-password"
+                      placeholder="Минимум 8 символов"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="confirmPassword">
+                      Подтвердите новый пароль *
+                    </label>
+                    <input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type="password"
+                      value={passwordData.confirmPassword}
+                      onChange={handlePasswordChange}
+                      className="form-input"
+                      disabled={passwordSaving}
+                      autoComplete="new-password"
+                    />
+                  </div>
+
+                  <div className="password-hints">
+                    <small>• Пароль должен содержать минимум 8 символов</small>
+                    <br />
+                    <small>
+                      • Используйте буквы, цифры и специальные символы
+                    </small>
+                  </div>
+
+                  <div className="form-actions">
+                    <button
+                      type="submit"
+                      className="btn-primary"
+                      disabled={passwordSaving}
+                    >
+                      {passwordSaving
+                        ? 'Сохранение...'
+                        : 'Сохранить новый пароль'}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
             <div className="bottom-section">
               <button className="btn-primary">Предпросмотр профиля</button>
               <button

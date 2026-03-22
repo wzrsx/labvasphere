@@ -9,9 +9,11 @@ import (
 	"time"
 
 	"labvasphere-api/internal/email"
+	"labvasphere-api/internal/middleware"
 	"labvasphere-api/internal/models"
 	"labvasphere-api/internal/security"
 	"labvasphere-api/internal/storage/postgres"
+	"labvasphere-api/internal/validators"
 )
 
 type AuthHandler struct {
@@ -51,6 +53,12 @@ type RegisterRequest struct {
 type LoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+// ChangePasswordRequest - запрос на смену пароля
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"current_password"`
+	NewPassword     string `json:"new_password"`
 }
 
 // Register обрабатывает регистрацию
@@ -168,6 +176,52 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	// Возвращаем ответ пользователю
 	writeJSON(w, http.StatusOK, map[string]string{
 		"message": "Если пользователь с таким email существует, инструкции отправлены",
+	})
+}
+
+func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	// ✅ Правильное получение claims из контекста
+	claims := middleware.GetUserFromContext(r.Context())
+	if claims == nil {
+		writeError(w, http.StatusUnauthorized, "Требуется авторизация")
+		return
+	}
+
+	userID := claims.UserID // ← Берём из claims
+
+	var req ChangePasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "Неверный формат запроса")
+		return
+	}
+
+	// Валидация нового пароля
+	if err := validators.ValidatePassword(req.NewPassword); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Получаем пользователя для проверки текущего пароля
+	user, err := h.userRepo.GetByID(r.Context(), userID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "Пользователь не найден")
+		return
+	}
+
+	// Проверяем текущий пароль
+	if !security.CheckPasswordHash(req.CurrentPassword, user.PasswordHash) {
+		writeError(w, http.StatusBadRequest, "Неверный текущий пароль")
+		return
+	}
+
+	// Обновляем пароль (передаём новый пароль, а не хэш)
+	if err := h.userRepo.UpdatePassword(r.Context(), userID, req.NewPassword); err != nil {
+		writeError(w, http.StatusInternalServerError, "Ошибка обновления пароля")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{
+		"message": "Пароль успешно изменён",
 	})
 }
 

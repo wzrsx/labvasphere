@@ -81,11 +81,16 @@ func main() {
 		})
 		// Роуты аутентификации
 		r.Route("/auth", func(r chi.Router) {
+			// Публичные (без middleware)
 			r.Post("/register", authHandler.Register)
 			r.Post("/login", authHandler.Login)
-			r.Post("/logout", authHandler.Logout)
 			r.Post("/reset-password", authHandler.ResetPassword)
+
+			// Защищённые (с middleware через r.With())
+			r.With(middleware.AuthMiddleware).Post("/change-password", authHandler.ChangePassword)
+			r.With(middleware.AuthMiddleware).Post("/logout", authHandler.Logout)
 		})
+
 		// Загрузка файлов (требует аутентификации)
 		r.Route("/upload", func(r chi.Router) {
 			r.Use(middleware.AuthMiddleware)

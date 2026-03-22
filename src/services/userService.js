@@ -34,3 +34,17 @@ export const updateProfile = async (profileData) => {
     };
   }
 };
+
+export const changePassword = async (passwordData) => {
+  try {
+    const { data } = await api.post('/auth/change-password', {
+      current_password: passwordData.currentPassword,
+      new_password: passwordData.newPassword,
+    });
+
+    return { success: true, message: data.message };
+  } catch (error) {
+    const message = error.response?.data?.error || error.message;
+    return { success: false, error: message };
+  }
+};
