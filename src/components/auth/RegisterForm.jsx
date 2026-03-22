@@ -1,10 +1,10 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { register } from '../../services/authService';
 
 const RegisterForm = ({ onSwitchToLogin }) => {
   const navigate = useNavigate();
-  
+
   // Состояние для полей формы
   const [formData, setFormData] = useState({
     fullName: '',
@@ -13,7 +13,7 @@ const RegisterForm = ({ onSwitchToLogin }) => {
     confirmPassword: '',
     role: 'user', // 'user' или 'designer'
   });
-  
+
   // Состояние для ошибок и загрузки
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -31,9 +31,9 @@ const RegisterForm = ({ onSwitchToLogin }) => {
   // Обработчик отправки формы
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     const { fullName, email, password, confirmPassword, role } = formData;
-    
+
     // Базовая валидация на фронтенде
     if (!fullName || !email || !password || !confirmPassword) {
       setError('Пожалуйста, заполните все поля');
@@ -48,9 +48,9 @@ const RegisterForm = ({ onSwitchToLogin }) => {
 
     try {
       const result = await register(fullName, email, password, role);
-      
+
       setIsLoading(false);
-      
+
       if (result.success) {
         // Сохраняем пользователя в localStorage
         localStorage.setItem('user', JSON.stringify(result.user));
@@ -72,11 +72,7 @@ const RegisterForm = ({ onSwitchToLogin }) => {
       <p className="subtitle">Создайте аккаунт для начала работы</p>
 
       {/* Отображение ошибки */}
-      {error && (
-        <div className="error-message">
-          {error}
-        </div>
-      )}
+      {error && <div className="error-message">{error}</div>}
 
       <input
         name="fullName"
@@ -87,7 +83,7 @@ const RegisterForm = ({ onSwitchToLogin }) => {
         onChange={handleChange}
         disabled={isLoading}
       />
-      
+
       <input
         name="email"
         type="email"
@@ -97,7 +93,7 @@ const RegisterForm = ({ onSwitchToLogin }) => {
         onChange={handleChange}
         disabled={isLoading}
       />
-      
+
       <div className="password-row">
         <input
           name="password"
@@ -143,11 +139,7 @@ const RegisterForm = ({ onSwitchToLogin }) => {
         </button>
       </div>
 
-      <button 
-        type="submit" 
-        className="login-button"
-        disabled={isLoading}
-      >
+      <button type="submit" className="login-button" disabled={isLoading}>
         {isLoading ? 'Регистрация...' : 'Зарегистрироваться'}
       </button>
     </form>

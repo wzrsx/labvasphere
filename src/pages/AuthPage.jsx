@@ -1,20 +1,20 @@
 // src/pages/AuthPage.jsx
-import React, { useState } from "react";
-import LoginForm from "../components/auth/LoginForm";
-import RegisterForm from "../components/auth/RegisterForm";
-import "./AuthPage.css";
+import React, { useState } from 'react';
+import LoginForm from '../components/auth/LoginForm';
+import RegisterForm from '../components/auth/RegisterForm';
+import './AuthPage.css';
 
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
 
   const handleLogin = (credentials) => {
-    console.log("Логин:", credentials);
-    alert("Вход выполнен (заглушка)");
+    console.log('Логин:', credentials);
+    alert('Вход выполнен (заглушка)');
   };
 
   const handleRegister = (userData) => {
-    console.log("Регистрация:", userData);
-    alert("Регистрация успешна (заглушка)");
+    console.log('Регистрация:', userData);
+    alert('Регистрация успешна (заглушка)');
   };
 
   return (

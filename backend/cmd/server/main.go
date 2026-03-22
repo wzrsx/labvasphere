@@ -52,6 +52,7 @@ func main() {
 	authHandler := handlers.NewAuthHandler(userRepo)
 	userHandler := handlers.NewUserHandler(userRepo)
 	hotspotHandler := handlers.NewHotspotHandler(hotspotRepo)
+	hotspotUploadHandler := handlers.NewHotspotUploadHandler("./uploads")
 
 	// Настраиваем роутер
 	r := chi.NewRouter()
@@ -87,6 +88,7 @@ func main() {
 			r.Use(middleware.AuthMiddleware)
 			r.Post("/panorama", panoramaUploadHandler.UploadFile)
 			r.Post("/cover", coverHandler.UploadFile)
+			r.Post("/hotspot", hotspotUploadHandler.UploadFile)
 		})
 		// Роуты проектов (требуют токен)
 		r.Route("/projects", func(r chi.Router) {

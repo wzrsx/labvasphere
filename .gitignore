@@ -5,6 +5,9 @@
 /.pnp
 .pnp.js
 
+#файлы панорам
+/backend/uploads
+
 # testing
 /coverage
 

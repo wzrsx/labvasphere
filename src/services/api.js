@@ -16,19 +16,19 @@ api.interceptors.request.use(
     const token = localStorage.getItem('token');
     console.log('🚀 Request:', config.url);
     console.log('🔑 Token exists:', !!token);
-    
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
       console.log('✅ Authorization header added');
     } else {
       console.log('❌ No token found');
     }
-    
+
     return config;
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Interceptor для обработки ошибок ответа
@@ -42,7 +42,7 @@ api.interceptors.response.use(
       window.location.href = '/auth';
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;

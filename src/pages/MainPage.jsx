@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { getProjects, deleteProject } from "../services/projectService";
-import { getCurrentUser } from "../services/authService";
-import Header from "../components/Header";
-import NewProjectModal from "../components/NewProjectModal";
-import "./MainPage.css";
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { getProjects, deleteProject } from '../services/projectService';
+import { getCurrentUser } from '../services/authService';
+import Header from '../components/Header';
+import NewProjectModal from '../components/NewProjectModal';
+import './MainPage.css';
 import ViewIcon from '../show.svg';
 import ShareIcon from '../share.svg';
 import EditIcon from '../edit.svg';
@@ -17,15 +17,15 @@ const MainPage = () => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [userName, setUserName] = useState("");
-  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [userName, setUserName] = useState('');
+
   // Состояние для модального окна подтверждения удаления
   const [deleteModal, setDeleteModal] = useState({
     isOpen: false,
     projectId: null,
     projectName: '',
-    isLoading: false
+    isLoading: false,
   });
   const getMediaUrl = (relativePath) => {
     if (!relativePath) return null;
@@ -58,25 +58,25 @@ const MainPage = () => {
   const loadProjects = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const result = await getProjects();
-      
+
       if (result.success) {
         setProjects(result.projects || []);
       } else {
         setError(result.error);
       }
     } catch (err) {
-      console.error("Ошибка загрузки проектов:", err);
-      setError("Не удалось загрузить список проектов");
+      console.error('Ошибка загрузки проектов:', err);
+      setError('Не удалось загрузить список проектов');
     } finally {
       setLoading(false);
     }
   };
 
   const handleCreateProject = (project) => {
-    console.log("Создан проект:", project);
+    console.log('Создан проект:', project);
     loadProjects();
   };
 
@@ -92,43 +92,53 @@ const MainPage = () => {
       isOpen: true,
       projectId: projectId,
       projectName: projectName,
-      isLoading: false
+      isLoading: false,
     });
   };
 
   // Подтверждаем удаление
   const handleConfirmDelete = async () => {
     if (!deleteModal.projectId) return;
-    
-    setDeleteModal(prev => ({ ...prev, isLoading: true }));
-    
+
+    setDeleteModal((prev) => ({ ...prev, isLoading: true }));
+
     try {
       const result = await deleteProject(deleteModal.projectId);
-      
+
       if (result.success) {
         // Обновляем список проектов
         loadProjects();
         // Закрываем модальное окно
-        setDeleteModal({ isOpen: false, projectId: null, projectName: '', isLoading: false });
+        setDeleteModal({
+          isOpen: false,
+          projectId: null,
+          projectName: '',
+          isLoading: false,
+        });
       } else {
         setError(result.error);
-        setDeleteModal(prev => ({ ...prev, isLoading: false }));
+        setDeleteModal((prev) => ({ ...prev, isLoading: false }));
       }
     } catch (err) {
-      console.error("Ошибка удаления проекта:", err);
-      setError("Не удалось удалить проект");
-      setDeleteModal(prev => ({ ...prev, isLoading: false }));
+      console.error('Ошибка удаления проекта:', err);
+      setError('Не удалось удалить проект');
+      setDeleteModal((prev) => ({ ...prev, isLoading: false }));
     }
   };
 
   // Закрываем модальное окно удаления
   const handleCloseDeleteModal = () => {
-    setDeleteModal({ isOpen: false, projectId: null, projectName: '', isLoading: false });
+    setDeleteModal({
+      isOpen: false,
+      projectId: null,
+      projectName: '',
+      isLoading: false,
+    });
   };
 
-  // Фильтрация по поиску 
+  // Фильтрация по поиску
   const filteredProjects = projects.filter((p) =>
-    p.title.toLowerCase().includes(searchQuery.toLowerCase())
+    p.title.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
@@ -154,20 +164,28 @@ const MainPage = () => {
         {/* Модальное окно подтверждения удаления */}
         {deleteModal.isOpen && (
           <div className="modal-overlay" onClick={handleCloseDeleteModal}>
-            <div className="delete-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="delete-modal-content"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="modal-header">
                 <h2>Подтверждение удаления</h2>
-                <button className="modal-close" onClick={handleCloseDeleteModal}>
+                <button
+                  className="modal-close"
+                  onClick={handleCloseDeleteModal}
+                >
                   ×
                 </button>
               </div>
-              
+
               <div className="modal-body">
                 <p>Вы действительно хотите удалить проект?</p>
-                <p className="project-name"><strong>"{deleteModal.projectName}"</strong></p>
+                <p className="project-name">
+                  <strong>"{deleteModal.projectName}"</strong>
+                </p>
                 <p className="warning-text">Это действие нельзя отменить.</p>
               </div>
-              
+
               <div className="modal-actions">
                 <button
                   type="button"
@@ -202,11 +220,7 @@ const MainPage = () => {
             />
           </div>
 
-          {error && (
-            <div className="error-message">
-              {error}
-            </div>
-          )}
+          {error && <div className="error-message">{error}</div>}
 
           {loading ? (
             <div className="empty-state">Загрузка проектов...</div>
@@ -228,22 +242,16 @@ const MainPage = () => {
                   <div className="project-info">
                     <h3>{project.title}</h3>
                     <p>
-                      Обновлено:{" "}
+                      Обновлено:{' '}
                       {new Date(project.updated_at).toLocaleDateString()}
                     </p>
-                    <p>
-                      Описание: {project.description || 'Без описания'}
-                    </p>
-                    <p>
-                      Просмотров: {project.views_count || 0}
-                    </p>
-                    <p>
-                      Статус: {project.status || 'draft'}
-                    </p>
+                    <p>Описание: {project.description || 'Без описания'}</p>
+                    <p>Просмотров: {project.views_count || 0}</p>
+                    <p>Статус: {project.status || 'draft'}</p>
                   </div>
                   <div className="project-actions">
                     {/* Просмотр */}
-                    <button 
+                    <button
                       onClick={() => handleViewProject(project.id)}
                       className="action-button"
                     >
@@ -252,7 +260,7 @@ const MainPage = () => {
                         <img src={ViewIcon} alt="Просмотр" />
                       </span>
                     </button>
-                    
+
                     {/* Поделиться */}
                     <button className="action-button">
                       <span className="button-text">Поделиться</span>
@@ -260,20 +268,23 @@ const MainPage = () => {
                         <img src={ShareIcon} alt="Поделиться" />
                       </span>
                     </button>
-                    
+
                     {/* Редактировать */}
-                    <button 
+                    <button
                       onClick={() => handleEditProject(project.id)}
-                      className="action-button">
+                      className="action-button"
+                    >
                       <span className="button-text">Редактировать</span>
                       <span className="button-icon">
                         <img src={EditIcon} alt="Редактировать" />
                       </span>
                     </button>
-                    
+
                     {/* Удалить */}
-                    <button 
-                      onClick={() => handleDeleteClick(project.id, project.title)}
+                    <button
+                      onClick={() =>
+                        handleDeleteClick(project.id, project.title)
+                      }
                       className="action-button btn-delete"
                     >
                       <span className="button-text">Удалить</span>

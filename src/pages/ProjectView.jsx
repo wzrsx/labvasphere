@@ -1,8 +1,8 @@
 // src/pages/ProjectView.jsx
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import "./ProjectView.css";
-import SphereViewer from "../components/SphereViewer";
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import './ProjectView.css';
+import SphereViewer from '../components/SphereViewer';
 import api from '../services/api';
 import { CONFIG } from '../config';
 import { getMainPanorama } from '../services/projectService';
@@ -26,7 +26,7 @@ const ProjectView = () => {
         setLoading(true);
         const response = await api.get(`/projects/${id}`);
         const projectData = response.data;
-        
+
         // Если нет main_panorama — запрашиваем отдельно
         if (!projectData.main_panorama) {
           const mainResult = await getMainPanorama(id);
@@ -34,10 +34,10 @@ const ProjectView = () => {
             projectData.main_panorama = mainResult.panorama;
           }
         }
-        
+
         setProject(projectData);
       } catch (err) {
-        console.error("Не удалось загрузить проект:", err);
+        console.error('Не удалось загрузить проект:', err);
         const message = err.response?.data?.error || 'Проект не найден';
         setError(message);
       } finally {
@@ -54,14 +54,16 @@ const ProjectView = () => {
 
   // 🔹 Формируем URL основной панорамы
   const mainPanoramaUrl = project.main_panorama?.filename
-    ? getMediaUrl(`projects/${project.id}/panoramas/${project.main_panorama.filename}`)
+    ? getMediaUrl(
+        `projects/${project.id}/panoramas/${project.main_panorama.filename}`,
+      )
     : null;
 
   return (
     <div className="project-view">
       <header className="project-header">
         <button onClick={() => navigate(-1)}>&larr; Назад к проектам</button>
-        <h1>{project.title}</h1> 
+        <h1>{project.title}</h1>
       </header>
 
       <div className="panorama-container">

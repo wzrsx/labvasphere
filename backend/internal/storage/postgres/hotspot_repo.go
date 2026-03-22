@@ -3,10 +3,9 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"labvasphere-api/internal/models"
 	"log"
 	"time"
-
-	"labvasphere-api/internal/models"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -169,7 +168,8 @@ func (r *HotspotRepository) GetByPanorama(ctx context.Context, panoramaID uuid.U
         SELECT 
             id, panorama_id, position_yaw, position_pitch,
             target_type, target_panorama_id, target_filename,
-            title, tooltip, icon, color,
+            title, tooltip, content_text, media_url, external_url,
+            icon, color,
             sort_order, is_active, created_at, updated_at
         FROM hotspots
         WHERE panorama_id = $1 AND is_active = true
@@ -190,25 +190,34 @@ func (r *HotspotRepository) GetByPanorama(ctx context.Context, panoramaID uuid.U
 		var h models.HotspotResponse
 		var sortOrder int32
 		var isActive bool
-
-		// 🔹 Временные поля — сканируем в time.Time, не в string!
 		var createdAt, updatedAt time.Time
+
+		var contentText, mediaURL, externalURL, targetPanoramaID *string
 
 		err := rows.Scan(
 			&h.ID, &h.PanoramaID, &h.PositionYaw, &h.PositionPitch,
-			&h.TargetType, &h.TargetPanoramaID, &h.TargetFilename,
-			&h.Title, &h.Tooltip, &h.Icon, &h.Color,
-			&sortOrder, &isActive, &createdAt, &updatedAt, // ← time.Time, не *string!
+			&h.TargetType, &targetPanoramaID, &h.TargetFilename,
+			&h.Title, &h.Tooltip, &contentText, &mediaURL, &externalURL,
+			&h.Icon, &h.Color,
+			&sortOrder, &isActive, &createdAt, &updatedAt,
 		)
 		if err != nil {
 			log.Printf("ERROR: Scan failed: %v", err)
 			return nil, err
 		}
 
+		if contentText != nil {
+			h.ContentText = *contentText
+		}
+		if mediaURL != nil {
+			h.MediaURL = *mediaURL
+		}
+		if externalURL != nil {
+			h.ExternalURL = *externalURL
+		}
+
 		h.SortOrder = int(sortOrder)
 		h.IsActive = isActive
-
-		// 🔹 Форматируем время в строку для JSON-ответа
 		h.CreatedAt = createdAt.Format(time.RFC3339)
 		h.UpdatedAt = updatedAt.Format(time.RFC3339)
 

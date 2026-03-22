@@ -10,22 +10,22 @@ export const preloadPanorama = async (url, onProgress) => {
 
     // Метод 1: Простой через Image (работает везде, кэшируется браузером)
     const img = new Image();
-    
+
     // Для кросс-доменных изображений
     img.crossOrigin = 'anonymous';
-    
+
     img.onload = () => {
       console.log(`✅ Preloaded: ${url}`);
       if (onProgress) onProgress(1, 1); // 100%
       resolve(url);
     };
-    
+
     img.onerror = (e) => {
       console.warn(`⚠️ Image onload error for ${url}:`, e);
-      
+
       // Метод 2: Фолбэк через fetch, если Image не сработал
       fetch(url, { mode: 'cors', cache: 'force-cache' })
-        .then(resp => {
+        .then((resp) => {
           if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
           return resp.blob();
         })
@@ -34,7 +34,7 @@ export const preloadPanorama = async (url, onProgress) => {
           if (onProgress) onProgress(1, 1);
           resolve(url);
         })
-        .catch(err => {
+        .catch((err) => {
           console.error(`❌ All preload methods failed for ${url}:`, err);
           if (onProgress) onProgress(1, 1); // Считаем как "завершенный провал"
           resolve(url); // Resolve, чтобы не блокировать весь процесс
@@ -43,7 +43,7 @@ export const preloadPanorama = async (url, onProgress) => {
 
     // Начинаем загрузку
     img.src = url;
-    
+
     // Таймаут на случай, если запрос завис (15 секунд)
     setTimeout(() => {
       if (img.complete === false && img.naturalWidth === 0) {
@@ -72,16 +72,21 @@ export const preloadPanoramasBatch = async (urls, onOverallProgress) => {
   // Загружаем пачками
   for (let i = 0; i < urls.length; i += CONCURRENCY) {
     const batch = urls.slice(i, i + CONCURRENCY);
-    
-    await Promise.all(batch.map(url => 
-      preloadPanorama(url)
-        .then(res => { results.push(res); return res; })
-        .catch(() => null) // Игнорируем ошибки отдельных картинок
-        .finally(() => {
-          completed++;
-          updateProgress();
-        })
-    ));
+
+    await Promise.all(
+      batch.map((url) =>
+        preloadPanorama(url)
+          .then((res) => {
+            results.push(res);
+            return res;
+          })
+          .catch(() => null) // Игнорируем ошибки отдельных картинок
+          .finally(() => {
+            completed++;
+            updateProgress();
+          }),
+      ),
+    );
   }
 
   return results.filter(Boolean);

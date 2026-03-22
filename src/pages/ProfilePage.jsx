@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { getProfile, updateProfile } from "../services/userService";
-import Header from "../components/Header";
-import "./ProfilePage.css";
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getProfile, updateProfile } from '../services/userService';
+import Header from '../components/Header';
+import './ProfilePage.css';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
-  
+
   const [user, setUser] = useState(null);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     bio: '',
-    avatarUrl: ''
+    avatarUrl: '',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -24,7 +24,7 @@ const ProfilePage = () => {
     loadUserProfile();
   }, []);
 
-    const loadUserProfile = async () => {
+  const loadUserProfile = async () => {
     try {
       const result = await getProfile();
       if (result.success) {
@@ -34,10 +34,10 @@ const ProfilePage = () => {
           fullName: userData.full_name || '',
           email: userData.email || '',
           bio: userData.bio || '',
-          avatarUrl: userData.avatar_url || ''
+          avatarUrl: userData.avatar_url || '',
         });
         setError(null);
-        
+
         // Обновляем localStorage для других компонентов
         localStorage.setItem('user', JSON.stringify(userData));
       } else {
@@ -53,9 +53,9 @@ const ProfilePage = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
     setError(null);
     setSuccess(null);
@@ -75,18 +75,18 @@ const ProfilePage = () => {
       const profileData = {
         full_name: formData.fullName,
         bio: formData.bio || null,
-        avatar_url: formData.avatarUrl || null
+        avatar_url: formData.avatarUrl || null,
       };
 
       const result = await updateProfile(profileData);
-      
+
       if (result.success) {
         const updatedUser = result.user;
         setUser(updatedUser);
-        
+
         // Обновляем localStorage
         localStorage.setItem('user', JSON.stringify(updatedUser));
-        
+
         setSuccess('Профиль успешно обновлён!');
         setTimeout(() => setSuccess(null), 3000);
       } else {
@@ -134,7 +134,7 @@ const ProfilePage = () => {
   return (
     <div className="profile-page">
       <Header />
-      
+
       <div className="profile-content">
         <div className="profile-header">
           <h1>Профиль</h1>
@@ -148,7 +148,11 @@ const ProfilePage = () => {
           <div className="avatar-section">
             <div className="avatar-preview">
               {formData.avatarUrl ? (
-                <img src={formData.avatarUrl} alt="Аватар" className="avatar-img" />
+                <img
+                  src={formData.avatarUrl}
+                  alt="Аватар"
+                  className="avatar-img"
+                />
               ) : (
                 <div className="avatar-placeholder">
                   {formData.fullName.charAt(0).toUpperCase()}
@@ -204,7 +208,9 @@ const ProfilePage = () => {
             <div className="form-group">
               <label>Роль</label>
               <div className="role-display">
-                {user?.role === 'designer' ? 'Дизайнер / Архитектор' : 'Пользователь'}
+                {user?.role === 'designer'
+                  ? 'Дизайнер / Архитектор'
+                  : 'Пользователь'}
               </div>
               <small className="form-hint">
                 Роль назначается при регистрации и не может быть изменена
@@ -212,20 +218,15 @@ const ProfilePage = () => {
             </div>
 
             <div className="bottom-section">
-                <button className="btn-primary">
-                    Предпросмотр профиля
-                </button>
-              <button 
-                onClick={handleSave} 
+              <button className="btn-primary">Предпросмотр профиля</button>
+              <button
+                onClick={handleSave}
                 className="btn-primary"
                 disabled={saving}
               >
                 {saving ? 'Сохранение...' : 'Сохранить изменения'}
               </button>
-              <button 
-                onClick={handleLogout} 
-                className="btn-danger"
-              >
+              <button onClick={handleLogout} className="btn-danger">
                 Выйти
               </button>
             </div>

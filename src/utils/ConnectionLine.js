@@ -1,6 +1,6 @@
 // src/utils/ConnectionLine.js
-import React, { useLayoutEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import React, { useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 const ConnectionLine = ({ fromRef, toRef, fromIndex }) => {
   const svgRef = useRef(null);
@@ -32,7 +32,7 @@ const ConnectionLine = ({ fromRef, toRef, fromIndex }) => {
     const cp2y = y1 + bendStrength;
 
     const d = `M ${x1} ${y1} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x2} ${y2}`;
-    pathRef.current.setAttribute("d", d);
+    pathRef.current.setAttribute('d', d);
   };
 
   const [mounted, setMounted] = useState(false);
@@ -47,12 +47,12 @@ const ConnectionLine = ({ fromRef, toRef, fromIndex }) => {
 
     updatePath();
 
-    window.addEventListener("scroll", onScrollOrResize, { passive: true });
-    window.addEventListener("resize", onScrollOrResize);
+    window.addEventListener('scroll', onScrollOrResize, { passive: true });
+    window.addEventListener('resize', onScrollOrResize);
 
     return () => {
-      window.removeEventListener("scroll", onScrollOrResize);
-      window.removeEventListener("resize", onScrollOrResize);
+      window.removeEventListener('scroll', onScrollOrResize);
+      window.removeEventListener('resize', onScrollOrResize);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, [fromRef, toRef, fromIndex]);
@@ -63,12 +63,12 @@ const ConnectionLine = ({ fromRef, toRef, fromIndex }) => {
     <svg
       ref={svgRef}
       style={{
-        position: "fixed",
+        position: 'fixed',
         top: 0,
         left: 0,
-        width: "100vw",
-        height: "100vh",
-        pointerEvents: "none",
+        width: '100vw',
+        height: '100vh',
+        pointerEvents: 'none',
         zIndex: 1,
       }}
     >
@@ -92,7 +92,7 @@ const ConnectionLine = ({ fromRef, toRef, fromIndex }) => {
         filter="url(#glow)"
       />
     </svg>,
-    document.body
+    document.body,
   );
 };
 
