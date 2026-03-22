@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { getProjects, deleteProject, updateProjectStatus } from '../services/projectService';
+import {
+  getProjects,
+  deleteProject,
+  updateProjectStatus,
+} from '../services/projectService';
 import { getCurrentUser } from '../services/authService';
 import Header from '../components/Header';
 import NewProjectModal from '../components/NewProjectModal';
@@ -23,6 +27,7 @@ const MainPage = () => {
   const [userName, setUserName] = useState('');
   const [toggleLoading, setToggleLoading] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [expandedDescriptions, setExpandedDescriptions] = useState({});
   // Состояние для модального окна подтверждения удаления
   const [deleteModal, setDeleteModal] = useState({
     isOpen: false,
@@ -36,11 +41,23 @@ const MainPage = () => {
     return `${CONFIG.MEDIA_BASE_URL}/${relativePath}`;
   };
   const isActive = (path) => location.pathname === path;
-const handleToggleStats = (projectId) => {
-  setProjects(prev => prev.map(p => 
-    p.id === projectId ? { ...p, showStats: !p.showStats } : p
-  ));
-};
+  const handleToggleStats = (projectId) => {
+    setProjects((prev) =>
+      prev.map((p) =>
+        p.id === projectId ? { ...p, showStats: !p.showStats } : p,
+      ),
+    );
+  };
+  const toggleDescription = (projectId) => {
+    setExpandedDescriptions((prev) => ({
+      ...prev,
+      [projectId]: !prev[projectId],
+    }));
+  };
+  const truncateText = (text, maxLength = 200) => {
+    if (!text || text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+  };
   // Получаем имя пользователя из ФИО
   useEffect(() => {
     const user = getCurrentUser();
@@ -82,26 +99,28 @@ const handleToggleStats = (projectId) => {
     }
   };
   const handleToggleStatus = async (e, projectId) => {
-  e.stopPropagation();
-  setToggleLoading(true);
-  
-  try {
-    const project = projects.find(p => p.id === projectId);
-    const newStatus = project.status === 'published' ? 'draft' : 'published';
-    
-    const result = await updateProjectStatus(projectId, newStatus);
-    
-    if (result.success) {
-      setProjects(prev => prev.map(p => 
-        p.id === projectId ? { ...p, status: newStatus } : p
-      ));
+    e.stopPropagation();
+    setToggleLoading(true);
+
+    try {
+      const project = projects.find((p) => p.id === projectId);
+      const newStatus = project.status === 'published' ? 'draft' : 'published';
+
+      const result = await updateProjectStatus(projectId, newStatus);
+
+      if (result.success) {
+        setProjects((prev) =>
+          prev.map((p) =>
+            p.id === projectId ? { ...p, status: newStatus } : p,
+          ),
+        );
+      }
+    } catch (err) {
+      console.error('Ошибка переключения статуса:', err);
+    } finally {
+      setToggleLoading(false);
     }
-  } catch (err) {
-    console.error('Ошибка переключения статуса:', err);
-  } finally {
-    setToggleLoading(false);
-  }
-};
+  };
   const handleCreateProject = (project) => {
     console.log('Создан проект:', project);
     loadProjects();
@@ -318,7 +337,26 @@ const handleToggleStats = (projectId) => {
                     ) : (
                       /* Блок описания */
                       <p className="project-description">
-                        Описание: {project.description || 'Без описания'}
+                        <span className="description-label">Описание: </span>
+                        <span className="description-text">
+                          {expandedDescriptions[project.id]
+                            ? project.description
+                            : truncateText(
+                                project.description || 'Без описания',
+                                200,
+                              )}
+                        </span>
+                        {project.description &&
+                          project.description.length > 200 && (
+                            <button
+                              className="read-more-btn"
+                              onClick={() => toggleDescription(project.id)}
+                            >
+                              {expandedDescriptions[project.id]
+                                ? 'Свернуть'
+                                : 'Читать далее'}
+                            </button>
+                          )}
                       </p>
                     )}
                   </div>
@@ -336,16 +374,15 @@ const handleToggleStats = (projectId) => {
                     <button
                       onClick={() => handleViewProject(project.id)}
                       className="action-button"
+                      title="Просмотр"
                     >
-                      <span className="button-text">Просмотр</span>
                       <span className="button-icon">
                         <img src={ViewIcon} alt="Просмотр" />
                       </span>
                     </button>
 
                     {/* Поделиться */}
-                    <button className="action-button">
-                      <span className="button-text">Поделиться</span>
+                    <button className="action-button" title="Поделиться">
                       <span className="button-icon">
                         <img src={ShareIcon} alt="Поделиться" />
                       </span>
@@ -355,8 +392,8 @@ const handleToggleStats = (projectId) => {
                     <button
                       onClick={() => handleEditProject(project.id)}
                       className="action-button"
+                      title="Редактировать"
                     >
-                      <span className="button-text">Редактировать</span>
                       <span className="button-icon">
                         <img src={EditIcon} alt="Редактировать" />
                       </span>
@@ -368,8 +405,8 @@ const handleToggleStats = (projectId) => {
                         handleDeleteClick(project.id, project.title)
                       }
                       className="action-button btn-delete"
+                      title="Удалить"
                     >
-                      <span className="button-text">Удалить</span>
                       <span className="button-icon">
                         <img src={DeleteIcon} alt="Удалить" />
                       </span>

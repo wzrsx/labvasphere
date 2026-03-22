@@ -80,7 +80,8 @@ export const updateProjectStatus = async (projectId, status) => {
     });
     return { success: true, project: response.data };
   } catch (error) {
-    const message = error.response?.data?.error || 'Ошибка при обновлении статуса';
+    const message =
+      error.response?.data?.error || 'Ошибка при обновлении статуса';
     return { success: false, error: message };
   }
 };
