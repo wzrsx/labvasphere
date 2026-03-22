@@ -89,7 +89,27 @@ export const register = async (fullName, email, password, role = 'user') => {
     };
   }
 };
+//Восстановление пароля
+export const requestPasswordReset = async (email) => {
+  try {
+    const { data } = await api.post('/auth/reset-password', { email });
 
+    return {
+      success: true,
+      message: data.message || 'Инструкции отправлены на почту',
+    };
+  } catch (error) {
+    console.error('Ошибка запроса восстановления:', error);
+
+    // Обработка ошибок axios
+    const message =
+      error.response?.data?.error ||
+      error.message ||
+      'Сервер недоступен. Попробуйте позже.';
+
+    return { success: false, error: message };
+  }
+};
 // Выход
 export const logout = () => {
   setAuthToken(null);

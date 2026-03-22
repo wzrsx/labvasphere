@@ -134,6 +134,20 @@ func (r *UserRepository) Update(user *models.User) error {
 	return err
 }
 
+// UpdatePassword обновляет пароль пользователя по ID
+func (r *UserRepository) UpdatePassword(ctx context.Context, userID string, newPassword string) error {
+	// Хэшируем пароль перед сохранением
+	hash, err := security.HashPassword(newPassword)
+	if err != nil {
+		return err
+	}
+
+	query := `UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2`
+
+	_, err = r.db.Exec(ctx, query, hash, userID)
+	return err
+}
+
 // VerifyPassword проверяет пароль пользователя
 func (r *UserRepository) VerifyPassword(email, password string) (*models.User, error) {
 	user, err := r.GetUserByEmail(email)

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../../services/authService';
-const LoginForm = ({ onSwitchToRegister }) => {
+const LoginForm = ({ onSwitchToRegister, onSwitchToResetPass }) => {
   const navigate = useNavigate();
 
   // Состояние для полей формы
@@ -98,7 +98,17 @@ const LoginForm = ({ onSwitchToRegister }) => {
           Зарегистрируйтесь
         </button>
       </div>
-
+      <div className="register-link">
+        <p>Забыли пароль?</p>
+        <button
+          type="button"
+          className="link-button"
+          onClick={onSwitchToResetPass}
+          disabled={isLoading}
+        >
+          Восстановить
+        </button>
+      </div>
       <button type="submit" className="login-button" disabled={isLoading}>
         {isLoading ? 'Вход...' : 'Войти'}
       </button>

@@ -16,6 +16,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"labvasphere-api/internal/config"
+	"labvasphere-api/internal/email"
 	"labvasphere-api/internal/handlers"
 	"labvasphere-api/internal/middleware"
 	"labvasphere-api/internal/storage/postgres"
@@ -45,11 +46,12 @@ func main() {
 	panoramaRepo := postgres.NewPanoramaRepository(db)
 
 	// Хендлеры
+	emailService := email.NewEmailService()
+	authHandler := handlers.NewAuthHandler(userRepo, emailService)
 	panoramaUploadHandler := handlers.NewPanoramaUploadHandler("./uploads")
 	coverHandler := handlers.NewCoverUploadHandler("./uploads")
 	projectHandler := handlers.NewProjectHandler(projectRepo, panoramaRepo, "./uploads")
 	panoramaHandler := handlers.NewPanoramaHandler(panoramaRepo)
-	authHandler := handlers.NewAuthHandler(userRepo)
 	userHandler := handlers.NewUserHandler(userRepo)
 	hotspotHandler := handlers.NewHotspotHandler(hotspotRepo)
 	hotspotUploadHandler := handlers.NewHotspotUploadHandler("./uploads")
@@ -82,6 +84,7 @@ func main() {
 			r.Post("/register", authHandler.Register)
 			r.Post("/login", authHandler.Login)
 			r.Post("/logout", authHandler.Logout)
+			r.Post("/reset-password", authHandler.ResetPassword)
 		})
 		// Загрузка файлов (требует аутентификации)
 		r.Route("/upload", func(r chi.Router) {

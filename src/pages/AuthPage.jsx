@@ -2,10 +2,12 @@
 import React, { useState } from 'react';
 import LoginForm from '../components/auth/LoginForm';
 import RegisterForm from '../components/auth/RegisterForm';
+import ResetPasswordForm from '../components/auth/ResetPasswordForm';
 import './AuthPage.css';
 
 const AuthPage = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  // 'login' | 'register' | 'reset'
+  const [authMode, setAuthMode] = useState('login');
 
   const handleLogin = (credentials) => {
     console.log('Логин:', credentials);
@@ -25,16 +27,23 @@ const AuthPage = () => {
       </header>
 
       <div className="auth-main">
-        {isLogin ? (
+        {authMode === 'login' && (
           <LoginForm
             onLogin={handleLogin}
-            onSwitchToRegister={() => setIsLogin(false)}
+            onSwitchToRegister={() => setAuthMode('register')}
+            onSwitchToResetPass={() => setAuthMode('reset')}
           />
-        ) : (
+        )}
+
+        {authMode === 'register' && (
           <RegisterForm
             onRegister={handleRegister}
-            onSwitchToLogin={() => setIsLogin(true)}
+            onSwitchToLogin={() => setAuthMode('login')}
           />
+        )}
+
+        {authMode === 'reset' && (
+          <ResetPasswordForm onSwitchToLogin={() => setAuthMode('login')} />
         )}
       </div>
     </div>

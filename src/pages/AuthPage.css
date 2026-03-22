@@ -50,7 +50,6 @@
 }
 .auth-form {
   width: min(700px, calc(100% - 40px));
-  min-height: 525px;
   background: rgba(181, 181, 181, 0.2), rgba(67, 40, 24, 0.25);
   backdrop-filter: blur(5px);
   border-radius: 30px;

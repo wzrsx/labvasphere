@@ -241,13 +241,13 @@ const MainPage = () => {
                   </div>
                   <div className="project-info">
                     <h3>{project.title}</h3>
+                    <p>Описание: {project.description || 'Без описания'}</p>
+                    <p>Просмотров: {project.views_count || 0}</p>
+                    <p>Статус: {project.status || 'draft'}</p>
                     <p>
                       Обновлено:{' '}
                       {new Date(project.updated_at).toLocaleDateString()}
                     </p>
-                    <p>Описание: {project.description || 'Без описания'}</p>
-                    <p>Просмотров: {project.views_count || 0}</p>
-                    <p>Статус: {project.status || 'draft'}</p>
                   </div>
                   <div className="project-actions">
                     {/* Просмотр */}
