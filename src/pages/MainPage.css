@@ -802,3 +802,111 @@
   max-height: 95vh;
   overflow-y: auto;
 }
+
+.project-stats-main-page {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.stats-row {
+  display: flex;
+  gap: 8px;              /* Уменьшил отступ */
+  margin-bottom: 12px;
+  flex-wrap: wrap;       /* Перенос на новую строку если не влезает */
+}
+
+.stats-row:last-child {
+  margin-bottom: 0;
+}
+
+.stat-block {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;    /* Уменьшил padding */
+  background: #f5f5f5;
+  border-radius: 12px;
+  min-width: auto;       /* Убрал фиксированную ширину */
+  flex: 1;               /* Равномерное распределение */
+  white-space: nowrap;   /* Текст не переносится */
+}
+
+.stat-block img {
+  width: 20px;
+  height: 20px;
+}
+
+.stat-block span {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Цвета для статуса */
+.stat-block .status-icon {
+  font-size: 20px;
+}
+
+/* Кнопка статуса */
+.status-button {
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.status-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.status-button:active {
+  transform: translateY(0);
+}
+
+.status-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Цвета статуса */
+.status-published {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-draft {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-published:hover {
+  background: #c3e6cb;
+}
+
+.status-draft:hover {
+  background: #ffeaa7;
+}
+
+.toggle-stats-btn {
+  width: 100%;
+  padding: 12px 20px;
+  background: #fff;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toggle-stats-btn:hover {
+  background: #f5f5f5;
+  border-color: #ccc;
+  transform: translateY(-2px);
+}
+
+.toggle-stats-btn:active {
+  transform: translateY(0);
+}

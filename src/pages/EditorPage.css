@@ -186,10 +186,6 @@
   transition: opacity 0.3s ease;
 }
 
-/* Информация о проекте */
-.project-info {
-  margin-bottom: 30px;
-}
 
 .project-title-input,
 .project-description-input {

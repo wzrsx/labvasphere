@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { getProjects, deleteProject } from '../services/projectService';
+import { getProjects, deleteProject, updateProjectStatus } from '../services/projectService';
 import { getCurrentUser } from '../services/authService';
 import Header from '../components/Header';
 import NewProjectModal from '../components/NewProjectModal';
@@ -9,6 +9,8 @@ import ViewIcon from '../show.svg';
 import ShareIcon from '../share.svg';
 import EditIcon from '../edit.svg';
 import DeleteIcon from '../delete.svg';
+import LikeIcon from '../likes.png';
+import FavLogo from '../favourites.png';
 import { CONFIG } from '../config';
 const MainPage = () => {
   const navigate = useNavigate();
@@ -19,7 +21,8 @@ const MainPage = () => {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [userName, setUserName] = useState('');
-
+  const [toggleLoading, setToggleLoading] = useState(false);
+  const [showStats, setShowStats] = useState(false);
   // Состояние для модального окна подтверждения удаления
   const [deleteModal, setDeleteModal] = useState({
     isOpen: false,
@@ -33,7 +36,11 @@ const MainPage = () => {
     return `${CONFIG.MEDIA_BASE_URL}/${relativePath}`;
   };
   const isActive = (path) => location.pathname === path;
-
+const handleToggleStats = (projectId) => {
+  setProjects(prev => prev.map(p => 
+    p.id === projectId ? { ...p, showStats: !p.showStats } : p
+  ));
+};
   // Получаем имя пользователя из ФИО
   useEffect(() => {
     const user = getCurrentUser();
@@ -74,7 +81,27 @@ const MainPage = () => {
       setLoading(false);
     }
   };
-
+  const handleToggleStatus = async (e, projectId) => {
+  e.stopPropagation();
+  setToggleLoading(true);
+  
+  try {
+    const project = projects.find(p => p.id === projectId);
+    const newStatus = project.status === 'published' ? 'draft' : 'published';
+    
+    const result = await updateProjectStatus(projectId, newStatus);
+    
+    if (result.success) {
+      setProjects(prev => prev.map(p => 
+        p.id === projectId ? { ...p, status: newStatus } : p
+      ));
+    }
+  } catch (err) {
+    console.error('Ошибка переключения статуса:', err);
+  } finally {
+    setToggleLoading(false);
+  }
+};
   const handleCreateProject = (project) => {
     console.log('Создан проект:', project);
     loadProjects();
@@ -241,14 +268,69 @@ const MainPage = () => {
                   </div>
                   <div className="project-info">
                     <h3>{project.title}</h3>
-                    <p>Описание: {project.description || 'Без описания'}</p>
-                    <p>Просмотров: {project.views_count || 0}</p>
-                    <p>Статус: {project.status || 'draft'}</p>
-                    <p>
-                      Обновлено:{' '}
-                      {new Date(project.updated_at).toLocaleDateString()}
-                    </p>
+
+                    {/* 🔀 Переключение: Описание или Статистика */}
+                    {project.showStats ? (
+                      /* Блок статистики */
+                      <div className="project-stats-main-page">
+                        {/* Первый ряд: лайки, просмотры, избранное */}
+                        <div className="stats-row">
+                          <div className="stat-block">
+                            <img src={LikeIcon} alt="likes" />
+                            <span>{project.likes_count || 0}</span>
+                          </div>
+                          <div className="stat-block">
+                            <img src={ViewIcon} alt="views" />
+                            <span>{project.views_count || 0}</span>
+                          </div>
+                          <div className="stat-block">
+                            <img src={FavLogo} alt="favourites" />
+                            <span>{project.favourites_count || 0}</span>
+                          </div>
+                        </div>
+
+                        {/* Второй ряд: статус и дата */}
+                        <div className="stats-row">
+                          <button
+                            className={`stat-block status-button ${project.status === 'published' ? 'status-published' : 'status-draft'}`}
+                            onClick={(e) => handleToggleStatus(e, project.id)}
+                            disabled={toggleLoading}
+                          >
+                            <span className="status-icon">
+                              {project.status === 'published' ? '✅' : '⏳'}
+                            </span>
+                            <span>
+                              {project.status === 'published'
+                                ? 'Опубликован'
+                                : 'Черновик'}
+                            </span>
+                          </button>
+                          <div className="stat-block">
+                            <span className="date-icon">📅</span>
+                            <span>
+                              {new Date(project.updated_at).toLocaleDateString(
+                                'ru-RU',
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Блок описания */
+                      <p className="project-description">
+                        Описание: {project.description || 'Без описания'}
+                      </p>
+                    )}
                   </div>
+
+                  {/* 🔀 Кнопка переключения */}
+                  <button
+                    className="toggle-stats-btn"
+                    onClick={() => handleToggleStats(project.id)}
+                  >
+                    {project.showStats ? '📝 Описание' : '📊 Статистика'}
+                  </button>
+
                   <div className="project-actions">
                     {/* Просмотр */}
                     <button

@@ -73,7 +73,17 @@ export const updateProject = async (projectId, projectData) => {
     return { success: false, error: message };
   }
 };
-
+export const updateProjectStatus = async (projectId, status) => {
+  try {
+    const response = await api.put(`/projects/${projectId}`, {
+      status: status,
+    });
+    return { success: true, project: response.data };
+  } catch (error) {
+    const message = error.response?.data?.error || 'Ошибка при обновлении статуса';
+    return { success: false, error: message };
+  }
+};
 // Удаление проекта
 export const deleteProject = async (projectId) => {
   try {

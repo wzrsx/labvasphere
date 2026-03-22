@@ -112,7 +112,7 @@ const ProfilePage = () => {
     setPasswordSaving(true);
     setPasswordError(null);
     setPasswordSuccess(null);
-    console.log("pass ", passwordData);
+    console.log('pass ', passwordData);
     try {
       const result = await changePassword(passwordData);
 
