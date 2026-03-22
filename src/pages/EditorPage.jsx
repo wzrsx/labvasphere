@@ -973,21 +973,7 @@ const EditorPage = () => {
                 />
                 <circle cx="12" cy="12" r="4" fill="currentColor" />
               </svg>
-              <span>Точки перехода</span>
-            </button>
-
-            <button
-              className={`tool-btn ${activeTool === 'annotation' ? 'active' : ''}`}
-              onClick={() => handleToolClick('annotation')}
-              title="Аннотации"
-            >
-              <svg className="tool-icon" viewBox="0 0 24 24">
-                <path
-                  fill="currentColor"
-                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
-                />
-              </svg>
-              <span>Текст</span>
+              <span>Точки</span>
             </button>
 
             <button
@@ -2050,19 +2036,21 @@ const EditorPage = () => {
         <div className="project-stats">
           <div className="stat-item">
             <span className="stat-label">Точки перехода:</span>
-            <span className="stat-value">{editorData.hotspots.length}</span>
+            <span className="editor-stat-value">
+              {editorData.hotspots.length}
+            </span>
           </div>
           <div className="stat-item">
             <span className="stat-label">Медиа-элементы:</span>
-            <span className="stat-value">{editorData.media.length}</span>
+            <span className="editor-stat-value">{editorData.media.length}</span>
           </div>
           <div className="stat-item">
             <span className="stat-label">ID проекта:</span>
-            <span className="stat-value">{project.id}</span>
+            <span className="editor-stat-value">{project.id}</span>
           </div>
           <div className="stat-item">
             <span className="stat-label">Статус:</span>
-            <span className={`stat-value status-${project.status}`}>
+            <span className={`editor-stat-value status-${project.status}`}>
               {project.status === 'published' ? 'Опубликован' : 'Черновик'}
             </span>
           </div>

@@ -60,14 +60,28 @@ export const login = async (email, password) => {
 };
 
 // Регистрация
-export const register = async (fullName, email, password, role = 'user') => {
+export const register = async (
+  fullName,
+  email,
+  password,
+  role = 'user',
+  refCode,
+) => {
   try {
-    const response = await api.post('/auth/register', {
+    // Формируем базовый payload
+    const payload = {
       full_name: fullName,
       email,
       password,
       role,
-    });
+    };
+
+    // 👇 Добавляем ref_code только если он передан
+    if (refCode) {
+      payload.ref_code = refCode;
+    }
+
+    const response = await api.post('/auth/register', payload);
 
     if (response.data.token) {
       setAuthToken(response.data.token);
@@ -80,9 +94,12 @@ export const register = async (fullName, email, password, role = 'user') => {
       token: response.data.token,
     };
   } catch (error) {
+    console.error('Registration error:', error);
+
     const message =
       error.response?.data?.error ||
       'Ошибка при регистрации. Попробуйте снова.';
+
     return {
       success: false,
       error: message,

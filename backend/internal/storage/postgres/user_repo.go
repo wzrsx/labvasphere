@@ -4,13 +4,21 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"labvasphere-api/internal/models"
 	"labvasphere-api/internal/security"
 	"labvasphere-api/internal/validators"
+)
+
+var (
+	ErrUserExists       = errors.New("user already exists")
+	ErrReferrerNotFound = errors.New("referrer not found")
 )
 
 type UserRepository struct {
@@ -19,6 +27,128 @@ type UserRepository struct {
 
 func NewUserRepository(db *pgxpool.Pool) *UserRepository {
 	return &UserRepository{db: db}
+}
+
+// CreateUserWithReferral создаёт пользователя и привязывает рефералов (в транзакции)
+func (r *UserRepository) CreateUserWithReferral(ctx context.Context, user *models.User, refUUID *uuid.UUID) error {
+	// Валидация
+	if err := validators.ValidateFullName(user.FullName); err != nil {
+		return err
+	}
+	if err := validators.ValidatePassword(user.Password); err != nil {
+		return err
+	}
+
+	// Хэширование пароля
+	hashedPassword, err := security.HashPassword(user.Password)
+	if err != nil {
+		return err
+	}
+	user.PasswordHash = hashedPassword
+	user.ID = uuid.New().String()
+
+	// Начинаем транзакцию
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx) // Откат, если не будет коммита
+
+	// 1. Создаём пользователя
+	query := `
+		INSERT INTO users (id, full_name, email, password_hash, avatar_url, bio, role)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		RETURNING created_at, updated_at
+	`
+	err = tx.QueryRow(ctx, query,
+		user.ID, user.FullName, user.Email, user.PasswordHash,
+		user.AvatarURL, user.Bio, user.Role,
+	).Scan(&user.CreatedAt, &user.UpdatedAt)
+
+	if err != nil {
+		// Проверяем на уникальный email
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
+			return ErrUserExists
+		}
+		return fmt.Errorf("create user: %w", err)
+	}
+
+	// 2. Если есть реферальный код — создаём связи
+	if refUUID != nil {
+		newUserID, _ := uuid.Parse(user.ID)
+
+		// Проверяем, что реферал существует и не ссылается сам на себя
+		var referrerExists bool
+		err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)`, refUUID).Scan(&referrerExists)
+		if err != nil {
+			return fmt.Errorf("check referrer: %w", err)
+		}
+		if !referrerExists {
+			return ErrReferrerNotFound
+		}
+		if *refUUID == newUserID {
+			return fmt.Errorf("self-referral not allowed")
+		}
+
+		// Создаём связь уровня 1
+		_, err = tx.Exec(ctx, `
+			INSERT INTO referrals (partner_id, referred_user_id, level, created_at)
+			VALUES ($1, $2, 1, NOW())
+			ON CONFLICT (partner_id, referred_user_id) DO NOTHING
+		`, refUUID, newUserID)
+		if err != nil {
+			return fmt.Errorf("create referral level 1: %w", err)
+		}
+
+		// 🔁 Рекурсивно добавляем уровни 2 и 3
+		if err := r.createUplineReferrals(ctx, tx, newUserID, 2); err != nil {
+			return fmt.Errorf("create upline referrals: %w", err)
+		}
+	}
+
+	// Коммитим транзакцию
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit transaction: %w", err)
+	}
+
+	return nil
+}
+
+// createUplineReferrals — рекурсивно добавляет уровни 2 и 3
+func (r *UserRepository) createUplineReferrals(ctx context.Context, tx pgx.Tx, currentUserID uuid.UUID, level int) error {
+	if level > 3 {
+		return nil // Максимум 3 уровня
+	}
+
+	// Находим, кто пригласил текущего "партнёра" (его реферала уровня 1)
+	var uplinePartnerID *uuid.UUID
+	err := tx.QueryRow(ctx, `
+		SELECT partner_id FROM referrals 
+		WHERE referred_user_id = $1 AND level = 1
+	`, currentUserID).Scan(&uplinePartnerID)
+
+	if err == pgx.ErrNoRows {
+		return nil // Нет вышестоящего партнёра — цепочка закончилась
+	}
+	if err != nil {
+		return err
+	}
+	if uplinePartnerID == nil {
+		return nil
+	}
+
+	// Создаём связь текущего пользователя с вышестоящим партнёром на новом уровне
+	_, err = tx.Exec(ctx, `
+		INSERT INTO referrals (partner_id, referred_user_id, level, created_at)
+		VALUES ($1, $2, $3, NOW())
+		ON CONFLICT (partner_id, referred_user_id) DO NOTHING
+	`, uplinePartnerID, currentUserID, level)
+	if err != nil {
+		return err
+	}
+
+	// Рекурсия для следующего уровня
+	return r.createUplineReferrals(ctx, tx, currentUserID, level+1)
 }
 
 // CreateUser создает нового пользователя

@@ -3,7 +3,9 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -14,6 +16,8 @@ import (
 	"labvasphere-api/internal/security"
 	"labvasphere-api/internal/storage/postgres"
 	"labvasphere-api/internal/validators"
+
+	"github.com/google/uuid"
 )
 
 type AuthHandler struct {
@@ -47,6 +51,7 @@ type RegisterRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 	Role     string `json:"role"` // "user" или "designer"
+	RefCode  string `json:"ref_code,omitempty"`
 }
 
 // LoginRequest - запрос входа
@@ -71,10 +76,21 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	// Валидация роли
 	if req.Role != "user" && req.Role != "designer" {
-		req.Role = "user" // по умолчанию
+		req.Role = "user"
 	}
 
-	// Создаем пользователя
+	// Валидация реферального кода (если есть)
+	var refUUID *uuid.UUID
+	if req.RefCode != "" {
+		parsed, err := uuid.Parse(req.RefCode)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "Неверный формат реферального кода")
+			return
+		}
+		refUUID = &parsed
+	}
+
+	// Создаём пользователя
 	user := &models.User{
 		FullName: req.FullName,
 		Email:    req.Email,
@@ -82,11 +98,29 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		Role:     req.Role,
 	}
 
-	err := h.userRepo.CreateUser(user)
+	// 👇 Используем транзакцию: пользователь + рефералы
+	err := h.userRepo.CreateUserWithReferral(r.Context(), user, refUUID)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
+		// Различаем ошибки: пользователь уже есть / реферал не найден
+		if errors.Is(err, postgres.ErrUserExists) {
+			writeError(w, http.StatusConflict, "Пользователь с таким email уже зарегистрирован")
+			return
+		}
+		if errors.Is(err, postgres.ErrReferrerNotFound) {
+			// Реферал не найден — регистрируем пользователя, но без привязки
+			// (или можно отклонить регистрацию — по желанию)
+			log.Printf("Referrer %s not found, registering user %s without referral", req.RefCode, user.Email)
+			// Пробуем создать без реферала
+			if err := h.userRepo.CreateUser(user); err != nil {
+				writeError(w, http.StatusBadRequest, err.Error())
+				return
+			}
+		} else {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
 	}
+
 	// Генерируем токен
 	token, err := security.GenerateToken(user.ID, user.Email, user.Role)
 	if err != nil {
@@ -94,15 +128,11 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Очищаем пароль из ответа
+	// Очищаем чувствительные данные
 	user.Password = ""
 	user.PasswordHash = ""
 
-	response := AuthResponse{
-		Token: token,
-		User:  user,
-	}
-
+	response := AuthResponse{Token: token, User: user}
 	writeJSON(w, http.StatusCreated, response)
 }
 

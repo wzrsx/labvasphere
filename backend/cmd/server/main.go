@@ -44,7 +44,7 @@ func main() {
 	projectRepo := postgres.NewProjectRepository(db)
 	hotspotRepo := postgres.NewHotspotRepository(db)
 	panoramaRepo := postgres.NewPanoramaRepository(db)
-
+	partnerRepo := postgres.NewPartnerRepository(db)
 	// Хендлеры
 	emailService := email.NewEmailService()
 	authHandler := handlers.NewAuthHandler(userRepo, emailService)
@@ -55,6 +55,7 @@ func main() {
 	userHandler := handlers.NewUserHandler(userRepo)
 	hotspotHandler := handlers.NewHotspotHandler(hotspotRepo)
 	hotspotUploadHandler := handlers.NewHotspotUploadHandler("./uploads")
+	partnerHandler := handlers.NewPartnerHandler(partnerRepo)
 
 	// Настраиваем роутер
 	r := chi.NewRouter()
@@ -117,6 +118,14 @@ func main() {
 		r.Route("/panoramas", func(r chi.Router) {
 			r.Use(middleware.AuthMiddleware)
 			panoramaHandler.RegisterRoutes(r)
+		})
+		r.Route("/partner", func(r chi.Router) {
+			r.Use(middleware.AuthMiddleware)
+			r.Get("/stats", partnerHandler.GetStats)
+			r.Get("/link", partnerHandler.GetReferralLink)
+			r.Post("/withdraw", partnerHandler.CreateWithdrawal)
+			r.Get("/transactions", partnerHandler.GetTransactions)
+			r.Get("/referrals", partnerHandler.GetReferrals)
 		})
 	})
 

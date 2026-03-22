@@ -32,9 +32,7 @@
   margin: 0 auto 20px;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+
 
 .error-message button,
 .empty-message button {
@@ -175,11 +173,6 @@
   transition: width 15s ease;
 }
 
-/* Анимации */
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(30px); }
-  to { opacity: 1; transform: translateY(0); }
-}
 
 /* Адаптив для мобильных */
 @media (max-width: 768px) {
@@ -300,11 +293,6 @@
   margin: 0 auto 20px;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
 
 /* --- ERROR STATE --- */
 .hero-container.error {

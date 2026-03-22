@@ -16,6 +16,7 @@ import SettingsPage from './pages/SettingsPage';
 import ProjectView from './pages/ProjectView';
 import EditorPage from './pages/EditorPage';
 import ProfilePage from './pages/ProfilePage';
+import ReferralHandler from './components/ReferralHandler';
 // Компонент-обёртка, чтобы получить доступ к location внутри Router
 const AppContent = () => {
   const location = useLocation();
@@ -27,6 +28,7 @@ const AppContent = () => {
 
   return (
     <>
+    <ReferralHandler />
       {showHeader && <Header />}
       <div className={showHeader ? 'main-content' : ''}>
         <Routes>

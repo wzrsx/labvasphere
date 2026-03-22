@@ -42,7 +42,7 @@
   opacity: 0.5;
 }
 
-/* Боковая панель инструментов */
+/* 🔹 Боковая панель */
 .editor-sidebar {
   width: 320px;
   height: 100%;
@@ -56,89 +56,97 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
 }
+
+/* 🔹 Полное скрытие панели при сворачивании */
 .editor-sidebar.collapsed {
-  width: 90px;
-  padding: 20px 10px;
-  overflow: hidden;
+  width: 0;
+  padding: 0;
+  border-left: none;
+  box-shadow: none;
+  overflow: visible !important; /* ← ВАЖНО: разрешить выход кнопки за пределы */
 }
-/* Кнопка сворачивания */
+
+/* 🔹 Кнопка сворачивания - базовые стили */
 .collapse-btn {
-  width: 32px;
-  height: 32px;
-  background: #bdbdbd;
+  width: 30px;
+  height: 30px;
+  background: white;
   border: 2px solid #404040;
-  border-radius: 20%;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  z-index: 100;
+  z-index: 1000;
+  flex-shrink: 0;
+  position: relative; /* ← По умолчанию relative */
 }
 
-.collapse-btn.collapsed {
-  right: 15px;
-  transform: translateX(-50%);
+/* 🔹 Кнопка в развёрнутом состоянии */
+.editor-sidebar:not(.collapsed) .collapse-btn {
+  position: relative;
+}
+
+/* 🔹 Кнопка в свёрнутом состоянии - FIXED позиция */
+.editor-sidebar.collapsed .collapse-btn {
+  position: fixed !important; /* ← FIXED чтобы выйти за пределы контейнера */
+  top: 16px !important;
+  right: 16px !important;
+  margin: 0 !important;
+  transform: rotate(180deg);
+  width: 40px !important;
+  height: 40px !important;
 }
 
 .collapse-btn svg {
   transition: transform 0.3s ease;
+  transform: rotate(0deg); /* Исходное положение */
 }
 
-/* Скрытие контента при сворачивании */
+/* 🔹 Поворот стрелки при свёрнутой панели */
+.editor-sidebar.collapsed .collapse-btn svg {
+  transform: rotate(180deg) !important; /* ← ВАЖНО: !important */
+}
+
+/* 🔹 Кнопка в развёрнутом состоянии */
+.editor-sidebar:not(.collapsed) .collapse-btn {
+  position: relative;
+}
+
+/* 🔹 Кнопка в свёрнутом состоянии - FIXED позиция */
+.editor-sidebar.collapsed .collapse-btn {
+  position: fixed !important;
+  top: 16px !important;
+  right: 16px !important;
+  margin: 0 !important;
+  width: 40px !important;
+  height: 40px !important;
+}
+
+
+/* 🔹 Скрытие всего контента панели при сворачивании */
 .editor-sidebar.collapsed .sidebar-header h3,
 .editor-sidebar.collapsed .project-info,
-.editor-sidebar.collapsed .tools-section h4,
-.editor-sidebar.collapsed .tools-grid span,
-.editor-sidebar.collapsed .actions-section h4,
-.editor-sidebar.collapsed .action-btn span,
-.editor-sidebar.collapsed .project-stats {
+.editor-sidebar.collapsed .tools-section,
+.editor-sidebar.collapsed .actions-section,
+.editor-sidebar.collapsed .project-stats,
+.editor-sidebar.collapsed .hotspot-editor-panel,
+.editor-sidebar.collapsed .media-panel,
+.editor-sidebar.collapsed .mode-toggle,
+.editor-sidebar.collapsed .hotspot-hint {
+  display: none !important;
   opacity: 0;
-  height: 0;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  pointer-events: none;
-  transition: all 0.3s ease;
+  visibility: hidden;
 }
 
-.editor-sidebar.collapsed .tools-grid {
-  grid-template-columns: 1fr;
-  gap: 10px;
+/* 🔹 Панорама на весь экран при скрытой панели */
+.editor-sidebar.collapsed + .panorama-viewer,
+.editor-container:has(.editor-sidebar.collapsed) .panorama-viewer {
+  width: 100vw;
+  margin-right: 0;
 }
-
-.editor-sidebar.collapsed .tool-btn {
-  padding: 15px 10px;
-  border-radius: 8px;
-}
-
-.editor-sidebar.collapsed .tool-btn span {
-  display: none;
-}
-
-.editor-sidebar.collapsed .actions-buttons {
-  gap: 8px;
-}
-
-.editor-sidebar.collapsed .action-btn {
-  padding: 12px;
-  justify-content: center;
-}
-
-.editor-sidebar.collapsed .action-btn svg {
-  margin: 0;
-}
-
-.editor-sidebar.collapsed .action-btn span {
-  display: none;
-}
-
-/* Панорама адаптируется под свернутую панель */
-.editor-sidebar.collapsed + .panorama-viewer {
-  margin-right: 60px;
-}
-
 /* Панорама-заглушка */
 .panorama-placeholder {
   width: 100%;
@@ -169,7 +177,7 @@
 /* Заголовок панели */
 .sidebar-header {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   margin-bottom: 25px;
   padding-bottom: 15px;
   border-bottom: 1px solid #404040;
@@ -177,13 +185,14 @@
 }
 
 .sidebar-header h3 {
-  color: white;
+  color: #161010;
   font-size: 1.5rem;
   margin: 0;
   font-weight: 600;
   white-space: nowrap;
   margin-left: 10px;
   transition: opacity 0.3s ease;
+  line-height: 1;
 }
 
 
@@ -381,17 +390,17 @@
   opacity: 0.8;
 }
 
-.stat-value {
+.editor-stat-value {
   font-size: 1.1rem;
   font-weight: 600;
   color: white;
 }
 
-.stat-value.status-published {
+.editor-stat-value.status-published {
   color: #4CAF50;
 }
 
-.stat-value.status-draft {
+.editor-stat-value.status-draft {
   color: #ff9800;
 }
 
