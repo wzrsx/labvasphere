@@ -185,6 +185,7 @@ export const getPanoramasByProject = async (projectId) => {
 export const getHotspots = async (panoramaId) => {
   try {
     const response = await api.get(`/hotspots/panorama/${panoramaId}`);
+    console.log("[GET H raw]: ", response);
     return {
       success: true,
       hotspots: Array.isArray(response.data) ? response.data : [],

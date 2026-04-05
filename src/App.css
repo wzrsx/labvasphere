@@ -1,95 +1,92 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-html,
-body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
-    Arial, sans-serif;
-  color: #333;
-  background-color: #f9f6ef;
-  margin: 0;
-  padding: 0;
-  position: relative;
-  overflow-x: hidden;
-}
-
+/* =============================================================================
+   APP LAYOUT
+   ============================================================================= */
 .app {
   display: flex;
   flex-direction: column;
-}
-.main {
-  min-height: 150vh; /* или больше */
-}
-/* Header */
-.header {
-  display: flex;
-  justify-content: space-between;
-  padding: 30px;
-  padding-bottom: 0;
+  min-height: 100vh;
 }
 
-.logo-container {
-  display: flex;
-  align-items: center;
-}
-
-.logo-img {
-  width: 100px;
-}
-
-.logo-text {
-  font-size: 1.4rem;
-  font-weight: bold;
-  color: #222;
-}
-
-.lang-button {
-  width: 50px;
-  height: 35px;
-  background: rgba(255, 230, 167, 0.14);
-  border: 2px solid rgba(153, 88, 42, 0.85);
-  border-radius: 17.5px;
-  font-size: 14px;
-  outline: none;
-  padding: 0;
-  margin: 0;
-  margin-left: 1rem;
-  cursor: pointer;
-  font: inherit;
-  transition: background-color 0.3s ease;
-}
-.lang-button:hover {
-  background-color: rgba(255, 183, 102, 0.25);
-}
-/* Main Content */
 .main {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
+  min-height: 100vh;
 }
 
+/* =============================================================================
+   HEADER
+   ============================================================================= */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-xl) var(--space-2xl);
+  padding-bottom: 0;
+  background: var(--bg-primary);
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.logo-img {
+  width: 100px;
+  height: auto;
+}
+
+.logo-text {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.lang-button {
+  width: 50px;
+  height: 35px;
+  margin: 0 1rem;
+  background: var(--accent-lighter);
+  border: 2px solid var(--accent-primary);
+  border-radius: var(--radius-full);
+  font-size: 14px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.lang-button:hover {
+  background: var(--accent-light);
+}
+
+/* =============================================================================
+   HERO SECTION
+   ============================================================================= */
 .hero {
   text-align: center;
-  margin-bottom: 3rem;
+  margin-bottom: var(--space-2xl);
   max-width: 600px;
+  padding: var(--space-xl);
 }
 
 .hero h1 {
   font-size: 2.5rem;
-  margin-bottom: 1rem;
-  color: #111;
+  margin-bottom: var(--space-md);
+  color: var(--text-primary);
 }
 
 .hero p {
   font-size: 1.25rem;
-  color: #555;
+  color: var(--text-secondary);
+}
+
+
+/* =============================================================================
+   SELECTION (Выделение текста)
+   ============================================================================= */
+::selection {
+  background: var(--accent-primary);
+  color: var(--text-inverse);
 }

@@ -14,9 +14,16 @@ import {
   getPanoramasByProject,
   uploadHotspotImage,
 } from '../services/projectService';
+import {
+  convertHotspotToEditor,
+  convertHotspotsToMarkers,
+  loadHotspotsForPanorama,
+  prepareHotspotForApi,
+} from '../utils/hotspotUtils';
 import SphereViewer from '../components/SphereViewer';
 import './EditorPage.css';
 import { CONFIG } from '../config';
+import MiniMapHotspots from '../components/MiniMap/MiniMapHotspots.jsx';
 
 const EditorPage = () => {
   const { id } = useParams();
@@ -103,7 +110,7 @@ const EditorPage = () => {
   // добавляем маркеры загруженных хотспотов в viewer
 
   // Загрузка проекта + основной панорамы + хотспотов
-  const loadProject = async () => {
+const loadProject = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -158,7 +165,7 @@ const EditorPage = () => {
               ? getMediaUrl(
                   `projects/${foundProject.id}/panoramas/${h.target_filename}`,
                 )
-              : null,
+              : null, 
             targetProjectName: h.target_filename || 'Панорама',
             icon: h.icon,
             color: h.color,
@@ -198,6 +205,7 @@ const EditorPage = () => {
       setLoading(false);
     }
   };
+
 
   const handleInputChange = (field, value) => {
     setEditorData((prev) => ({ ...prev, [field]: value }));
@@ -566,6 +574,7 @@ const EditorPage = () => {
         setIsTransitioning(false);
         setTransitionProgress(0);
       }, 300);
+        console.log("NEXT PANORAMA:", targetPanoramaId)
 
       // Обновляем currentPanoramaId и загружаем хотспоты новой панорамы
       if (targetPanoramaId) {
@@ -578,6 +587,7 @@ const EditorPage = () => {
         setCurrentPanoramaId(targetPanoramaId);
 
         // Загружаем хотспоты для новой панорамы
+        console.log("NEXT PANORAMA:", targetPanoramaId)
         const hotspotResponse = await getHotspots(targetPanoramaId);
         if (hotspotResponse.success) {
           const newHotspots = hotspotResponse.hotspots.map((h) => ({
@@ -604,6 +614,7 @@ const EditorPage = () => {
             targetProjectName: h.target_filename || 'Панорама',
             icon: h.icon,
             color: h.color,
+            media_url: h.media_url || '', 
           }));
 
           console.log(
@@ -839,7 +850,7 @@ const EditorPage = () => {
         ) : (
           <div className="panorama-placeholder">
             <div className="empty-state">
-              <svg className="empty-icon" viewBox="0 0 24 24">
+              <svg viewBox="0 0 24 24" style={{ color: 'var(--text-primary)' }}>
                 <path
                   fill="currentColor"
                   d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"
@@ -1005,25 +1016,8 @@ const EditorPage = () => {
             </button>
           </div>
           {/* 🔹 Кнопка переключения режима переходов */}
-          <div
-            className="mode-toggle"
-            style={{
-              marginTop: '12px',
-              padding: '8px',
-              background: '#f8fafc',
-              borderRadius: '6px',
-              border: '1px solid #e2e8f0',
-            }}
-          >
-            <label
-              style={{
-                fontSize: '12px',
-                color: '#475569',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
+          <div className="mode-toggle">
+            <label className="mode-toggle-label">
               <input
                 type="checkbox"
                 checked={activeTool === 'transition'}
@@ -1034,15 +1028,7 @@ const EditorPage = () => {
               />
               <span>👁️ Режим переходов</span>
             </label>
-            <span
-              style={{
-                fontSize: '10px',
-                color: '#64748b',
-                display: 'block',
-                marginTop: '4px',
-                marginLeft: '24px',
-              }}
-            >
+            <span className="mode-toggle-hint">
               {activeTool === 'transition'
                 ? 'Клик по хотспоту = переход к панораме'
                 : 'Клик по хотспоту = открыть редактор'}
@@ -1051,39 +1037,14 @@ const EditorPage = () => {
           {/* 🔹 Панель редактирования хотспота */}
           {(activeTool === 'hotspot' || activeTool === 'hotspot-edit') &&
             selectedHotspot && (
-              <div
-                className="hotspot-editor-panel"
-                style={{
-                  marginTop: '16px',
-                  paddingTop: '16px',
-                  borderTop: '1px solid #e2e8f0',
-                }}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '12px',
-                  }}
-                >
-                  <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>
-                    ✏️ Редактирование точки
-                  </h4>
+              <div className="hotspot-editor-panel">
+                <div className="hotspot-editor-header">
+                  <h4>✏️ Редактирование точки</h4>
                   <button
+                    className="hotspot-editor-close"
                     onClick={() => {
                       setSelectedHotspot(null);
                       setActiveTool('');
-                    }}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#64748b',
-                      cursor: 'pointer',
-                      padding: '4px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
                     }}
                     title="Закрыть"
                   >
@@ -1097,18 +1058,10 @@ const EditorPage = () => {
                 </div>
 
                 <div className="form-group" style={{ marginBottom: '12px' }}>
-                  <label
-                    style={{
-                      fontSize: '12px',
-                      color: '#475569',
-                      display: 'block',
-                      marginBottom: '4px',
-                    }}
-                  >
-                    Название
-                  </label>
+                  <label className="form-label">Название</label>
                   <input
                     type="text"
+                    className="form-input"
                     value={selectedHotspot.title || ''}
                     onChange={(e) => {
                       const updated = {
@@ -1120,29 +1073,13 @@ const EditorPage = () => {
                       debounceSave(updated); // ← Добавлено
                     }}
                     placeholder="Название точки"
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      border: '1px solid #cbd5e1',
-                      borderRadius: '6px',
-                      fontSize: '13px',
-                      boxSizing: 'border-box',
-                    }}
                   />
                 </div>
 
                 <div className="form-group" style={{ marginBottom: '12px' }}>
-                  <label
-                    style={{
-                      fontSize: '12px',
-                      color: '#475569',
-                      display: 'block',
-                      marginBottom: '4px',
-                    }}
-                  >
-                    Подсказка (tooltip)
-                  </label>
+                  <label className="form-label">Подсказка (tooltip)</label>
                   <textarea
+                    className="form-input"
                     value={selectedHotspot.tooltip || ''}
                     onChange={(e) => {
                       const updated = {
@@ -1155,29 +1092,11 @@ const EditorPage = () => {
                     }}
                     placeholder="Текст подсказки при наведении"
                     rows={2}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      border: '1px solid #cbd5e1',
-                      borderRadius: '6px',
-                      fontSize: '13px',
-                      resize: 'vertical',
-                      boxSizing: 'border-box',
-                    }}
                   />
                 </div>
 
                 <div className="form-group" style={{ marginBottom: '12px' }}>
-                  <label
-                    style={{
-                      fontSize: '12px',
-                      color: '#475569',
-                      display: 'block',
-                      marginBottom: '4px',
-                    }}
-                  >
-                    Тип точки
-                  </label>
+                  <label className="form-label">Тип точки</label>
                   <select
                     value={selectedHotspot.type || 'transition'}
                     onChange={(e) => {
@@ -1206,50 +1125,22 @@ const EditorPage = () => {
                   </select>
                   {/* 🔹 Загрузка кастомного изображения */}
                   <div className="form-group" style={{ marginBottom: '16px' }}>
-                    <label
-                      style={{
-                        fontSize: '12px',
-                        color: '#475569',
-                        display: 'block',
-                        marginBottom: '6px',
-                        fontWeight: 500,
-                      }}
-                    >
+                    <label className="form-label">
                       🖼️ Изображение хотспота
                     </label>
 
-                    <div
-                      style={{
-                        border: '2px dashed #e2e8f0',
-                        borderRadius: '8px',
-                        padding: '12px',
-                        background: '#f8fafc',
-                        textAlign: 'center',
-                      }}
-                    >
+                    <div className="image-upload-area">
                       {/* Превью изображения */}
                       {selectedHotspot.media_url ? (
-                        <div
-                          style={{
-                            position: 'relative',
-                            display: 'inline-block',
-                            marginBottom: '10px',
-                          }}
-                        >
+                        <div className="image-preview-container">
                           <img
                             src={`${CONFIG.MEDIA_BASE_URL}/${selectedHotspot.media_url}`}
                             alt="Hotspot preview"
-                            style={{
-                              maxWidth: '180px',
-                              maxHeight: '120px',
-                              borderRadius: '6px',
-                              border: '1px solid #e2e8f0',
-                              objectFit: 'contain',
-                              background: '#fff',
-                            }}
+                            className="image-preview"
                           />
                           <button
                             type="button"
+                            className="image-remove-btn"
                             onClick={() => {
                               setSelectedHotspot((prev) => ({
                                 ...prev,
@@ -1259,44 +1150,18 @@ const EditorPage = () => {
                                 media_url: '',
                               });
                             }}
-                            style={{
-                              position: 'absolute',
-                              top: '-8px',
-                              right: '-8px',
-                              width: '24px',
-                              height: '24px',
-                              borderRadius: '50%',
-                              background: '#ef4444',
-                              color: 'white',
-                              border: 'none',
-                              cursor: 'pointer',
-                              fontSize: '14px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
                             title="Удалить изображение"
                           >
                             ✕
                           </button>
                         </div>
                       ) : (
-                        <div
-                          style={{
-                            padding: '16px',
-                            color: '#94a3b8',
-                            fontSize: '12px',
-                          }}
-                        >
-                          <div
-                            style={{ fontSize: '24px', marginBottom: '6px' }}
-                          >
-                            📷
-                          </div>
-                          <p style={{ margin: '0 0 4px 0' }}>
+                        <div className="image-upload-placeholder">
+                          <div className="placeholder-icon">📷</div>
+                          <p className="placeholder-text">
                             Изображение не выбрано
                           </p>
-                          <p style={{ margin: 0, fontSize: '10px' }}>
+                          <p className="placeholder-hint">
                             Будет использоваться иконка по умолчанию
                           </p>
                         </div>
@@ -1304,6 +1169,7 @@ const EditorPage = () => {
 
                       {/* Скрытый input и кнопка загрузки */}
                       <input
+                        className="image-upload-input"
                         type="file"
                         accept="image/*"
                         onChange={async (e) => {
@@ -1360,21 +1226,7 @@ const EditorPage = () => {
 
                       <label
                         htmlFor="hotspot-image-input"
-                        style={{
-                          display: 'inline-block',
-                          padding: '8px 16px',
-                          background: uploadingImage
-                            ? '#94a3b8'
-                            : selectedHotspot.media_url
-                              ? '#e2e8f0'
-                              : '#3b82f6',
-                          color: 'white',
-                          borderRadius: '6px',
-                          fontSize: '12px',
-                          cursor: uploadingImage ? 'not-allowed' : 'pointer',
-                          marginTop: '8px',
-                          transition: 'background 0.2s',
-                        }}
+                        className={`image-upload-btn ${uploadingImage ? 'uploading' : ''} ${selectedHotspot.media_url ? 'has-image' : ''}`}
                       >
                         {uploadingImage
                           ? '⏳ Загрузка...'
@@ -1400,16 +1252,7 @@ const EditorPage = () => {
                 </div>
                 {selectedHotspot.type === 'transition' && (
                   <div className="form-group" style={{ marginBottom: '12px' }}>
-                    <label
-                      style={{
-                        fontSize: '12px',
-                        color: '#475569',
-                        display: 'block',
-                        marginBottom: '4px',
-                      }}
-                    >
-                      🔄 Целевая панорама
-                    </label>
+                    <label className="form-label">🔄 Целевая панорама</label>
 
                     {/* 🔹 Кнопка загрузки нового файла */}
                     <input
@@ -1418,7 +1261,7 @@ const EditorPage = () => {
                       accept="image/*"
                       onChange={handleFileSelect}
                       disabled={uploadingFile}
-                      style={{ display: 'none' }}
+                      className="panorama-upload-input"
                     />
 
                     <button
@@ -1426,34 +1269,11 @@ const EditorPage = () => {
                         !uploadingFile && fileInputRef.current?.click()
                       }
                       disabled={uploadingFile}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        background: uploadingFile ? '#94a3b8' : '#3b82f6',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '6px',
-                        fontSize: '13px',
-                        cursor: uploadingFile ? 'not-allowed' : 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        marginBottom: '8px',
-                      }}
+                      className={`panorama-upload-btn ${uploadingFile ? 'uploading' : ''}`}
                     >
                       {uploadingFile ? (
                         <>
-                          <div
-                            style={{
-                              width: '16px',
-                              height: '16px',
-                              border: '2px solid white',
-                              borderTopColor: 'transparent',
-                              borderRadius: '50%',
-                              animation: 'spin 0.8s linear infinite',
-                            }}
-                          />
+                          <div className="spinner-mini" />
                           Загрузка...
                         </>
                       ) : (
@@ -1477,63 +1297,20 @@ const EditorPage = () => {
 
                     {/* 🔹 Индикатор выбранной панорамы */}
                     {selectedHotspot.targetFileUrl && (
-                      <div
-                        style={{
-                          padding: '8px',
-                          background: '#f0fdf4',
-                          border: '1px solid #86efac',
-                          borderRadius: '6px',
-                          fontSize: '12px',
-                          color: '#166534',
-                          marginBottom: '8px',
-                        }}
-                      >
+                      <div className="selected-panorama-indicator">
                         <span>✓ {selectedHotspot.targetProjectName}</span>
                       </div>
                     )}
 
                     {/* 🔹 Разделитель */}
-                    <div
-                      style={{
-                        margin: '12px 0',
-                        borderTop: '1px solid #e2e8f0',
-                        position: 'relative',
-                      }}
-                    >
-                      <span
-                        style={{
-                          position: 'absolute',
-                          top: '-10px',
-                          left: '50%',
-                          transform: 'translateX(-50%)',
-                          background: 'white',
-                          padding: '0 8px',
-                          fontSize: '11px',
-                          color: '#64748b',
-                        }}
-                      >
-                        или выбрать из загруженных
-                      </span>
+                    <div className="panorama-divider">
+                      <span>или выбрать из загруженных</span>
                     </div>
 
                     {/* 🔹 Список панорам проекта */}
-                    <div
-                      style={{
-                        maxHeight: '200px',
-                        overflowY: 'auto',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '6px',
-                      }}
-                    >
+                    <div className="panorama-list">
                       {projectPanoramas.length === 0 ? (
-                        <div
-                          style={{
-                            padding: '12px',
-                            fontSize: '12px',
-                            color: '#64748b',
-                            textAlign: 'center',
-                          }}
-                        >
+                        <div className="panorama-list-empty">
                           Нет загруженных панорам
                         </div>
                       ) : (
@@ -1543,23 +1320,7 @@ const EditorPage = () => {
                             onClick={() => {
                               handlePanoramaSelection(panorama);
                             }}
-                            style={{
-                              width: '100%',
-                              padding: '8px 12px',
-                              background:
-                                selectedHotspot.targetProjectId === panorama.id
-                                  ? '#eff6ff'
-                                  : 'white',
-                              border: 'none',
-                              borderBottom: '1px solid #e2e8f0',
-                              fontSize: '12px',
-                              cursor: 'pointer',
-                              textAlign: 'left',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '8px',
-                              transition: 'background 0.2s',
-                            }}
+                            className={`panorama-list-item ${selectedHotspot.targetProjectId === panorama.id ? 'selected' : ''}`}
                             onMouseEnter={(e) =>
                               (e.target.style.background = '#f8fafc')
                             }
@@ -1576,33 +1337,19 @@ const EditorPage = () => {
                               height="16"
                               viewBox="0 0 24 24"
                               fill={panorama.is_main ? '#fbbf24' : '#94a3b8'}
+                              className="panorama-icon"
                             >
                               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                             </svg>
 
                             {/* 🔹 Имя файла (оригинальное!) */}
-                            <span
-                              style={{
-                                flex: 1,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                              }}
-                            >
+                            <span className="panorama-name">
                               {panorama.original_filename || panorama.filename}
                             </span>
 
                             {/* 🔹 Бейдж "Основная" */}
                             {panorama.is_main && (
-                              <span
-                                style={{
-                                  fontSize: '9px',
-                                  padding: '2px 6px',
-                                  background: '#fef3c7',
-                                  color: '#92400e',
-                                  borderRadius: '4px',
-                                }}
-                              >
+                              <span className="panorama-badge-main">
                                 Основная
                               </span>
                             )}
@@ -1627,17 +1374,7 @@ const EditorPage = () => {
                             targetFileUrl: null,
                           });
                         }}
-                        style={{
-                          width: '100%',
-                          marginTop: '8px',
-                          padding: '6px 12px',
-                          background: '#fef2f2',
-                          color: '#dc2626',
-                          border: '1px solid #fecaca',
-                          borderRadius: '6px',
-                          fontSize: '12px',
-                          cursor: 'pointer',
-                        }}
+                        className="panorama-clear-btn"
                       >
                         ✕ Очистить выбор
                       </button>
@@ -1681,49 +1418,25 @@ const EditorPage = () => {
                   </div>
                 )}
 
-                <div className="form-group" style={{ marginBottom: '16px' }}>
-                  <label
-                    style={{
-                      fontSize: '11px',
-                      color: '#64748b',
-                      display: 'block',
-                      marginBottom: '4px',
-                    }}
-                  >
-                    Координаты
-                  </label>
-                  <code
-                    style={{
-                      fontSize: '10px',
-                      display: 'block',
-                      background: '#f8fafc',
-                      padding: '6px 8px',
-                      borderRadius: '4px',
-                      color: '#475569',
-                      fontFamily: 'monospace',
-                    }}
-                  >
+                <div className="form-group hotspot-coordinates">
+                  <label className="form-label">Координаты</label>
+                  <code className="coordinates-display">
                     yaw: {selectedHotspot.position?.yaw || '—'}
                     <br />
                     pitch: {selectedHotspot.position?.pitch || '—'}
                   </code>
                 </div>
 
-                <div
-                  className="actions-buttons"
-                  style={{ display: 'flex', gap: '8px' }}
-                >
+                <div className="actions-buttons hotspot-actions">
                   <button
                     className="action-btn secondary"
                     onClick={() => goToHotspot(selectedHotspot.id)}
-                    style={{ flex: 1, padding: '6px 12px', fontSize: '12px' }}
                   >
                     🔍 Перейти
                   </button>
                   <button
                     className="action-btn danger"
                     onClick={() => deleteHotspot(selectedHotspot.id)}
-                    style={{ flex: 1, padding: '6px 12px', fontSize: '12px' }}
                   >
                     🗑️ Удалить
                   </button>
@@ -1733,42 +1446,15 @@ const EditorPage = () => {
 
           {/* 🔹 Подсказка для режима добавления */}
           {activeTool === 'hotspot' && !selectedHotspot && (
-            <div
-              className="hotspot-hint"
-              style={{
-                marginTop: '12px',
-                padding: '10px 12px',
-                background: '#eff6ff',
-                border: '1px solid #bfdbfe',
-                borderRadius: '6px',
-                fontSize: '12px',
-                color: '#1e40af',
-              }}
-            >
+            <div className="hotspot-hint">
               💡 Кликните по панораме, чтобы добавить новую точку перехода
             </div>
           )}
           {/* 🔹 Панель Медиа-галереи */}
           {activeTool === 'media' && (
-            <div
-              className="media-panel"
-              style={{
-                marginTop: '16px',
-                paddingTop: '16px',
-                borderTop: '1px solid #e2e8f0',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '12px',
-                }}
-              >
-                <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>
-                  📸 Медиа-галерея
-                </h4>
+            <div className="media-panel">
+              <div className="media-panel-header">
+                <h4>📸 Медиа-галерея</h4>
 
                 {/* 🔹 Кнопка загрузки */}
                 <input
@@ -1784,12 +1470,10 @@ const EditorPage = () => {
 
                     try {
                       for (const file of files) {
-                        // 1. Загрузка файла
                         const formData = new FormData();
                         formData.append('file', file);
                         formData.append('project_id', project.id);
 
-                        // Используем fetch напрямую или ваш wrapper, если он поддерживает FormData
                         const uploadRes = await uploadPanorama(
                           file,
                           project.id,
@@ -1802,12 +1486,10 @@ const EditorPage = () => {
                           project_id: project.id,
                           filename: uploadRes.filename,
                           original_filename: file.name,
-                          title: file.name.split('.')[0], // Имя без расширения
+                          title: file.name.split('.')[0],
                           is_main: false,
                           file_size: file.size,
                           mime_type: file.type,
-                          // thumbnail_url придет с бэкенда, если мы доработаем ответ uploadPanorama,
-                          // либо можно сгенерировать его здесь, зная логику именования (thumb_<filename>)
                           thumbnail_url: `projects/${project.id}/panoramas/thumb_${uploadRes.filename}`,
                         });
                         if (regRes.success) successCount++;
@@ -1819,11 +1501,11 @@ const EditorPage = () => {
                       alert(`❌ Ошибка: ${err.message}`);
                     } finally {
                       setUploadingMedia(false);
-                      e.target.value = ''; // Сброс инпута
+                      e.target.value = '';
                     }
                   }}
                   disabled={uploadingMedia}
-                  style={{ display: 'none' }}
+                  className="media-upload-input"
                   id="media-upload-input"
                 />
 
@@ -1832,143 +1514,77 @@ const EditorPage = () => {
                     document.getElementById('media-upload-input').click()
                   }
                   disabled={uploadingMedia}
-                  style={{
-                    padding: '6px 12px',
-                    background: uploadingMedia ? '#94a3b8' : '#3b82f6',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    cursor: uploadingMedia ? 'not-allowed' : 'pointer',
-                  }}
+                  className="media-upload-btn"
                 >
                   {uploadingMedia ? 'Загрузка...' : '+ Добавить'}
                 </button>
               </div>
 
               {/* 🔹 Список панорам */}
-              <div
-                style={{
-                  maxHeight: '400px',
-                  overflowY: 'auto',
-                  display: 'grid',
-                  gap: '8px',
-                }}
-              >
+              <div className="media-panoramas-list">
                 {projectPanoramas.length === 0 ? (
-                  <div
-                    style={{
-                      padding: '20px',
-                      textAlign: 'center',
-                      color: '#64748b',
-                      fontSize: '13px',
-                    }}
-                  >
+                  <div className="media-empty-state">
                     <svg
                       width="48"
                       height="48"
                       viewBox="0 0 24 24"
-                      fill="#cbd5e1"
-                      style={{ marginBottom: '8px' }}
+                      fill="currentColor"
+                      className="media-empty-icon"
                     >
                       <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
                     </svg>
                     <p>Нет загруженных панорам</p>
-                    <p style={{ fontSize: '11px', marginTop: '4px' }}>
+                    <p className="media-empty-hint">
                       Загрузите файлы через кнопку «Добавить»
                     </p>
                   </div>
                 ) : (
-                  projectPanoramas.map((panorama) => (
-                    <div
-                      key={panorama.id}
-                      style={{
-                        padding: '10px',
-                        background: '#f8fafc',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '6px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: '50px',
-                          height: '50px',
-                          background: '#e2e8f0',
-                          borderRadius: '4px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '20px',
-                        }}
-                      >
-                        📷
-                      </div>
-                      <div style={{ flex: 1, overflow: 'hidden' }}>
-                        <div
-                          style={{
-                            fontSize: '12px',
-                            fontWeight: 500,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {panorama.original_filename || panorama.filename}
+                  <div className="media-grid">
+                    {projectPanoramas.map((panorama) => (
+                      <div key={panorama.id} className="media-item">
+                        <div className="media-item-thumbnail">
+                          {panorama.thumbnail_url ? (
+                            <img
+                              src={getMediaUrl(panorama.thumbnail_url)}
+                              alt={panorama.title}
+                            />
+                          ) : (
+                            <div className="media-item-placeholder">📷</div>
+                          )}
                         </div>
-                        <div
-                          style={{
-                            fontSize: '10px',
-                            color: '#64748b',
-                            marginTop: '2px',
-                          }}
-                        >
-                          {panorama.is_main
-                            ? '🏠 Основная'
-                            : '📁 Дополнительная'}
+                        <div className="media-item-info">
+                          <div className="media-item-title">
+                            {panorama.original_filename || panorama.filename}
+                          </div>
+                          <div className="media-item-subtitle">
+                            {panorama.is_main
+                              ? '🏠 Основная'
+                              : '📁 Дополнительная'}
+                          </div>
                         </div>
+                        <button
+                          onClick={async () => {
+                            const targetUrl = getMediaUrl(
+                              `projects/${project.id}/panoramas/${panorama.filename}`,
+                            );
+                            await handlePanoramaTransition(
+                              targetUrl,
+                              panorama.original_filename || panorama.filename,
+                              panorama.id,
+                            );
+                          }}
+                          className="media-item-btn"
+                        >
+                          Перейти
+                        </button>
                       </div>
-                      <button
-                        onClick={async () => {
-                          const targetUrl = getMediaUrl(
-                            `projects/${project.id}/panoramas/${panorama.filename}`,
-                          );
-                          await handlePanoramaTransition(
-                            targetUrl,
-                            panorama.original_filename || panorama.filename,
-                            panorama.id,
-                          );
-                        }}
-                        style={{
-                          padding: '6px 10px',
-                          background: '#3b82f6',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          fontSize: '11px',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Перейти
-                      </button>
-                    </div>
-                  ))
+                    ))}
+                  </div>
                 )}
               </div>
 
               {/* 🔹 Статистика */}
-              <div
-                style={{
-                  marginTop: '12px',
-                  padding: '8px',
-                  background: '#f1f5f9',
-                  borderRadius: '6px',
-                  fontSize: '11px',
-                  color: '#64748b',
-                }}
-              >
+              <div className="media-stats">
                 <strong>Всего панорам:</strong> {projectPanoramas.length}
               </div>
             </div>
@@ -2055,6 +1671,7 @@ const EditorPage = () => {
             </span>
           </div>
         </div>
+        
       </div>
     </div>
   );

@@ -1,62 +1,51 @@
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
-}
+/* =============================================================================
+   CSS ПЕРЕМЕННЫЕ (THEMING)
+   ============================================================================= */
 :root {
-  /* Фон */
+  /* 🔹 Фон */
   --bg-primary: #f9f6ef;
-  --bg-secondary: #EBE0D0;
+  --bg-secondary: #ebe0d0;
+  --bg-tertiary: #ffffff;
+  --bg-gradient: linear-gradient(135deg, #f9f7f2 0%, #f5f0e6 100%);
   --bg-card: #FFFFFF;
-  --bg-gradient: linear-gradient(135deg, #F9F7F2 0%, #F5F0E6 100%);
+  --bg-header: #fcfbf9;
+
+  /* 🔹 Текст */
+  --text-primary: #3e3a33;
+  --text-secondary: #6b6358;
+  --text-muted: #9c948a;
+  --text-inverse: #ffffff;
   
-  /* Текст */
-  --text-primary: #3E3A33;
-  --text-secondary: #6B6358;
-  --text-muted: #9C948A;
-  --text-inverse: #FFFFFF;
-  
-  /* Акценты */
+  /* 🔹 Акценты */
   --accent-primary: rgba(153, 88, 42, 0.85);
   --accent-hover: rgb(153, 88, 42);
-  --accent-light: #D4C4B0;
-  --accent-lighter: #E8E0D5;
+  --accent-light: #d4c4b0;
+  --accent-lighter: #e8e0d5;
   
-  /* Статусы */
-  --success: #7A9B76;
+  /* 🔹 Статусы */
+  --success: #7a9b76;
   --success-bg: rgba(122, 155, 118, 0.5);
-  --warning: #C9A961;
+  --warning: #c9a961;
   --warning-bg: rgba(201, 169, 97, 0.5);
-  --error: #B87B6E;
+  --error: #b87b6e;
   --error-bg: rgba(184, 123, 110, 0.12);
+  --danger: #ef4444;
+  --danger-hover: #dc2626;
   
-  /* Границы и тени */
-  --border: #E8E0D5;
-  --border-hover: #D4C4B0;
+  /* 🔹 Границы и тени */
+  --border: #e8e0d5;
+  --border-hover: #d4c4b0;
   --shadow: 0 2px 12px rgba(62, 58, 51, 0.08);
   --shadow-hover: 0 4px 20px rgba(62, 58, 51, 0.12);
   
-  /* Радиусы */
+  /* 🔹 Радиусы */
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 20px;
   --radius-full: 9999px;
   
-  /* Отступы */
+  /* 🔹 Отступы */
   --space-xs: 0.25rem;
   --space-sm: 0.5rem;
   --space-md: 1rem;
@@ -64,149 +53,140 @@ code {
   --space-xl: 2rem;
   --space-2xl: 3rem;
   
-  /* Анимации */
+  /* 🔹 Анимации */
   --transition-fast: 0.15s ease;
   --transition-normal: 0.25s ease;
   --transition-slow: 0.4s ease-in;
 }
-/* ----------------------------------------------------------------------------
-   FADE IN UP - Плавное появление с движением вверх
-   Используется: карточки, секции, кнопки, заголовки
----------------------------------------------------------------------------- */
+
+/* =============================================================================
+   ТЁМНАЯ ТЕМА
+   ============================================================================= */
+.dark-theme {
+  /* 🔹 Фон */
+  --bg-primary: #181512;
+  --bg-secondary: #211c18;
+  --bg-tertiary: #2c251e;
+  --bg-gradient: linear-gradient(135deg, #181512 0%, #211c18 100%);
+  --bg-card: #1e1914;
+  --bg-header: #201e1c;
+
+  /* 🔹 Текст */
+  --text-primary: #f0e9df;
+  --text-secondary: #b8ad9e;
+  --text-muted: #7d7266;
+  
+  /* 🔹 Акценты */
+  --accent-primary: #c47a4a;
+  --accent-hover: #d68a58;
+  --accent-light: #3a3028;
+  --accent-lighter: #4a3c2f;
+  
+  /* 🔹 Границы и тени */
+  --border: #362f27;
+  --border-hover: #4a4035;
+  --shadow: 0 2px 12px rgba(12, 10, 8, 0.4);
+  --shadow-hover: 0 4px 20px rgba(12, 10, 8, 0.6);
+  
+  /* 🔹 Статусы */
+  --success: #6a8864;
+  --warning: #d4b56a;
+  --error: #c48274;
+  --danger: #e05c4a;
+  --danger-hover: #c94a38;
+
+  --success-bg: rgba(106, 136, 100, 0.25);
+  --warning-bg: rgba(212, 181, 106, 0.25);
+  --error-bg: rgba(196, 130, 116, 0.25);
+}
+/* =============================================================================
+   СБРОС СТИЛЕЙ (RESET)
+   ============================================================================= */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color var(--transition-normal), color var(--transition-normal);
+  overflow-x: hidden;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+/* =============================================================================
+   АНИМАЦИИ (KEYFRAMES)
+   ============================================================================= */
 @keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-/* ----------------------------------------------------------------------------
-   FADE IN - Плавное появление (прозрачность)
-   Используется: модальные окна, уведомления, оверлеи
----------------------------------------------------------------------------- */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-/* ----------------------------------------------------------------------------
-   SLIDE DOWN - Появление сверху вниз
-   Используется: уведомления, выпадающие формы
----------------------------------------------------------------------------- */
 @keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-/* ----------------------------------------------------------------------------
-   SLIDE UP - Появление снизу вверх
-   Используется: модальные окна, диалоговые окна
----------------------------------------------------------------------------- */
 @keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
-/* ----------------------------------------------------------------------------
-   SHAKE - Тряска (ошибки валидации)
-   Используется: сообщения об ошибках в формах
----------------------------------------------------------------------------- */
 @keyframes shake {
-  0%, 100% {
-    transform: translateX(0);
-  }
-  25% {
-    transform: translateX(-4px);
-  }
-  75% {
-    transform: translateX(4px);
-  }
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
 }
 
-/* ----------------------------------------------------------------------------
-   SPIN - Вращение (загрузка)
-   Используется: спиннеры, индикаторы загрузки
----------------------------------------------------------------------------- */
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
-/* ----------------------------------------------------------------------------
-   PULSE - Пульсация (активные элементы)
-   Используется: кнопки, индикаторы активности
----------------------------------------------------------------------------- */
 @keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.8;
-    transform: scale(1.05);
-  }
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
 }
 
-/* ----------------------------------------------------------------------------
-   BOUNCE - Прыжок (успешные действия)
-   Используется: уведомления об успехе
----------------------------------------------------------------------------- */
 @keyframes bounce {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-5px);
-  }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
 }
 
-/* ----------------------------------------------------------------------------
-   ZOOM IN - Увеличение (модальные окна)
-   Используется: альтернатива slideUp для модалок
----------------------------------------------------------------------------- */
 @keyframes zoomIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
 
-/* ----------------------------------------------------------------------------
-   Готовые классы для быстрого применения анимаций
----------------------------------------------------------------------------- */
-
-/* Появление карточек с задержкой */
+/* =============================================================================
+   УТИЛИТАРНЫЕ КЛАССЫ АНИМАЦИЙ
+   ============================================================================= */
 .animate-fade-in-up {
   opacity: 0;
-  animation: fadeInUp var(--transition-slow, 0.4s) ease forwards;
+  animation: fadeInUp var(--transition-slow) ease forwards;
 }
 
 .animate-fade-in-up.delay-1 { animation-delay: 0.1s; }
@@ -214,66 +194,28 @@ code {
 .animate-fade-in-up.delay-3 { animation-delay: 0.3s; }
 .animate-fade-in-up.delay-4 { animation-delay: 0.4s; }
 .animate-fade-in-up.delay-5 { animation-delay: 0.5s; }
-.animate-fade-in-up.delay-6 { animation-delay: 0.6s; }
-.animate-fade-in-up.delay-7 { animation-delay: 0.7s; }
-.animate-fade-in-up.delay-8 { animation-delay: 0.8s; }
-.animate-fade-in-up.delay-9 { animation-delay: 0.9s; }
-.animate-fade-in-up.delay-10 { animation-delay: 1.0s; }
 
-/* Уведомления */
-.animate-slide-down {
-  animation: slideDown var(--transition-normal, 0.25s) ease forwards;
-}
+.animate-slide-down { animation: slideDown var(--transition-normal) ease forwards; }
+.animate-fade-in { animation: fadeIn var(--transition-normal) ease forwards; }
+.animate-slide-up { animation: slideUp var(--transition-normal) ease forwards; }
+.animate-zoom-in { animation: zoomIn var(--transition-normal) ease forwards; }
+.animate-spin { animation: spin 1s linear infinite; }
+.animate-pulse { animation: pulse 2s ease-in-out infinite; }
+.animate-bounce { animation: bounce 1s ease-in-out infinite; }
+.animate-shake { animation: shake var(--transition-fast) ease-in-out; }
 
-.animate-shake {
-  animation: shake var(--transition-fast, 0.15s) ease-in-out;
-}
-
-/* Модальные окна */
-.animate-fade-in {
-  animation: fadeIn var(--transition-normal, 0.25s) ease forwards;
-}
-
-.animate-slide-up {
-  animation: slideUp var(--transition-normal, 0.25s) ease forwards;
-}
-
-.animate-zoom-in {
-  animation: zoomIn var(--transition-normal, 0.25s) ease forwards;
-}
-
-/* Загрузка */
-.animate-spin {
-  animation: spin 1s linear infinite;
-}
-
-/* Пульсация */
-.animate-pulse {
-  animation: pulse 2s ease-in-out infinite;
-}
-
-/* Прыжок */
-.animate-bounce {
-  animation: bounce 1s ease-in-out infinite;
-}
-
-/* ----------------------------------------------------------------------------
-   Анимации при наведении (hover)
----------------------------------------------------------------------------- */
-
+/* Hover эффекты */
 .hover-lift {
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
-
 .hover-lift:hover {
   transform: translateY(-4px);
-  box-shadow: var(--shadow-hover, 0 4px 20px rgba(62, 58, 51, 0.12));
+  box-shadow: var(--shadow-hover);
 }
 
 .hover-scale {
   transition: transform var(--transition-fast);
 }
-
 .hover-scale:hover {
   transform: scale(1.02);
 }
@@ -281,7 +223,6 @@ code {
 .hover-rotate {
   transition: transform var(--transition-fast);
 }
-
 .hover-rotate:hover {
   transform: rotate(5deg);
 }

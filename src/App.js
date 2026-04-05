@@ -28,7 +28,7 @@ const AppContent = () => {
 
   return (
     <>
-    <ReferralHandler />
+      <ReferralHandler />
       {showHeader && <Header />}
       <div className={showHeader ? 'main-content' : ''}>
         <Routes>

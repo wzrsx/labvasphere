@@ -2,8 +2,10 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import ExitIcon from '../exit.svg'; // убедитесь, что путь верный
 import { useAuth } from '../hooks/useAuth';
-
+import { useTheme } from '../context/ThemeContext';
+import ThemeToggle from '../components/ThemeToggle';
 const Header = () => {
+  const { isDark } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, logout } = useAuth();
@@ -54,6 +56,7 @@ const Header = () => {
         <div className="user-profile">
           <span onClick={handleProfile}>{getUserName() || 'Пользователь'}</span>
           <button className="lang-button">RU</button>
+           <ThemeToggle />
         </div>
       )}
     </header>

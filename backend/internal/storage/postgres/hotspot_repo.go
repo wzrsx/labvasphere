@@ -25,6 +25,12 @@ func (r *HotspotRepository) Create(ctx context.Context, req models.HotspotReques
 	id := uuid.New()
 	now := time.Now()
 
+	// 🔹 Обработка указателей: преобразуем *uuid.UUID → uuid.UUID
+	var targetPanoramaID uuid.UUID
+	if req.TargetPanoramaID != nil {
+		targetPanoramaID = *req.TargetPanoramaID
+	}
+
 	query := `
 		INSERT INTO hotspots (
 			id, panorama_id, position_yaw, position_pitch,
@@ -49,24 +55,24 @@ func (r *HotspotRepository) Create(ctx context.Context, req models.HotspotReques
 	var createdAt, updatedAt time.Time
 
 	err := r.pool.QueryRow(ctx, query,
-		id,                   // $1
-		req.PanoramaID,       // $2
-		req.PositionYaw,      // $3
-		req.PositionPitch,    // $4
-		req.TargetType,       // $5
-		req.TargetPanoramaID, // $6
-		req.TargetFilename,   // $7
-		req.Title,            // $8
-		req.Tooltip,          // $9
-		req.ContentText,      // $10
-		req.MediaURL,         // $11
-		req.ExternalURL,      // $12
-		req.Icon,             // $13
-		req.Color,            // $14
-		sortOrder,            // $15
-		isActive,             // $16
-		now,                  // $17
-		now,                  // $18
+		id,                 // $1
+		req.PanoramaID,     // $2
+		req.PositionYaw,    // $3
+		req.PositionPitch,  // $4
+		req.TargetType,     // $5
+		targetPanoramaID,   // $6 ← ← ← ИСПРАВЛЕНО: значение, не указатель
+		req.TargetFilename, // $7
+		req.Title,          // $8
+		req.Tooltip,        // $9
+		req.ContentText,    // $10
+		req.MediaURL,       // $11
+		req.ExternalURL,    // $12
+		req.Icon,           // $13
+		req.Color,          // $14
+		sortOrder,          // $15
+		isActive,           // $16
+		now,                // $17
+		now,                // $18
 	).Scan(&id, &createdAt, &updatedAt)
 
 	if err != nil {
@@ -74,13 +80,14 @@ func (r *HotspotRepository) Create(ctx context.Context, req models.HotspotReques
 		return nil, fmt.Errorf("failed to create hotspot: %w", err)
 	}
 
-	return &models.HotspotResponse{
+	// 🔹 Формируем ответ
+	hotspot := &models.HotspotResponse{
 		ID:               id,
 		PanoramaID:       req.PanoramaID,
 		PositionYaw:      req.PositionYaw,
 		PositionPitch:    req.PositionPitch,
 		TargetType:       req.TargetType,
-		TargetPanoramaID: req.TargetPanoramaID,
+		TargetPanoramaID: targetPanoramaID, // ← ← ← ИСПРАВЛЕНО: значение, не указатель
 		TargetFilename:   req.TargetFilename,
 		Title:            req.Title,
 		Tooltip:          req.Tooltip,
@@ -90,12 +97,18 @@ func (r *HotspotRepository) Create(ctx context.Context, req models.HotspotReques
 		IsActive:         isActive,
 		CreatedAt:        createdAt.Format(time.RFC3339),
 		UpdatedAt:        updatedAt.Format(time.RFC3339),
-	}, nil
+	}
+
+	return hotspot, nil // ← ← ← ИСПРАВЛЕНО: добавлен return
 }
 
 func (r *HotspotRepository) Update(ctx context.Context, id uuid.UUID, req models.HotspotRequest) (*models.HotspotResponse, error) {
 	now := time.Now()
-
+	var targetPanoramaID *uuid.UUID
+	if req.TargetPanoramaID != nil {
+		val := *req.TargetPanoramaID
+		targetPanoramaID = &val
+	}
 	query := `
 		UPDATE hotspots SET
 			position_yaw = $1, position_pitch = $2,
@@ -111,36 +124,27 @@ func (r *HotspotRepository) Update(ctx context.Context, id uuid.UUID, req models
 
 	err := r.pool.QueryRow(ctx, query,
 		req.PositionYaw, req.PositionPitch,
-		req.TargetType, req.TargetPanoramaID, req.TargetFilename,
+		req.TargetType, targetPanoramaID, req.TargetFilename,
 		req.Title, req.Tooltip, req.ContentText, req.MediaURL, req.ExternalURL,
 		req.Icon, req.Color,
-		func() int {
-			if req.SortOrder != nil {
-				return *req.SortOrder
-			}
-			return 0
-		}(),
-		func() bool {
-			if req.IsActive != nil {
-				return *req.IsActive
-			}
-			return true
-		}(),
 		now,
 		id,
-	).Scan(&panoramaID, &createdAt, &now)
+	).Scan(&panoramaID, &createdAt)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to update hotspot: %w", err)
 	}
-
+	respTargetPanoramaID := uuid.Nil
+	if req.TargetPanoramaID != nil {
+		respTargetPanoramaID = *req.TargetPanoramaID
+	}
 	return &models.HotspotResponse{
 		ID:               id,
 		PanoramaID:       panoramaID,
 		PositionYaw:      req.PositionYaw,
 		PositionPitch:    req.PositionPitch,
 		TargetType:       req.TargetType,
-		TargetPanoramaID: req.TargetPanoramaID,
+		TargetPanoramaID: respTargetPanoramaID,
 		TargetFilename:   req.TargetFilename,
 		Title:            req.Title,
 		Tooltip:          req.Tooltip,
@@ -192,7 +196,9 @@ func (r *HotspotRepository) GetByPanorama(ctx context.Context, panoramaID uuid.U
 		var isActive bool
 		var createdAt, updatedAt time.Time
 
-		var contentText, mediaURL, externalURL, targetPanoramaID *string
+		// 🔹 ИСПРАВЛЕНО: *uuid.UUID для обработки NULL
+		var targetPanoramaID *uuid.UUID
+		var contentText, mediaURL, externalURL *string
 
 		err := rows.Scan(
 			&h.ID, &h.PanoramaID, &h.PositionYaw, &h.PositionPitch,
@@ -206,6 +212,7 @@ func (r *HotspotRepository) GetByPanorama(ctx context.Context, panoramaID uuid.U
 			return nil, err
 		}
 
+		// 🔹 ИСПРАВЛЕНО: Присваиваем значения после проверки на nil
 		if contentText != nil {
 			h.ContentText = *contentText
 		}
@@ -215,6 +222,11 @@ func (r *HotspotRepository) GetByPanorama(ctx context.Context, panoramaID uuid.U
 		if externalURL != nil {
 			h.ExternalURL = *externalURL
 		}
+		// 🔹 КЛЮЧЕВОЕ: присваиваем target_panorama_id
+		if targetPanoramaID != nil {
+			h.TargetPanoramaID = *targetPanoramaID
+		}
+		// Если targetPanoramaID == nil, h.TargetPanoramaID останется пустым (uuid.Nil)
 
 		h.SortOrder = int(sortOrder)
 		h.IsActive = isActive

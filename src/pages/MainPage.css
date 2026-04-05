@@ -19,7 +19,7 @@
   justify-content: space-between;
   align-items: baseline;
   padding: var(--space-md) var(--space-xl) 0 var(--space-xl);
-  background-color: rgba(255, 255, 255, 0.5);
+  background-color: var(--bg-header);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
   position: relative;
@@ -186,6 +186,7 @@
   font-size: 1rem;
   background: var(--bg-primary);
   color: var(--text-primary);
+  margin-top: var(--space-sm);
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 

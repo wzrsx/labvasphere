@@ -25,15 +25,16 @@ const RegisterForm = ({ onSwitchToLogin }) => {
       // Проверка времени хранения (опционально: реф актуален 30 дней)
       const clickTime = localStorage.getItem('referral_click_time');
       if (clickTime) {
-        const daysDiff = (new Date() - new Date(clickTime)) / (1000 * 60 * 60 * 24);
+        const daysDiff =
+          (new Date() - new Date(clickTime)) / (1000 * 60 * 60 * 24);
         if (daysDiff <= 30) {
-          setFormData(prev => ({ ...prev, refCode: savedRef }));
+          setFormData((prev) => ({ ...prev, refCode: savedRef }));
         } else {
           localStorage.removeItem('pending_ref');
           localStorage.removeItem('referral_click_time');
         }
       } else {
-        setFormData(prev => ({ ...prev, refCode: savedRef }));
+        setFormData((prev) => ({ ...prev, refCode: savedRef }));
       }
     }
   }, []);
@@ -45,7 +46,8 @@ const RegisterForm = ({ onSwitchToLogin }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { fullName, email, password, confirmPassword, role, refCode } = formData;
+    const { fullName, email, password, confirmPassword, role, refCode } =
+      formData;
 
     if (!fullName || !email || !password || !confirmPassword) {
       setError('Пожалуйста, заполните все поля');
@@ -60,7 +62,13 @@ const RegisterForm = ({ onSwitchToLogin }) => {
     setIsLoading(true);
 
     try {
-      const result = await register(fullName, email, password, role, refCode || undefined);
+      const result = await register(
+        fullName,
+        email,
+        password,
+        role,
+        refCode || undefined,
+      );
       setIsLoading(false);
 
       if (result.success) {
@@ -105,22 +113,69 @@ const RegisterForm = ({ onSwitchToLogin }) => {
       )}
 
       {/* ... остальные поля формы ... */}
-      <input name="fullName" type="text" placeholder="ФИО" className="input-field" value={formData.fullName} onChange={handleChange} disabled={isLoading} required />
-      <input name="email" type="email" placeholder="Email" className="input-field" value={formData.email} onChange={handleChange} disabled={isLoading} required />
-      
+      <input
+        name="fullName"
+        type="text"
+        placeholder="ФИО"
+        className="input-field"
+        value={formData.fullName}
+        onChange={handleChange}
+        disabled={isLoading}
+        required
+      />
+      <input
+        name="email"
+        type="email"
+        placeholder="Email"
+        className="input-field"
+        value={formData.email}
+        onChange={handleChange}
+        disabled={isLoading}
+        required
+      />
+
       <div className="password-row">
-        <input name="password" type="password" placeholder="Пароль" className="input-field" value={formData.password} onChange={handleChange} disabled={isLoading} required />
-        <input name="confirmPassword" type="password" placeholder="Повторите пароль" className="input-field" value={formData.confirmPassword} onChange={handleChange} disabled={isLoading} required />
+        <input
+          name="password"
+          type="password"
+          placeholder="Пароль"
+          className="input-field"
+          value={formData.password}
+          onChange={handleChange}
+          disabled={isLoading}
+          required
+        />
+        <input
+          name="confirmPassword"
+          type="password"
+          placeholder="Повторите пароль"
+          className="input-field"
+          value={formData.confirmPassword}
+          onChange={handleChange}
+          disabled={isLoading}
+          required
+        />
       </div>
 
-      <select name="role" className="input-field" value={formData.role} onChange={handleChange} disabled={isLoading}>
+      <select
+        name="role"
+        className="input-field"
+        value={formData.role}
+        onChange={handleChange}
+        disabled={isLoading}
+      >
         <option value="user">Пользователь</option>
         <option value="designer">Дизайнер / Архитектор</option>
       </select>
 
       <div className="register-link">
         <p>Уже есть аккаунт?</p>
-        <button type="button" className="link-button" onClick={onSwitchToLogin} disabled={isLoading}>
+        <button
+          type="button"
+          className="link-button"
+          onClick={onSwitchToLogin}
+          disabled={isLoading}
+        >
           Войти
         </button>
       </div>

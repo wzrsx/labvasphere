@@ -240,7 +240,7 @@
   gap: var(--space-lg);
 }
 
-.form-group {
+/*.form-group {
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
@@ -250,7 +250,7 @@
   font-size: 0.9rem;
   font-weight: 500;
   color: var(--text-primary);
-}
+}*/
 
 .form-input,
 .form-select {

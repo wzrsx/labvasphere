@@ -87,7 +87,7 @@
   gap: var(--space-lg);
 }
 
-.form-group {
+/*.form-group {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
@@ -97,7 +97,7 @@
   font-weight: 500;
   color: var(--text-primary);
   font-size: 0.9rem;
-}
+}*/
 
 .form-input,
 .form-textarea {
