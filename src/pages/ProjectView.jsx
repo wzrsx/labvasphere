@@ -7,6 +7,7 @@ import api from '../services/api';
 import { CONFIG } from '../config';
 import { getMainPanorama, getHotspots, getPanoramasByProject } from '../services/projectService';
 import { convertHotspotsToMarkers } from '../utils/hotspotUtils';
+import { panoramaCache } from '../utils/panoramaCache';
 
 const ProjectView = () => {
   const { id } = useParams();
@@ -20,8 +21,12 @@ const ProjectView = () => {
   const [currentPanoramaUrl, setCurrentPanoramaUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [preloading, setPreloading] = useState(false);
+  const [preloadProgress, setPreloadProgress] = useState({}); // { url: percent }
+  const [preloadStats, setPreloadStats] = useState({ total: 0, loaded: 0, failed: 0 });
   const [isTransitioning, setIsTransitioning] = useState(false);
-
+const [transitionProgress, setTransitionProgress] = useState(0);  // ← ← ← ДОЛЖНО БЫТЬ ЗДЕСЬ!
+const [transitionError, setTransitionError] = useState(null);
   const getMediaUrl = (relativePath) => {
     if (!relativePath) return null;
     if (relativePath.startsWith('http')) return relativePath;
@@ -30,68 +35,108 @@ const ProjectView = () => {
 
   // 🔹 Загрузка проекта + панорамы + хотспотов
   useEffect(() => {
-    console.log('[ProjectView] 🚀 Component mounted, project ID:', id);
-    
-    const fetchProject = async () => {
-      try {
-        console.log('[ProjectView] 📡 Fetching project data...');
-        setLoading(true);
-        setError(null);
-        
-        // 1. Загружаем проект
-        const response = await api.get(`/projects/${id}`);
-        console.log('[ProjectView] ✅ Project loaded:', response.data?.id);
-        const projectData = response.data;
+  console.log('[ProjectView] 🚀 Component mounted, project ID:', id);
+  
+  const fetchProject = async () => {
+    try {
+      console.log('[ProjectView] 📡 Fetching project data...');
+      setLoading(true);
+      setError(null);
+      
+      // 1. Загружаем проект
+      const response = await api.get(`/projects/${id}`);
+      console.log('[ProjectView] ✅ Project loaded:', response.data?.id);
+      const projectData = response.data;
 
-        // 2. Загружаем основную панораму
-        let mainPanorama = projectData.main_panorama;
-        if (!mainPanorama) {
-          console.log('[ProjectView] 🔍 No main_panorama in project, fetching separately...');
-          const mainResult = await getMainPanorama(id);
-          if (mainResult.success) {
-            mainPanorama = mainResult.panorama;
-            console.log('[ProjectView] ✅ Main panorama fetched:', mainPanorama?.id);
-          }
+      // 2. Загружаем основную панораму
+      let mainPanorama = projectData.main_panorama;
+      if (!mainPanorama) {
+        console.log('[ProjectView] 🔍 No main_panorama in project, fetching separately...');
+        const mainResult = await getMainPanorama(id);
+        if (mainResult.success) {
+          mainPanorama = mainResult.panorama;
+          console.log('[ProjectView] ✅ Main panorama fetched:', mainPanorama?.id);
         }
-
-        setProject({ ...projectData, main_panorama: mainPanorama });
-        
-        // 3. Инициализируем текущую панораму
-        if (mainPanorama?.id) {
-          console.log('[ProjectView] 🎯 Setting current panorama:', mainPanorama.id);
-          setCurrentPanoramaId(mainPanorama.id);
-          
-          const panoramaUrl = getMediaUrl(
-            `projects/${projectData.id}/panoramas/${mainPanorama.filename}`
-          );
-          console.log('[ProjectView] 🔗 Panorama URL:', panoramaUrl);
-          setCurrentPanoramaUrl(panoramaUrl);
-          
-          // 4. Загружаем хотспоты для текущей панорамы
-          console.log('[ProjectView] 📍 Loading hotspots for panorama:', mainPanorama.id);
-          await loadHotspots(mainPanorama.id, projectData.id);
-        }
-        
-        // 5. Загружаем все панорамы проекта (для переходов)
-        console.log('[ProjectView] 📸 Fetching all project panoramas...');
-        const panoramasResponse = await getPanoramasByProject(projectData.id);
-        if (panoramasResponse.success) {
-          setAllPanoramas(panoramasResponse.panoramas);
-          console.log('[ProjectView] ✅ Loaded', panoramasResponse.panoramas.length, 'panoramas');
-        }
-      } catch (err) {
-        console.error('[ProjectView] ❌ Error fetching project:', err);
-        const message = err.response?.data?.error || 'Проект не найден';
-        setError(message);
-      } finally {
-        console.log('[ProjectView] 🏁 Loading finished');
-        setLoading(false);
       }
-    };
 
-    if (id) fetchProject();
-  }, [id]);
+      setProject({ ...projectData, main_panorama: mainPanorama });
+      
+      // 3. Инициализируем текущую панораму
+      if (mainPanorama?.id) {
+        console.log('[ProjectView] 🎯 Setting current panorama:', mainPanorama.id);
+        setCurrentPanoramaId(mainPanorama.id);
+        
+        const panoramaUrl = getMediaUrl(
+          `projects/${projectData.id}/panoramas/${mainPanorama.filename}`
+        );
+        console.log('[ProjectView] 🔗 Panorama URL:', panoramaUrl);
+        setCurrentPanoramaUrl(panoramaUrl);
+        
+        // 🔹 Предзагружаем основную панораму в кэш
+        try {
+          await panoramaCache.preload(panoramaUrl);
+        } catch (err) {
+          console.warn('[ProjectView] ⚠️ Failed to preload main panorama:', err);
+        }
+        
+        // 4. Загружаем хотспоты для текущей панорамы
+        console.log('[ProjectView] 📍 Loading hotspots for panorama:', mainPanorama.id);
+        await loadHotspots(mainPanorama.id, projectData.id);
+      }
+      
+      // 5. Загружаем все панорамы проекта (для переходов + кэширования)
+      console.log('[ProjectView] 📸 Fetching all project panoramas...');
+      const panoramasResponse = await getPanoramasByProject(projectData.id);
+      if (panoramasResponse.success) {
+        setAllPanoramas(panoramasResponse.panoramas);
+        console.log('[ProjectView] ✅ Loaded', panoramasResponse.panoramas.length, 'panoramas');
+        
+        // 🔹 Предзагружаем ВСЕ панорамы проекта в кэш (фоновая загрузка)
+        preloadAllPanoramas(panoramasResponse.panoramas, projectData.id);
+      }
+    } catch (err) {
+      console.error('[ProjectView] ❌ Error fetching project:', err);
+      const message = err.response?.data?.error || 'Проект не найден';
+      setError(message);
+    } finally {
+      console.log('[ProjectView] 🏁 Loading finished');
+      setLoading(false);
+    }
+  };
 
+  if (id) fetchProject();
+}, [id]);
+// 🔹 Предзагрузка всех панорам проекта в кэш
+const preloadAllPanoramas = async (panoramas, projectId) => {
+  if (!panoramas?.length || !projectId) return;
+  
+  console.log(`[ProjectView] 🔄 Preloading ${panoramas.length} panoramas...`);
+  setPreloading(true);
+  setPreloadStats({ total: panoramas.length, loaded: 0, failed: 0 });
+  
+  const urls = panoramas.map(p => 
+    getMediaUrl(`projects/${projectId}/panoramas/${p.filename}`)
+  ).filter(url => url); // Убираем null/undefined
+  
+  try {
+    const result = await panoramaCache.preloadMany(urls, (url, percent) => {
+      // Обновляем прогресс для конкретного URL
+      setPreloadProgress(prev => ({ ...prev, [url]: percent }));
+    });
+    
+    setPreloadStats({
+      total: panoramas.length,
+      loaded: result.successful,
+      failed: result.failed
+    });
+    
+    console.log(`[ProjectView] ✅ Preload complete: ${result.successful}/${panoramas.length}`);
+  } catch (err) {
+    console.error('[ProjectView] ❌ Preload error:', err);
+  } finally {
+    setPreloading(false);
+  }
+};
   // 🔹 Загрузка хотспотов для указанной панорамы
   const loadHotspots = async (panoramaId, projectId) => {
     console.log('[ProjectView] 📍 loadHotspots called:', { panoramaId, projectId });
@@ -214,70 +259,67 @@ const ProjectView = () => {
   }
 };
 
-  // 🔹 Переход к другой панораме
-  const handlePanoramaTransition = async (targetUrl, targetName, targetPanoramaId) => {
-    console.log('[ProjectView] 🔄 handlePanoramaTransition called:', { targetUrl, targetName, targetPanoramaId });
+  // 🔹 Переход к другой панораме (с использованием кэша)
+const handlePanoramaTransition = async (targetUrl, targetName, targetPanoramaId) => {
+  console.log('[ProjectView] 🔄 handlePanoramaTransition called:', { targetUrl, targetName, targetPanoramaId });
+  
+  if (!targetUrl) {
+    console.error('[ProjectView] ❌ No targetUrl provided');
+    setError('Не указан URL панорамы');
+    return;
+  }
+
+  let absoluteUrl = targetUrl;
+  if (!targetUrl.startsWith('http')) {
+    absoluteUrl = `${CONFIG.MEDIA_BASE_URL}/${targetUrl}`;
+  }
+  console.log('[ProjectView] 🔗 Absolute URL:', absoluteUrl);
+
+  console.log('[ProjectView] ⏳ Starting transition...');
+  setIsTransitioning(true);
+
+  try {
+    // 🔹 ПРОВЕРКА КЭША: если изображение уже загружено — переход мгновенный
+    const cachedImage = panoramaCache.get(absoluteUrl);
     
-    if (!targetUrl) {
-      console.error('[ProjectView] ❌ No targetUrl provided');
-      setError('Не указан URL панорамы');
-      return;
+    if (cachedImage) {
+      console.log('[ProjectView] ⚡ Cache hit! Instant transition');
+      // Кэш хит — переходим сразу
+    } else {
+      // Кэш промах — загружаем с прогрессом
+      console.log('[ProjectView] 📥 Cache miss, loading...');
+      await panoramaCache.preload(absoluteUrl, (url, percent) => {
+        setTransitionProgress(percent);
+      });
     }
 
-    let absoluteUrl = targetUrl;
-    if (!targetUrl.startsWith('http')) {
-      absoluteUrl = `${CONFIG.MEDIA_BASE_URL}/${targetUrl}`;
-    }
-    console.log('[ProjectView] 🔗 Absolute URL:', absoluteUrl);
-
-    console.log('[ProjectView] ⏳ Starting transition...');
-    setIsTransitioning(true);
-
-    try {
-      // Предзагрузка изображения
-      console.log('[ProjectView] 🖼️ Preloading image...');
-      await new Promise((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => {
-          console.log('[ProjectView] ✅ Image preloaded successfully');
-          resolve();
-        };
-        img.onerror = (err) => {
-          console.error('[ProjectView] ❌ Image preload failed:', err);
-          reject(new Error('Не удалось загрузить изображение'));
-        };
-        img.src = absoluteUrl + '?t=' + Date.now();
-      });
-
-      // Переход через SphereViewer
-      console.log('[ProjectView] 🎬 Calling changePanorama()...');
-      await sphereViewerRef.current?.changePanorama(absoluteUrl, {
-        transition: 'fade',
-        duration: 800
-      });
-      console.log('[ProjectView] ✅ Panorama changed');
+    // Переход через SphereViewer
+    console.log('[ProjectView] 🎬 Calling changePanorama()...');
+    await sphereViewerRef.current?.changePanorama(absoluteUrl, {
+      transition: 'fade',
+      duration: 800
+    });
+    console.log('[ProjectView] ✅ Panorama changed');
+    
+    // Обновляем текущую панораму и загружаем её хотспоты
+    if (targetPanoramaId && project?.id) {
+      console.log('[ProjectView] 🔄 Updating current panorama to:', targetPanoramaId);
+      setCurrentPanoramaId(targetPanoramaId);
+      setCurrentPanoramaUrl(absoluteUrl);
       
-      // Обновляем текущую панораму и загружаем её хотспоты
-      if (targetPanoramaId && project?.id) {
-        console.log('[ProjectView] 🔄 Updating current panorama to:', targetPanoramaId);
-        setCurrentPanoramaId(targetPanoramaId);
-        setCurrentPanoramaUrl(absoluteUrl);
-        
-        // 🔹 Загружаем хотспоты новой панорамы (с projectId!)
-        await loadHotspots(targetPanoramaId, project.id);
-      }
-
-      setTimeout(() => {
-        console.log('[ProjectView] 🏁 Transition finished');
-        setIsTransitioning(false);
-      }, 300);
-    } catch (err) {
-      console.error('[ProjectView] ❌ Transition error:', err);
-      setError(err.message || 'Ошибка загрузки панорамы');
-      setIsTransitioning(false);
+      // 🔹 Загружаем хотспоты новой панорамы
+      await loadHotspots(targetPanoramaId, project.id);
     }
-  };
+
+    setIsTransitioning(false);
+    setTransitionProgress(0);
+  } catch (err) {
+    console.error('[ProjectView] ❌ Transition error:', err);
+    setError(err.message || 'Ошибка загрузки панорамы');
+    setIsTransitioning(false);
+    setTransitionProgress(0);
+  }
+};
 
   // 🔹 Обработчик нажатия клавиш (Esc для выхода)
   useEffect(() => {
@@ -359,7 +401,6 @@ const ProjectView = () => {
       {/* 🔹 SphereViewer на весь экран */}
       <div className="panorama-container-fullscreen">
         <SphereViewer
-          key={`viewer-${currentPanoramaId}-${hotspots.length}`}  // ✅ Ключ для пересоздания
           ref={sphereViewerRef}
           src={currentPanoramaUrl}
           hotspots={hotspots}
@@ -369,7 +410,7 @@ const ProjectView = () => {
         />
       </div>
 
-      {/* 🔹 Оверлей перехода */}
+      {/* 🔹 Оверлей перехода 
       {isTransitioning && (
         <div className="transition-overlay-fullscreen">
           <div className="transition-spinner">
@@ -377,7 +418,7 @@ const ProjectView = () => {
           </div>
           <p>Загрузка панорамы...</p>
         </div>
-      )}
+      )}*/}
     </div>
   );
 };

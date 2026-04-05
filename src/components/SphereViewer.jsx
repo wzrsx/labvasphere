@@ -352,36 +352,19 @@ const SphereViewer = forwardRef((props, ref) => {
 
   // Рендер
   if (!isViewerReady || !isPanoramaLoaded) {
-    return (
-      <div
-        ref={containerRef}
-        style={{
-          width: '100%',
-          height: '100%',
-          minHeight: '225px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: '#1a1a2e',
-          color: '#fff',
-          ...style,
-        }}
-      >
-        {/*
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-          <div style={{
-            width: '40px', height: '40px',
-            border: '4px solid rgba(74,144,226,0.3)',
-            borderTopColor: '#4a90e2', borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-          }} />
-          <span style={{ fontSize: '14px', color: '#cbd5e1' }}>
-            Загрузка... {loadProgress > 0 && `(${Math.round(loadProgress)}%)`}
-          </span>
-          {initError && <span style={{ fontSize: '12px', color: '#ef4444' }}>Ошибка</span>}
-        </div>*/}
-      </div>
-    );
+    // ✅ Всегда рендерим ОДИН контейнер, лоадер — поверх
+return (
+  <div
+    ref={containerRef}
+    style={{ 
+      width: '100%', 
+      height: '100%', 
+      position: 'relative',  // ← Для позиционирования оверлея
+      ...style 
+    }}
+  >
+  </div>
+);
   }
 
   return (
