@@ -17,7 +17,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-const mediaBaseURL = "http://localhost:8080"
+const mediaBaseURL = "http://localhost:8081"
 
 type ProjectHandler struct {
 	projectRepo  *postgres.ProjectRepository

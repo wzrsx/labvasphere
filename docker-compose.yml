@@ -47,6 +47,9 @@ services:
       DATABASE_URL: postgresql://postgres:q1w2e3@db:5432/labvasphere?sslmode=disable
       PORT: "8080"   
       ENV: "development"
+      UPLOAD_DIR: "/app/uploads" 
+    volumes:
+      - ./uploads:/app/uploads
     depends_on:
       db:
         condition: service_healthy 
