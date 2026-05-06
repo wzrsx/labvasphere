@@ -67,14 +67,26 @@ func toProjectResponse(p *models.ProjectWithMainPanorama) *dto.ProjectResponse {
 	return resp
 }
 
-func (h *ProjectHandler) RegisterRoutes(r chi.Router) {
+func (h *ProjectHandler) RegisterPublicRoutes(r chi.Router) {
+	r.Get("/projects/published", h.ListPublished)
+	r.Get("/projects/public/{id}", h.GetPublicProject)
+}
+func (h *ProjectHandler) RegisterPrivateRoutes(r chi.Router) {
+	r.Get("/", h.List)
+	r.Post("/", h.CreateProject)
+	r.Get("/{id}", h.GetByID)
+	r.Put("/{id}", h.UpdateProject)
+	r.Delete("/{id}", h.DeleteProject)
+}
+
+/*func (h *ProjectHandler) RegisterRoutes(r chi.Router) {
 	r.Get("/published", h.ListPublished)
 	r.Get("/{id}", h.GetByID)
 	r.Post("/", h.CreateProject)
 	r.Get("/", h.List)
 	r.Put("/{id}", h.UpdateProject)
 	r.Delete("/{id}", h.DeleteProject)
-}
+}*/
 
 func (h *ProjectHandler) ListPublished(w http.ResponseWriter, r *http.Request) {
 	limit := 5
@@ -325,4 +337,40 @@ func (h *ProjectHandler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// GetPublicProject — публичный просмотр проекта (без авторизации)
+// Доступен только для проектов со статусом "published"
+// GET /api/v1/projects/public/{id}
+func (h *ProjectHandler) GetPublicProject(w http.ResponseWriter, r *http.Request) {
+	projectID := chi.URLParam(r, "id")
+
+	// Валидация UUID
+	if len(projectID) != 36 {
+		http.Error(w, "Invalid project ID", http.StatusBadRequest)
+		return
+	}
+
+	// Получаем проект
+	project, err := h.projectRepo.GetByID(r.Context(), projectID)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	if project == nil {
+		http.Error(w, "Project not found", http.StatusNotFound)
+		return
+	}
+
+	// Показываем только опубликованные
+	if project.Project.Status != "published" {
+		http.Error(w, "Project not found", http.StatusNotFound)
+		return
+	}
+
+	// Возвращаем ответ через существующий toProjectResponse
+	resp := toProjectResponse(project)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
 }

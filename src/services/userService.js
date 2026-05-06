@@ -48,3 +48,83 @@ export const changePassword = async (passwordData) => {
     return { success: false, error: message };
   }
 };
+
+export const uploadAvatar = async (file) => {
+  try {
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    const response = await api.post('/upload/avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      timeout: 30000,
+      onUploadProgress: (progressEvent) => {
+        const percentCompleted = Math.round(
+          (progressEvent.loaded * 100) / progressEvent.total
+        );
+        console.log(`📤 Загрузка аватара: ${percentCompleted}%`);
+      },
+    });
+
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const updatedUser = { ...currentUser, avatar_url: response.data.avatar_url };
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+
+    return { success: true, avatarUrl: response.data.avatar_url };
+  } catch (error) {
+    console.error('❌ uploadAvatar error:', error);
+    
+    let errorMessage = 'Ошибка загрузки аватара';
+    if (error.response?.data?.error) {
+      errorMessage = error.response.data.error;
+    } else if (error.code === 'ECONNABORTED') {
+      errorMessage = 'Превышено время ожидания загрузки';
+    } else if (error.message?.includes('Network Error')) {
+      errorMessage = 'Ошибка сети. Проверьте подключение';
+    }
+    
+    return { success: false, error: errorMessage };
+  }
+};
+
+export const deleteAvatar = async () => {
+  try {
+    await api.delete('/upload/avatar');
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const updatedUser = { ...currentUser, avatar_url: null };
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    
+    return { success: true };
+  } catch (error) {
+    console.error('❌ deleteAvatar error:', error);
+    return { 
+      success: false, 
+      error: error.response?.data?.error || 'Ошибка удаления аватара' 
+    };
+  }
+};
+
+export const validateAvatarFile = (file) => {
+  if (!file) {
+    return { valid: false, error: 'Файл не выбран' };
+  }
+
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  if (!allowedTypes.includes(file.type)) {
+    return { 
+      valid: false, 
+      error: 'Недопустимый формат. Разрешены: JPG, PNG, WebP' 
+    };
+  }
+
+  const maxSize = 5 * 1024 * 1024; // 5MB
+  if (file.size > maxSize) {
+    return { 
+      valid: false, 
+      error: 'Файл слишком большой. Максимум 5MB' 
+    };
+  }
+
+  return { valid: true };
+};

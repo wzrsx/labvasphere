@@ -164,7 +164,6 @@ const SphereViewer = forwardRef((props, ref) => {
     },
     [onPositionClick],
   );
-
   // Экспорт методов
   useImperativeHandle(
     ref,
@@ -317,6 +316,62 @@ const SphereViewer = forwardRef((props, ref) => {
           },
         );
       }
+      // 🔹 Горячие клавиши: F — полный экран, Esc — выход
+const handleKeyDown = (e) => {
+  // Игнорируем, если пользователь печатает в инпуте
+  if (e.target.matches('input, textarea, [contenteditable="true"]')) {
+    return;
+  }
+
+  const container = containerRef.current;
+  if (!container) return;
+  // 🔹 F11 — блокируем и показываем подсказку
+if (e.key === 'F11') {
+    e.preventDefault();
+    e.stopPropagation();
+    setTimeout(() => alert('⚠️ Используйте клавишу F для полноэкранного режима — F11 может работать некорректно'), 0);
+    return;
+  }
+  const isFullscreenKey = 
+    e.key.toLowerCase() === 'f' ||  // Английская раскладка
+    e.key === 'а' || e.key === 'А'; // Русская раскладка
+  if (isFullscreenKey) {
+    e.preventDefault();
+    
+    const isAlreadyFullscreen = document.fullscreenElement || 
+                                document.webkitFullscreenElement || 
+                                document.mozFullScreenElement || 
+                                document.msFullscreenElement;
+    
+    if (!isAlreadyFullscreen) {
+      if (container.requestFullscreen) {
+        container.requestFullscreen();
+      } else if (container.webkitRequestFullscreen) {
+        container.webkitRequestFullscreen();
+      } else if (container.mozRequestFullScreen) {
+        container.mozRequestFullScreen();
+      } else if (container.msRequestFullscreen) {
+        container.msRequestFullscreen();
+      }
+    }
+  }
+  
+  // 🔹 Esc — выход из полноэкранного режима
+  // (photo-sphere-viewer обычно обрабатывает это сам, но для надёжности дублируем)
+  if (e.key === 'Escape') {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    } else if (document.mozCancelFullScreen) {
+      document.mozCancelFullScreen();
+    } else if (document.msExitFullscreen) {
+      document.msExitFullscreen();
+    }
+  }
+};
+
+window.addEventListener('keydown', handleKeyDown);
       return () => {
         console.log('[SV] === CLEANUP ===');
         clearTimeout(timeout);
@@ -336,6 +391,7 @@ const SphereViewer = forwardRef((props, ref) => {
         autoRotatePluginRef.current = null;
         setIsViewerReady(false);
         setIsPanoramaLoaded(false);
+        window.removeEventListener('keydown', handleKeyDown);
       };
     } catch (err) {
       console.error('[SV] Init error:', err);
@@ -372,6 +428,7 @@ return (
       ref={containerRef}
       style={{ width: '100%', height: '100%', ...style }}
     />
+    
   );
 });
 

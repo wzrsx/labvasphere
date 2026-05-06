@@ -56,6 +56,7 @@ func main() {
 	hotspotHandler := handlers.NewHotspotHandler(hotspotRepo)
 	hotspotUploadHandler := handlers.NewHotspotUploadHandler("./uploads")
 	partnerHandler := handlers.NewPartnerHandler(partnerRepo)
+	avatarHandler := handlers.NewAvatarHandler(userRepo, "./uploads")
 
 	// Настраиваем роутер
 	r := chi.NewRouter()
@@ -74,6 +75,8 @@ func main() {
 
 	r.Handle("/uploads/projects/*", http.StripPrefix("/uploads/projects/",
 		http.FileServer(http.Dir("./uploads/projects"))))
+	r.Handle("/uploads/avatars/*", http.StripPrefix("/uploads/avatars/",
+		http.FileServer(http.Dir("./uploads/avatars"))))
 	// Роуты
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -98,11 +101,17 @@ func main() {
 			r.Post("/panorama", panoramaUploadHandler.UploadFile)
 			r.Post("/cover", coverHandler.UploadFile)
 			r.Post("/hotspot", hotspotUploadHandler.UploadFile)
+			r.Post("/avatar", avatarHandler.UploadAvatar)
+			r.Delete("/avatar", avatarHandler.DeleteAvatar)
 		})
+		r.Get("/projects/public/{id}", projectHandler.GetPublicProject)
+		r.Get("/panoramas/project/{id}", panoramaHandler.ListByProjectPublic)
+		r.Get("/hotspots/panorama/{id}", hotspotHandler.ListByPanoramaPublic)
+		projectHandler.RegisterPublicRoutes(r)
 		// Роуты проектов (требуют токен)
 		r.Route("/projects", func(r chi.Router) {
-			r.Use(middleware.AuthMiddleware) // ← Защита токеном
-			projectHandler.RegisterRoutes(r)
+			r.Use(middleware.AuthMiddleware)
+			projectHandler.RegisterPrivateRoutes(r)
 		})
 		// Роуты профиля (требуют аутентификации)
 		r.Route("/profile", func(r chi.Router) {

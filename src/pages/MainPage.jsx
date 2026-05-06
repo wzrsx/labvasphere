@@ -6,8 +6,10 @@ import {
   updateProjectStatus,
 } from '../services/projectService';
 import { getCurrentUser } from '../services/authService';
+import { useTranslation } from 'react-i18next';
 import Header from '../components/Header';
 import NewProjectModal from '../components/NewProjectModal';
+import ShareModal from '../components/ShareModal';
 import './MainPage.css';
 import ViewIcon from '../show.svg';
 import ShareIcon from '../share.svg';
@@ -18,6 +20,7 @@ import FavLogo from '../favourites.png';
 import { CONFIG } from '../config';
 
 const MainPage = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -74,7 +77,71 @@ const MainPage = () => {
       }
     }
   }, []);
+  const [shareModal, setShareModal] = useState({
+      isOpen: false,
+      projectId: null,
+      projectTitle: ''
+    });
+const [publishConfirmModal, setPublishConfirmModal] = useState({
+  isOpen: false,
+  project: null,
+  isLoading: false,
+});
+  const handleShareClick = (project) => {
+  // Если проект в черновике — показываем подтверждение публикации
+  if (project.status === 'draft') {
+    setPublishConfirmModal({
+      isOpen: true,
+      project: project,
+      isLoading: false,
+    });
+  } else {
+    // Если уже опубликован — сразу открываем шаринг
+    setShareModal({
+      isOpen: true,
+      projectId: project.id,
+      projectTitle: project.title
+    });
+  }
+};
+const handleConfirmPublishAndShare = async () => {
+  const project = publishConfirmModal.project;
+  if (!project) return;
 
+  setPublishConfirmModal((prev) => ({ ...prev, isLoading: true }));
+
+  try {
+    // Публикуем проект
+    const result = await updateProjectStatus(project.id, 'published');
+    
+    if (result.success) {
+      // Обновляем список проектов локально
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.id === project.id ? { ...p, status: 'published' } : p,
+        ),
+      );
+      // Закрываем модальное подтверждения
+      setPublishConfirmModal({ isOpen: false, project: null, isLoading: false });
+      // Открываем модальное окно шеринга
+      setShareModal({
+        isOpen: true,
+        projectId: project.id,
+        projectTitle: project.title
+      });
+    } else {
+      setError(result.error);
+      setPublishConfirmModal((prev) => ({ ...prev, isLoading: false }));
+    }
+  } catch (err) {
+    console.error('Ошибка публикации проекта:', err);
+    setError('Не удалось опубликовать проект');
+    setPublishConfirmModal((prev) => ({ ...prev, isLoading: false }));
+  }
+};
+  const handleCloseShareModal = () => {
+    setShareModal({ isOpen: false, projectId: null, projectTitle: '' });
+  };
   // Загрузка проектов
   useEffect(() => {
     loadProjects();
@@ -192,13 +259,12 @@ const MainPage = () => {
     <div className="dashboard">
       <main className="dashboard-main">
         <div className="hero-section">
-          <h1>Добро пожаловать, {userName}!</h1>
+          <h1>{t('main.welcome')}, {userName}!</h1>
           <p>
-            Создайте свою первую 360° панораму или продолжите работу над
-            проектом.
+            {t('main.title')}
           </p>
           <button className="btn-primary" onClick={() => setIsModalOpen(true)}>
-            + Новый проект
+            {t('main.new_project')}
           </button>
         </div>
 
@@ -216,7 +282,7 @@ const MainPage = () => {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="modal-header">
-                <h2>Подтверждение удаления</h2>
+                <h2>{t('modal.delete.title')}</h2>
                 <button
                   className="modal-close"
                   onClick={handleCloseDeleteModal}
@@ -226,11 +292,11 @@ const MainPage = () => {
               </div>
 
               <div className="modal-body">
-                <p>Вы действительно хотите удалить проект?</p>
+                <p>{t('modal.delete.confirm')}</p>
                 <p className="project-name">
                   <strong>"{deleteModal.projectName}"</strong>
                 </p>
-                <p className="warning-text">Это действие нельзя отменить.</p>
+                <p className="warning-text">{t('modal.delete.warning')}</p>
               </div>
 
               <div className="modal-actions">
@@ -240,7 +306,7 @@ const MainPage = () => {
                   onClick={handleCloseDeleteModal}
                   disabled={deleteModal.isLoading}
                 >
-                  Отмена
+                  {t('modal.delete.cancel')}
                 </button>
                 <button
                   type="button"
@@ -248,19 +314,60 @@ const MainPage = () => {
                   onClick={handleConfirmDelete}
                   disabled={deleteModal.isLoading}
                 >
-                  {deleteModal.isLoading ? 'Удаление...' : 'Удалить'}
+                  {deleteModal.isLoading ? t('modal.delete.cancel') : t('modal.delete.confirm_button')}
                 </button>
               </div>
             </div>
           </div>
         )}
+{/* Модальное окно подтверждения публикации перед шерингом */}
+{publishConfirmModal.isOpen && (
+  <div className="modal-overlay" onClick={() => setPublishConfirmModal({ isOpen: false, project: null, isLoading: false })}>
+    <div className="delete-modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-header">
+        <h2>{t('modal.publish_before_share.title')}</h2>
+        <button className="modal-close" onClick={() => setPublishConfirmModal({ isOpen: false, project: null, isLoading: false })}>
+          ×
+        </button>
+      </div>
 
+      <div className="modal-body">
+        <p>{t('modal.publish_before_share.confirm')}</p>
+        <p className="project-name">
+          <strong>"{publishConfirmModal.project?.title}"</strong>
+        </p>
+        <p className="warning-text">{t('modal.publish_before_share.warning')}</p>
+      </div>
+
+      <div className="modal-actions">
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={() => setPublishConfirmModal({ isOpen: false, project: null, isLoading: false })}
+          disabled={publishConfirmModal.isLoading}
+        >
+          {t('modal.publish_before_share.cancel')}
+        </button>
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={handleConfirmPublishAndShare}
+          disabled={publishConfirmModal.isLoading}
+        >
+          {publishConfirmModal.isLoading 
+            ? t('modal.publish_before_share.publishing') 
+            : t('modal.publish_before_share.publish_and_share')}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
         <div className="projects-section">
           <div className="projects-header">
-            <h2>Мои проекты</h2>
+            <h2>{t('projects.title')}</h2>
             <input
               type="text"
-              placeholder="Поиск по проектам..."
+              placeholder={t('projects.search_placeholder')}
               className="project-search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -271,7 +378,7 @@ const MainPage = () => {
 
 
           {loading ? (
-            <div className="empty-state">Загрузка проектов...</div>
+            <div className="empty-state">{t('projects.loading')}</div>
           ) : filteredProjects.length > 0 ? (
             <div className="projects-grid">
               {filteredProjects.map((project) => (
@@ -384,8 +491,8 @@ fill="currentColor" stroke="none">
                             </span>
                             <span>
                               {project.status === 'published'
-                                ? 'Опубликован'
-                                : 'Черновик'}
+                                ? t('projects.status.published')
+                                : t('projects.status.draft')}
                             </span>
                           </button>
                           <div className="stat-block">
@@ -400,12 +507,12 @@ fill="currentColor" stroke="none">
                       </div>
                     ) : (
                       <p className="project-description">
-                        <span className="description-label">Описание: </span>
+                        <span className="description-label">{t('projects.description.label')}</span>
                         <span className="description-text">
                           {expandedDescriptions[project.id]
                             ? project.description
                             : truncateText(
-                                project.description || 'Без описания',
+                                project.description || t('projects.description.empty'),
                                 200,
                               )}
                         </span>
@@ -416,8 +523,8 @@ fill="currentColor" stroke="none">
                               onClick={() => toggleDescription(project.id)}
                             >
                               {expandedDescriptions[project.id]
-                                ? 'Свернуть'
-                                : 'Читать далее'}
+                                ? t('projects.description.collapse')
+                                : t('projects.description.read_more')}
                             </button>
                           )}
                       </p>
@@ -427,13 +534,13 @@ fill="currentColor" stroke="none">
                     className="toggle-stats-btn"
                     onClick={() => handleToggleStats(project.id)}
                   >
-                    {project.showStats ? '📝 Описание' : '📊 Статистика'}
+                    {project.showStats ? t('projects.toggle.description') : t('projects.toggle.stats')}
                   </button>
                   <div className="project-actions">
                     <button
                       onClick={() => handleViewProject(project.id)}
                       className="action-button"
-                      title="Просмотр"
+                      title={t('projects.actions.view')}
                     >
                       <span className="button-icon">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -449,7 +556,7 @@ fill="currentColor" stroke="none">
 </svg>
                       </span>
                     </button>
-                    <button className="action-button" title="Поделиться">
+                    <button className="action-button" title="Поделиться" onClick={() => handleShareClick(project)}>
                       <span className="button-icon">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g clip-path="url(#clip0_403_2908)">
@@ -468,7 +575,7 @@ fill="currentColor" stroke="none">
                     <button
                       onClick={() => handleEditProject(project.id)}
                       className="action-button"
-                      title="Редактировать"
+                      title={t('projects.actions.edit')}
                     >
                       <span className="button-icon">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -489,7 +596,7 @@ fill="currentColor" stroke="none">
                         handleDeleteClick(project.id, project.title)
                       }
                       className="action-button btn-delete"
-                      title="Удалить"
+                      title={t('projects.actions.delete')}
                     >
                       <span className="button-icon">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -514,13 +621,13 @@ fill="currentColor" stroke="none">
             <div className="empty-state">
               {projects.length > 0 && searchQuery.trim() !== '' ? (
                 // Случай: проекты есть, но поиск не дал результатов
-                <p>Проект "{searchQuery}" не найден.</p>
+                <p>{t('projects.empty.no_results', { query: searchQuery })}</p>
               ) : (
                 // Случай: проектов вообще нет
                 <>
-                  <p>У вас пока нет проектов.</p>
+                  <p>{t('projects.empty.no_projects')}</p>
                   <p>
-                    Нажмите «+ Новый проект», чтобы загрузить первую 360° панораму.
+                    {t('projects.empty.hint')}
                   </p>
                 </>
               )}
@@ -528,6 +635,12 @@ fill="currentColor" stroke="none">
           )}
           </div>
       </main>
+      <ShareModal
+        isOpen={shareModal.isOpen}
+        onClose={handleCloseShareModal}
+        projectId={shareModal.projectId}
+        projectTitle={shareModal.projectTitle}
+      />
     </div>
   );
 };

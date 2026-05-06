@@ -31,15 +31,45 @@ api.interceptors.request.use(
   },
 );
 
-// Interceptor для обработки ошибок ответа
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Токен недействителен или просрочен
+      const requestUrl = error.config?.url || '';
+      const currentPath = window.location.pathname;
+
+      // 📋 Список публичных эндпоинтов (не требуют авторизации)
+      const publicEndpoints = [
+        '/auth/login',
+        '/auth/register',
+        '/auth/reset-password',
+        '/health',
+        '/projects/published',      // ← Список опубликованных
+        '/projects/public/',        // ← Детали проекта (с слэшем!)
+        '/panoramas/project/',
+        '/hotspots/panorama/',
+      ];
+
+      // Проверяем, был ли запрос к публичному эндпоинту
+      const isPublicRequest = publicEndpoints.some(endpoint => 
+        requestUrl.includes(endpoint)
+      );
+
+      // 🧹 Всегда очищаем невалидный токен
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/auth';
+
+      // 🚫 Не редиректим, если:
+      // 1. Запрос к публичному API, ИЛИ
+      // 2. Пользователь уже на странице авторизации
+      if (isPublicRequest || currentPath === '/auth') {
+        console.warn('⚠️ 401 on public endpoint, no redirect');
+        return Promise.reject(error);
+      }
+
+      // 🔐 Для защищённых эндпоинтов — редирект на авторизацию
+      // Сохраняем путь, чтобы вернуть пользователя после входа
+      window.location.href = `/auth?returnTo=${encodeURIComponent(currentPath)}`;
     }
     return Promise.reject(error);
   },

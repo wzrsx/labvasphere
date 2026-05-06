@@ -4,7 +4,11 @@ import ExitIcon from '../exit.svg'; // убедитесь, что путь ве�
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
 import ThemeToggle from '../components/ThemeToggle';
+import LanguageToggle from '../components/LanguageToggle';
+import { useTranslation } from 'react-i18next';
+
 const Header = () => {
+  const { t } = useTranslation();
   const { isDark } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
@@ -40,22 +44,22 @@ const Header = () => {
       <div className="logo">LABVASPHERE</div>
       <nav className="nav-links">
         <Link to="/main" className={isActive('/main') ? 'active' : ''}>
-          Мои проекты
+          {t('nav.projects')}
         </Link>
         <Link to="/partner" className={isActive('/partner') ? 'active' : ''}>
-          Партнёрская программа
+          {t('nav.partner')}
         </Link>
         <Link to="/guide" className={isActive('/guide') ? 'active' : ''}>
-          Инструкция
+          {t('nav.guide')}
         </Link>
         <Link to="/settings" className={isActive('/settings') ? 'active' : ''}>
-          Настройки
+          {t('nav.settings')}
         </Link>
       </nav>
       {isAuthenticated && (
         <div className="user-profile">
-          <span onClick={handleProfile}>{getUserName() || 'Пользователь'}</span>
-          <button className="lang-button">RU</button>
+          <span onClick={handleProfile}>{getUserName() || t('user.default')}</span>
+           <LanguageToggle />
            <ThemeToggle />
         </div>
       )}

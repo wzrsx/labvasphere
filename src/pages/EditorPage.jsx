@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   getProjects,
   updateProject,
@@ -26,6 +27,7 @@ import { CONFIG } from '../config';
 import MiniMapHotspots from '../components/MiniMap/MiniMapHotspots.jsx';
 
 const EditorPage = () => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const panoramaContainerRef = useRef(null);
@@ -74,7 +76,7 @@ const EditorPage = () => {
   // Загрузка проекта при монтировании
   useEffect(() => {
     loadProject();
-  }, [id]);
+  }, [id, t]);
 
   useEffect(() => {
     activeToolRef.current = activeTool;
@@ -224,20 +226,20 @@ const loadProject = async () => {
       if (response.success) {
         setProject(response.project);
         setUnsavedChanges(false);
-        alert('Проект успешно сохранен!');
+        alert(t('editor.alerts.saved'));
       } else {
         throw new Error(response.error);
       }
     } catch (err) {
       console.error('Ошибка сохранения:', err);
-      alert(err.message || 'Не удалось сохранить проект');
+      alert(err.message || t('editor.alerts.save_error'));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Вы уверены, что хотите удалить этот проект?')) return;
+    if (!window.confirm(t('editor.alerts.delete_confirm'))) return;
     try {
       const response = await deleteProject(id);
       if (response.success) {
@@ -856,7 +858,7 @@ const loadProject = async () => {
                   d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"
                 />
               </svg>
-              <p>Панорама не загружена</p>
+              <p>{t('editor.viewer.placeholder')}</p>
             </div>
           </div>
         )}
@@ -869,12 +871,12 @@ const loadProject = async () => {
                 <div className="spinner-ring" />
               </div>
               <p className="transition-text">
-                Загрузка: {Math.round(transitionProgress)}%
+                  {t('editor.transition.loading', { progress: Math.round(transitionProgress) })}
               </p>
               <p className="transition-subtext">
                 {editorData.hotspots.find(
                   (h) => h.targetFileUrl === project.panorama_url,
-                )?.targetProjectName || 'Панорама'}
+                )?.targetProjectName || t('editor.hotspot_editor.transition.label')}
               </p>
             </div>
 
@@ -894,7 +896,7 @@ const loadProject = async () => {
                 setTransitionProgress(0);
               }}
             >
-              Отмена
+              {t('editor.transition.cancel')}
             </button>
           </div>
         )}
@@ -908,7 +910,7 @@ const loadProject = async () => {
                 d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
               />
             </svg>
-            <span>{transitionError}</span>
+            <span>{transitionError || t('editor.transition.error')}</span>
             <button onClick={() => setTransitionError(null)}>✕</button>
           </div>
         )}
@@ -922,7 +924,7 @@ const loadProject = async () => {
           <button
             className={`collapse-btn ${isSidebarCollapsed ? 'collapsed' : ''}`}
             onClick={toggleSidebar}
-            title={isSidebarCollapsed ? 'Развернуть панель' : 'Свернуть панель'}
+            title={isSidebarCollapsed ? t('editor.sidebar.expand') : t('editor.sidebar.collapse')}
           >
             {isSidebarCollapsed ? (
               <svg viewBox="0 0 24 24" width="20" height="20">
@@ -940,38 +942,38 @@ const loadProject = async () => {
               </svg>
             )}
           </button>
-          <h3>Редактор проекта</h3>
+          <h3>{t('editor.title')}</h3>
         </div>
 
         <div className="project-info">
           <div className="form-group">
-            <label>Название</label>
+            <label>{t('editor.form.title_label')}</label>
             <input
               type="text"
               value={editorData.title}
               onChange={(e) => handleInputChange('title', e.target.value)}
-              placeholder="Название проекта"
+              placeholder={t('editor.form.title_placeholder')}
               className="project-title-input"
             />
           </div>
           <div className="form-group">
-            <label>Описание</label>
+            <label>{t('editor.form.description_label')}</label>
             <textarea
               value={editorData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
-              placeholder="Описание проекта"
+              placeholder={t('editor.form.description_placeholder')}
               className="project-description-input"
             />
           </div>
         </div>
 
         <div className="tools-section">
-          <h4>Инструменты</h4>
+          <h4>{t('editor.tools.title')}</h4>
           <div className="tools-grid">
             <button
               className={`tool-btn ${activeTool === 'hotspot' ? 'active' : ''}`}
               onClick={() => handleToolClick('hotspot')}
-              title="Точки перехода"
+              title={t('editor.tools.hotspots_title')}
             >
               <svg className="tool-icon" viewBox="0 0 24 24">
                 <circle
@@ -984,13 +986,13 @@ const loadProject = async () => {
                 />
                 <circle cx="12" cy="12" r="4" fill="currentColor" />
               </svg>
-              <span>Точки</span>
+              <span>{t('editor.tools.hotspots')}</span>
             </button>
 
             <button
               className={`tool-btn ${activeTool === 'media' ? 'active' : ''}`}
               onClick={() => handleToolClick('media')}
-              title="Медиа"
+              title={t('editor.tools.media')}
             >
               <svg className="tool-icon" viewBox="0 0 24 24">
                 <path
@@ -998,13 +1000,13 @@ const loadProject = async () => {
                   d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM8 15h2v2H8zm0-4h2v2H8zm0-4h2v2H8zm4 8h2v2h-2zm0-4h2v2h-2zm0-4h2v2h-2zm4 8h2v2h-2zm0-4h2v2h-2zm0-4h2v2h-2z"
                 />
               </svg>
-              <span>Медиа</span>
+              <span>{t('editor.tools.media')}</span>
             </button>
 
             <button
               className={`tool-btn ${activeTool === 'settings' ? 'active' : ''}`}
               onClick={() => handleToolClick('settings')}
-              title="Настройки"
+              title={t('editor.tools.settings')}
             >
               <svg className="tool-icon" viewBox="0 0 24 24">
                 <path
@@ -1012,7 +1014,7 @@ const loadProject = async () => {
                   d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"
                 />
               </svg>
-              <span>Настройки</span>
+              <span>{t('editor.tools.settings')}</span>
             </button>
           </div>
           {/* 🔹 Кнопка переключения режима переходов */}
@@ -1026,12 +1028,12 @@ const loadProject = async () => {
                 }
                 style={{ width: '16px', height: '16px', cursor: 'pointer' }}
               />
-              <span>👁️ Режим переходов</span>
+              <span>{t('editor.modes.transition')}</span>
             </label>
             <span className="mode-toggle-hint">
               {activeTool === 'transition'
-                ? 'Клик по хотспоту = переход к панораме'
-                : 'Клик по хотспоту = открыть редактор'}
+                ? t('editor.modes.transition_hint_on')
+                : t('editor.modes.transition_hint_off')}
             </span>
           </div>
           {/* 🔹 Панель редактирования хотспота */}
@@ -1039,14 +1041,14 @@ const loadProject = async () => {
             selectedHotspot && (
               <div className="hotspot-editor-panel">
                 <div className="hotspot-editor-header">
-                  <h4>✏️ Редактирование точки</h4>
+                  <h4>{t('editor.hotspot_editor.title')}</h4>
                   <button
                     className="hotspot-editor-close"
                     onClick={() => {
                       setSelectedHotspot(null);
                       setActiveTool('');
                     }}
-                    title="Закрыть"
+                    title={t('editor.hotspot_editor.close')}
                   >
                     <svg viewBox="0 0 24 24" width="18" height="18">
                       <path
@@ -1058,10 +1060,10 @@ const loadProject = async () => {
                 </div>
 
                 <div className="form-group" style={{ marginBottom: '12px' }}>
-                  <label className="form-label">Название</label>
-                  <input
+                    <label className="form-label">{t('editor.hotspot_editor.name_label')}</label>                  
+                    <input
                     type="text"
-                    className="form-input"
+                    className="hotspot-title-input hotspot-custom-input"
                     value={selectedHotspot.title || ''}
                     onChange={(e) => {
                       const updated = {
@@ -1072,14 +1074,14 @@ const loadProject = async () => {
                       updateHotspotLocal(selectedHotspot.id, updated);
                       debounceSave(updated); // ← Добавлено
                     }}
-                    placeholder="Название точки"
+                    placeholder={t('editor.hotspot_editor.name_placeholder')}
                   />
                 </div>
 
                 <div className="form-group" style={{ marginBottom: '12px' }}>
-                  <label className="form-label">Подсказка (tooltip)</label>
+                  <label className="form-label">{t('editor.hotspot_editor.tooltip_label')}</label>
                   <textarea
-                    className="form-input"
+                    className="hotspot-tooltip-input hotspot-custom-input" 
                     value={selectedHotspot.tooltip || ''}
                     onChange={(e) => {
                       const updated = {
@@ -1090,13 +1092,13 @@ const loadProject = async () => {
                       updateHotspotLocal(selectedHotspot.id, updated);
                       debounceSave(updated); // ← Добавлено
                     }}
-                    placeholder="Текст подсказки при наведении"
+                    placeholder={t('editor.hotspot_editor.tooltip_placeholder')}
                     rows={2}
                   />
                 </div>
 
                 <div className="form-group" style={{ marginBottom: '12px' }}>
-                  <label className="form-label">Тип точки</label>
+                  <label className="form-label">{t('editor.hotspot_editor.type_label')}</label>
                   <select
                     value={selectedHotspot.type || 'transition'}
                     onChange={(e) => {
@@ -1118,16 +1120,14 @@ const loadProject = async () => {
                       boxSizing: 'border-box',
                     }}
                   >
-                    <option value="transition">🔄 Переход к панораме</option>
-                    <option value="info">ℹ️ Информационная</option>
-                    <option value="media">🎬 Медиа-контент</option>
-                    <option value="link">🔗 Внешняя ссылка</option>
+                    <option value="transition">{t('editor.hotspot_editor.types.transition')}</option>
+                    <option value="info">{t('editor.hotspot_editor.types.info')}</option>
+                    <option value="media">{t('editor.hotspot_editor.types.media')}</option>
+                    <option value="link">{t('editor.hotspot_editor.types.link')}</option>
                   </select>
                   {/* 🔹 Загрузка кастомного изображения */}
                   <div className="form-group" style={{ marginBottom: '16px' }}>
-                    <label className="form-label">
-                      🖼️ Изображение хотспота
-                    </label>
+                    <label className="hotspot-image-label">{t('editor.hotspot_editor.image.label')}</label>
 
                     <div className="image-upload-area">
                       {/* Превью изображения */}
@@ -1150,7 +1150,7 @@ const loadProject = async () => {
                                 media_url: '',
                               });
                             }}
-                            title="Удалить изображение"
+                            title={t('editor.hotspot_editor.image.remove')}
                           >
                             ✕
                           </button>
@@ -1158,12 +1158,8 @@ const loadProject = async () => {
                       ) : (
                         <div className="image-upload-placeholder">
                           <div className="placeholder-icon">📷</div>
-                          <p className="placeholder-text">
-                            Изображение не выбрано
-                          </p>
-                          <p className="placeholder-hint">
-                            Будет использоваться иконка по умолчанию
-                          </p>
+                          <p className="placeholder-text">{t('editor.hotspot_editor.image.placeholder')}</p>
+                          <p className="placeholder-hint">{t('editor.hotspot_editor.image.hint')}</p>
                         </div>
                       )}
 
@@ -1228,11 +1224,11 @@ const loadProject = async () => {
                         htmlFor="hotspot-image-input"
                         className={`image-upload-btn ${uploadingImage ? 'uploading' : ''} ${selectedHotspot.media_url ? 'has-image' : ''}`}
                       >
-                        {uploadingImage
-                          ? '⏳ Загрузка...'
-                          : selectedHotspot.media_url
-                            ? '🔄 Заменить'
-                            : '📁 Выбрать изображение'}
+                        {uploadingImage 
+                          ? t('editor.hotspot_editor.image.uploading') 
+                          : selectedHotspot.media_url 
+                            ? t('editor.hotspot_editor.image.replace') 
+                            : t('editor.hotspot_editor.image.upload')}
                       </label>
                     </div>
 
@@ -1245,14 +1241,13 @@ const loadProject = async () => {
                         textAlign: 'center',
                       }}
                     >
-                      Макс. 5MB. Рекомендуется: PNG/SVG с прозрачным фоном,
-                      32x32px
+                      {t('editor.hotspot_editor.image.size_hint')}
                     </p>
                   </div>
                 </div>
                 {selectedHotspot.type === 'transition' && (
                   <div className="form-group" style={{ marginBottom: '12px' }}>
-                    <label className="form-label">🔄 Целевая панорама</label>
+                    <label className="form-label">{t('editor.hotspot_editor.transition.label')}</label>
 
                     {/* 🔹 Кнопка загрузки нового файла */}
                     <input
@@ -1261,9 +1256,13 @@ const loadProject = async () => {
                       accept="image/*"
                       onChange={handleFileSelect}
                       disabled={uploadingFile}
-                      className="panorama-upload-input"
-                    />
-
+                      style={{display: 'none'}}/>
+                    {/* 🔹 Индикатор выбранной панорамы */}
+                    {selectedHotspot.targetFileUrl && (
+                      <div className="selected-panorama-indicator">
+                        <span>✓ {selectedHotspot.targetProjectName}</span>
+                      </div>
+                    )}
                     <button
                       onClick={() =>
                         !uploadingFile && fileInputRef.current?.click()
@@ -1271,10 +1270,11 @@ const loadProject = async () => {
                       disabled={uploadingFile}
                       className={`panorama-upload-btn ${uploadingFile ? 'uploading' : ''}`}
                     >
+                      
                       {uploadingFile ? (
                         <>
                           <div className="spinner-mini" />
-                          Загрузка...
+                          {t('editor.media_panel.uploading')}
                         </>
                       ) : (
                         <>
@@ -1290,28 +1290,23 @@ const loadProject = async () => {
                             <polyline points="17 8 12 3 7 8" />
                             <line x1="12" y1="3" x2="12" y2="15" />
                           </svg>
-                          Загрузить новую панораму
+                          {t('editor.hotspot_editor.transition.upload_new')}
                         </>
                       )}
                     </button>
 
-                    {/* 🔹 Индикатор выбранной панорамы */}
-                    {selectedHotspot.targetFileUrl && (
-                      <div className="selected-panorama-indicator">
-                        <span>✓ {selectedHotspot.targetProjectName}</span>
-                      </div>
-                    )}
+                    
 
                     {/* 🔹 Разделитель */}
                     <div className="panorama-divider">
-                      <span>или выбрать из загруженных</span>
+                      <span>{t('editor.hotspot_editor.transition.or')}</span>
                     </div>
 
                     {/* 🔹 Список панорам проекта */}
                     <div className="panorama-list">
                       {projectPanoramas.length === 0 ? (
                         <div className="panorama-list-empty">
-                          Нет загруженных панорам
+                          {t('editor.hotspot_editor.transition.empty')}
                         </div>
                       ) : (
                         projectPanoramas.map((panorama) => (
@@ -1350,7 +1345,7 @@ const loadProject = async () => {
                             {/* 🔹 Бейдж "Основная" */}
                             {panorama.is_main && (
                               <span className="panorama-badge-main">
-                                Основная
+                                {t('editor.media_panel.main')}
                               </span>
                             )}
                           </button>
@@ -1376,7 +1371,7 @@ const loadProject = async () => {
                         }}
                         className="panorama-clear-btn"
                       >
-                        ✕ Очистить выбор
+                        {t('editor.hotspot_editor.transition.clear')}
                       </button>
                     )}
                   </div>
@@ -1391,7 +1386,7 @@ const loadProject = async () => {
                         marginBottom: '4px',
                       }}
                     >
-                      URL ссылки
+                      {t('editor.hotspot_editor.link.url_label')}
                     </label>
                     <input
                       type="url"
@@ -1405,7 +1400,7 @@ const loadProject = async () => {
                           linkUrl: e.target.value,
                         });
                       }}
-                      placeholder="https://example.com"
+                      placeholder={t('editor.hotspot_editor.link.url_placeholder')}
                       style={{
                         width: '100%',
                         padding: '8px 12px',
@@ -1418,27 +1413,18 @@ const loadProject = async () => {
                   </div>
                 )}
 
-                <div className="form-group hotspot-coordinates">
-                  <label className="form-label">Координаты</label>
-                  <code className="coordinates-display">
-                    yaw: {selectedHotspot.position?.yaw || '—'}
-                    <br />
-                    pitch: {selectedHotspot.position?.pitch || '—'}
-                  </code>
-                </div>
-
                 <div className="actions-buttons hotspot-actions">
                   <button
                     className="action-btn secondary"
                     onClick={() => goToHotspot(selectedHotspot.id)}
                   >
-                    🔍 Перейти
+                    {t('editor.hotspot_editor.actions.preview')}
                   </button>
                   <button
                     className="action-btn danger"
                     onClick={() => deleteHotspot(selectedHotspot.id)}
                   >
-                    🗑️ Удалить
+                    {t('editor.hotspot_editor.actions.delete')}
                   </button>
                 </div>
               </div>
@@ -1447,14 +1433,14 @@ const loadProject = async () => {
           {/* 🔹 Подсказка для режима добавления */}
           {activeTool === 'hotspot' && !selectedHotspot && (
             <div className="hotspot-hint">
-              💡 Кликните по панораме, чтобы добавить новую точку перехода
+              {t('editor.hotspot_hints.add_mode')}
             </div>
           )}
           {/* 🔹 Панель Медиа-галереи */}
           {activeTool === 'media' && (
             <div className="media-panel">
               <div className="media-panel-header">
-                <h4>📸 Медиа-галерея</h4>
+                <h4>{t('editor.media_panel.title')}</h4>
 
                 {/* 🔹 Кнопка загрузки */}
                 <input
@@ -1516,7 +1502,9 @@ const loadProject = async () => {
                   disabled={uploadingMedia}
                   className="media-upload-btn"
                 >
-                  {uploadingMedia ? 'Загрузка...' : '+ Добавить'}
+                  {uploadingMedia 
+                    ? t('editor.media_panel.uploading') 
+                    : t('editor.media_panel.add')}
                 </button>
               </div>
 
@@ -1533,9 +1521,9 @@ const loadProject = async () => {
                     >
                       <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
                     </svg>
-                    <p>Нет загруженных панорам</p>
+                    <p>{t('editor.hotspot_editor.transition.empty')}</p>
                     <p className="media-empty-hint">
-                      Загрузите файлы через кнопку «Добавить»
+                      {t('editor.media_panel.empty.hint')}
                     </p>
                   </div>
                 ) : (
@@ -1557,9 +1545,9 @@ const loadProject = async () => {
                             {panorama.original_filename || panorama.filename}
                           </div>
                           <div className="media-item-subtitle">
-                            {panorama.is_main
-                              ? '🏠 Основная'
-                              : '📁 Дополнительная'}
+                            {panorama.is_main 
+                              ? t('editor.media_panel.main') 
+                              : t('editor.media_panel.additional')}
                           </div>
                         </div>
                         <button
@@ -1575,7 +1563,7 @@ const loadProject = async () => {
                           }}
                           className="media-item-btn"
                         >
-                          Перейти
+                          {t('editor.media_panel.preview')}
                         </button>
                       </div>
                     ))}
@@ -1585,14 +1573,14 @@ const loadProject = async () => {
 
               {/* 🔹 Статистика */}
               <div className="media-stats">
-                <strong>Всего панорам:</strong> {projectPanoramas.length}
+                <strong>{t('editor.media_panel.stats')}:</strong> {projectPanoramas.length}
               </div>
             </div>
           )}
         </div>
 
         <div className="actions-section">
-          <h4>Действия</h4>
+          <h4>{t('editor.actions.title')}</h4>
           <div className="actions-buttons">
             <button
               className={`action-btn primary ${saving ? 'loading' : ''}`}
@@ -1602,7 +1590,7 @@ const loadProject = async () => {
               {saving ? (
                 <>
                   <div className="spinner-small"></div>
-                  <span>Сохранение...</span>
+                  <span>{t('editor.actions.saving')}</span>
                 </>
               ) : unsavedChanges ? (
                 <>
@@ -1612,7 +1600,7 @@ const loadProject = async () => {
                       d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"
                     />
                   </svg>
-                  <span>Сохранить изменения</span>
+                  <span>{t('editor.actions.save')}</span>
                 </>
               ) : (
                 <>
@@ -1622,7 +1610,7 @@ const loadProject = async () => {
                       d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"
                     />
                   </svg>
-                  <span>Сохранено</span>
+                  <span>{t('editor.actions.saved')}</span>
                 </>
               )}
             </button>
@@ -1634,7 +1622,7 @@ const loadProject = async () => {
                   d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
                 />
               </svg>
-              <span>Предпросмотр</span>
+              <span>{t('editor.actions.preview')}</span>
             </button>
 
             <button className="action-btn danger" onClick={handleDelete}>
@@ -1644,30 +1632,32 @@ const loadProject = async () => {
                   d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
                 />
               </svg>
-              <span>Удалить проект</span>
+              <span>{t('editor.actions.delete')}</span>
             </button>
           </div>
         </div>
 
         <div className="project-stats">
           <div className="stat-item">
-            <span className="stat-label">Точки перехода:</span>
+            <span className="stat-label">{t('editor.stats.hotspots')}</span>
             <span className="editor-stat-value">
               {editorData.hotspots.length}
             </span>
           </div>
           <div className="stat-item">
-            <span className="stat-label">Медиа-элементы:</span>
+            <span className="stat-label">{t('editor.stats.media')}</span>
             <span className="editor-stat-value">{editorData.media.length}</span>
           </div>
           <div className="stat-item">
-            <span className="stat-label">ID проекта:</span>
+            <span className="stat-label">{t('editor.stats.project_id')}</span>
             <span className="editor-stat-value">{project.id}</span>
           </div>
           <div className="stat-item">
-            <span className="stat-label">Статус:</span>
+            <span className="stat-label">{t('editor.stats.status')}</span>
             <span className={`editor-stat-value status-${project.status}`}>
-              {project.status === 'published' ? 'Опубликован' : 'Черновик'}
+              {project.status === 'published' 
+                ? t('editor.stats.status_published') 
+                : t('editor.stats.status_draft')}
             </span>
           </div>
         </div>

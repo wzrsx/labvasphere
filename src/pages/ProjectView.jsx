@@ -9,8 +9,9 @@ import { getMainPanorama, getHotspots, getPanoramasByProject } from '../services
 import { convertHotspotsToMarkers } from '../utils/hotspotUtils';
 import { panoramaCache } from '../utils/panoramaCache';
 
-const ProjectView = () => {
+const ProjectView = ({ mode = 'public' }) => {
   const { id } = useParams();
+  const isPublic = mode === 'public';
   const navigate = useNavigate();
   const sphereViewerRef = useRef(null);
   
@@ -25,8 +26,8 @@ const ProjectView = () => {
   const [preloadProgress, setPreloadProgress] = useState({}); // { url: percent }
   const [preloadStats, setPreloadStats] = useState({ total: 0, loaded: 0, failed: 0 });
   const [isTransitioning, setIsTransitioning] = useState(false);
-const [transitionProgress, setTransitionProgress] = useState(0);  // ← ← ← ДОЛЖНО БЫТЬ ЗДЕСЬ!
-const [transitionError, setTransitionError] = useState(null);
+  const [transitionProgress, setTransitionProgress] = useState(0);  // ← ← ← ДОЛЖНО БЫТЬ ЗДЕСЬ!
+  const [transitionError, setTransitionError] = useState(null);
   const getMediaUrl = (relativePath) => {
     if (!relativePath) return null;
     if (relativePath.startsWith('http')) return relativePath;
@@ -44,7 +45,10 @@ const [transitionError, setTransitionError] = useState(null);
       setError(null);
       
       // 1. Загружаем проект
-      const response = await api.get(`/projects/${id}`);
+      const apiUrl = isPublic 
+          ? `/projects/public/${id}`
+          : `/projects/${id}`;
+      const response = await api.get(apiUrl);
       console.log('[ProjectView] ✅ Project loaded:', response.data?.id);
       const projectData = response.data;
 

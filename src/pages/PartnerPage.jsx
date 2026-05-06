@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import partnerService from '../services/partnerService';
 import styles from './PartnerPage.css';
-
+import { useTranslation } from 'react-i18next'; 
 // SVG иконки (встроены, без внешних зависимостей)
 const Icons = {
   Wallet: () => (
@@ -74,6 +74,7 @@ const Icons = {
 };
 
 const PartnerPage = () => {
+  const { t } = useTranslation(); 
   const [stats, setStats] = useState(null);
   const [referralLink, setReferralLink] = useState('');
   const [loading, setLoading] = useState(true);
@@ -96,13 +97,13 @@ const PartnerPage = () => {
         setReferralLink(linkData.referral_link);
       } catch (err) {
         console.error('Failed to load partner data:', err);
-        showNotification('Не удалось загрузить данные', 'error');
+        showNotification(t('partner.notifications.load_error'), 'error');
       } finally {
         setLoading(false);
       }
     };
     loadData();
-  }, []);
+  }, [t]);
 
   const showNotification = (message, type = 'info') => {
     setNotification({ message, type });
@@ -112,9 +113,9 @@ const PartnerPage = () => {
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(referralLink);
-      showNotification('Ссылка скопирована!', 'success');
+      showNotification(t('partner.notifications.link_copied'), 'success');
     } catch {
-      showNotification('Не удалось скопировать', 'error');
+      showNotification(t('partner.notifications.copy_error'), 'error');
     }
   };
 
@@ -132,7 +133,7 @@ const PartnerPage = () => {
         method: withdrawForm.method,
         details,
       });
-      showNotification('Заявка создана! Ожидайте обработки.', 'success');
+      showNotification(t('partner.notifications.withdraw_success'), 'success');
       setWithdrawForm({
         amount: '',
         method: 'card',
@@ -144,20 +145,20 @@ const PartnerPage = () => {
       const updatedStats = await partnerService.getStats();
       setStats(updatedStats);
     } catch (err) {
-      showNotification(err.message || 'Ошибка при создании заявки', 'error');
+      showNotification(err.message || t('partner.notifications.withdraw_error'), 'error');
     }
   };
 
   if (loading) {
     return (
       <div className={styles.loading}>
-        Загрузка данных партнёрской программы...
+         {t('partner.loading')}
       </div>
     );
   }
 
   if (!stats) {
-    return <div className={styles.error}>Не удалось загрузить данные</div>;
+    return <div className={styles.error}>{t('partner.error')}</div>;
   }
 
   return (
@@ -184,11 +185,8 @@ const PartnerPage = () => {
 
         {/* Заголовок */}
         <header className="partner-header">
-          <h1>Партнёрская программа</h1>
-          <p>
-            Приглашайте дизайнеров и архитекторов — получайте процент с их
-            подписок
-          </p>
+          <h1>{t('partner.header.title')}</h1>
+          <p>{t('partner.header.subtitle')}</p>
         </header>
 
         {/* Статистика */}
@@ -201,64 +199,33 @@ const PartnerPage = () => {
                 <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
               </svg>
             </div>
-            <div className="stat-title">Доступно к выводу</div>
+            <div className="stat-title">{t('partner.stats.balance_title')}</div>
             <div className="stat-value">
               {stats?.balance_net?.toFixed(2) || '0.00'} ₽
             </div>
-            <div className="stat-subtitle">После удержания 6% налога</div>
+            <div className="stat-subtitle">{t('partner.stats.balance_note')}</div>
           </div>
 
-          <div className="stat-card">
-            <div className="stat-icon">
-              <svg className="icon" viewBox="0 0 24 24">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-              </svg>
+          {[1, 2, 3].map((level) => (
+            <div className="stat-card" key={level}>
+              <div className="stat-icon"><Icons.Users /></div>
+              <div className="stat-title">
+                {t(`partner.stats.referrals_level_${level}_title`)}
+              </div>
+              <div className="stat-value">
+                {stats?.[`referrals_level_${level}`] || 0}
+              </div>
+              <div className="stat-subtitle">
+                {t(`partner.stats.referrals_level_${level}_rate`)}
+              </div>
             </div>
-            <div className="stat-title">Рефералы 1 уровня</div>
-            <div className="stat-value">{stats?.referrals_level_1 || 0}</div>
-            <div className="stat-subtitle">7.5% с их подписок</div>
+          ))}
           </div>
-
-          <div className="stat-card">
-            <div className="stat-icon">
-              <svg className="icon" viewBox="0 0 24 24">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-              </svg>
-            </div>
-            <div className="stat-title">Рефералы 2 уровня</div>
-            <div className="stat-value">{stats?.referrals_level_2 || 0}</div>
-            <div className="stat-subtitle">5% с их подписок</div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon">
-              <svg className="icon" viewBox="0 0 24 24">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-              </svg>
-            </div>
-            <div className="stat-title">Рефералы 3 уровня</div>
-            <div className="stat-value">{stats?.referrals_level_3 || 0}</div>
-            <div className="stat-subtitle">2.5% с их подписок</div>
-          </div>
-        </div>
-
         {/* Реферальная ссылка */}
         <section className="referral-section">
           <h3 className="section-title">
-            <svg className="icon" viewBox="0 0 24 24">
-              <path d="M7 7h10v10" />
-              <path d="M7 17 17 7" />
-            </svg>
-            Ваша реферальная ссылка
+            <Icons.ArrowUpRight />
+            {t('partner.referral.title')}
           </h3>
           <div className="link-input-wrapper">
             <input
@@ -268,32 +235,22 @@ const PartnerPage = () => {
               className="link-input"
             />
             <button onClick={copyLink} className="copy-btn">
-              <svg className="icon icon-sm" viewBox="0 0 24 24">
-                <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
-                <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-              </svg>
-              Копировать
+              <Icons.Copy />
+              {t('partner.referral.copy_button')}
             </button>
           </div>
-          <p className="link-hint">
-            Пользователь считается вашим рефералом, если зарегистрируется в
-            любое время после перехода по ссылке
-          </p>
+          <p className="link-hint">{t('partner.referral.hint')}</p>
         </section>
 
         {/* Форма вывода */}
         <section className="withdraw-section">
           <h3 className="section-title">
-            <svg className="icon" viewBox="0 0 24 24">
-              <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
-              <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
-              <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
-            </svg>
-            Вывод средств
+            <Icons.Wallet />
+            {t('partner.withdraw.title')}
           </h3>
           <form onSubmit={handleWithdraw} className="withdraw-form">
             <div className="form-group">
-              <label className="form-label">Сумма (₽)</label>
+              <label className="form-label">{t('partner.withdraw.amount_label')}</label>
               <input
                 type="number"
                 step="0.01"
@@ -304,13 +261,15 @@ const PartnerPage = () => {
                   setWithdrawForm({ ...withdrawForm, amount: e.target.value })
                 }
                 className="form-input"
-                placeholder={`Макс: ${stats?.balance_net?.toFixed(2) || '0.00'} ₽`}
+                placeholder={t('partner.withdraw.amount_placeholder', { 
+                  max: stats?.balance_net?.toFixed(2) || '0.00' 
+                })}
                 required
               />
             </div>
 
             <div className="form-group">
-              <label className="form-label">Способ вывода</label>
+              <label className="form-label">{t('partner.withdraw.method_label')}</label>
               <select
                 value={withdrawForm.method}
                 onChange={(e) =>
@@ -323,25 +282,22 @@ const PartnerPage = () => {
                 }
                 className="form-select"
               >
-                <option value="card">Банковская карта (РФ)</option>
-                <option value="crypto_usdt">USDT (TRC-20)</option>
-                <option value="crypto_btc">Bitcoin (BTC)</option>
-                <option value="crypto_eth">Ethereum (ETH)</option>
+                <option value="card">{t('partner.withdraw.methods.card')}</option>
+                <option value="crypto_usdt">{t('partner.withdraw.methods.usdt')}</option>
+                <option value="crypto_btc">{t('partner.withdraw.methods.btc')}</option>
+                <option value="crypto_eth">{t('partner.withdraw.methods.eth')}</option>
               </select>
             </div>
 
             {withdrawForm.method === 'card' ? (
               <div className="form-group">
-                <label className="form-label">Номер карты</label>
+                <label className="form-label">{t('partner.withdraw.card_label')}</label>
                 <input
                   type="text"
-                  placeholder="0000 0000 0000 0000"
+                  placeholder={t('partner.withdraw.card_placeholder')}
                   value={withdrawForm.cardNumber}
                   onChange={(e) =>
-                    setWithdrawForm({
-                      ...withdrawForm,
-                      cardNumber: e.target.value,
-                    })
+                    setWithdrawForm({ ...withdrawForm, cardNumber: e.target.value })
                   }
                   className="form-input"
                   pattern="[0-9\s]{13,19}"
@@ -350,16 +306,15 @@ const PartnerPage = () => {
               </div>
             ) : (
               <div className="form-group">
-                <label className="form-label">Адрес кошелька</label>
+                <label className="form-label">{t('partner.withdraw.wallet_label')}</label>
                 <input
                   type="text"
-                  placeholder={`Адрес для ${withdrawForm.method.replace('crypto_', '').toUpperCase()}`}
+                  placeholder={t('partner.withdraw.wallet_placeholder', {
+                    crypto: withdrawForm.method.replace('crypto_', '').toUpperCase()
+                  })}
                   value={withdrawForm.walletAddress}
                   onChange={(e) =>
-                    setWithdrawForm({
-                      ...withdrawForm,
-                      walletAddress: e.target.value,
-                    })
+                    setWithdrawForm({ ...withdrawForm, walletAddress: e.target.value })
                   }
                   className="form-input"
                   required
@@ -375,35 +330,29 @@ const PartnerPage = () => {
               }
               className="submit-btn"
             >
-              Создать заявку на вывод
+              {t('partner.withdraw.submit_button')}
             </button>
-            <p className="withdraw-hint">
-              Выплаты обрабатываются в течение 1-3 рабочих дней. Крипто-выплаты
-              позиционируются как «Благотворительный взнос на развитие
-              приложения».
-            </p>
+            <p className="withdraw-hint">{t('partner.withdraw.hint')}</p>
           </form>
         </section>
 
         {/* Как это работает */}
         <section className="how-it-works-section">
-          <h3>Как это работает</h3>
+          <h3>{t('partner.how_it_works.title')}</h3>
           <div className="levels-grid">
-            <div className="level-card">
-              <div className="level-badge">1</div>
-              <div className="level-rate">7.5%</div>
-              <div className="level-desc">Прямые рефералы</div>
-            </div>
-            <div className="level-card">
-              <div className="level-badge">2</div>
-              <div className="level-rate">5.0%</div>
-              <div className="level-desc">Рефералы ваших рефералов</div>
-            </div>
-            <div className="level-card">
-              <div className="level-badge">3</div>
-              <div className="level-rate">2.5%</div>
-              <div className="level-desc">Третий уровень</div>
-            </div>
+            {[
+              { level: 1, rate: '7.5%', descKey: 'direct' },
+              { level: 2, rate: '5.0%', descKey: 'second' },
+              { level: 3, rate: '2.5%', descKey: 'third' },
+            ].map(({ level, rate, descKey }) => (
+              <div className="level-card" key={level}>
+                <div className="level-badge">{level}</div>
+                <div className="level-rate">{rate}</div>
+                <div className="level-desc">
+                  {t(`partner.how_it_works.levels.${descKey}`)}
+                </div>
+              </div>
+            ))}
           </div>
         </section>
       </div>

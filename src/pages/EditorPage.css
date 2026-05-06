@@ -175,10 +175,12 @@
 }
 
 /* ----------------------------------------------------------------------------
-   ПОЛЯ ВВОДА ПРОЕКТА
+   ПОЛЯ ВВОДА
 ---------------------------------------------------------------------------- */
 .project-title-input,
-.project-description-input {
+.project-description-input,
+.hotspot-title-input,
+.hotspot-tooltip-input{
   width: 100%;
   border: 1.5px solid var(--accent-light);
   border-radius: var(--radius-md);
@@ -722,7 +724,11 @@
   border-color: var(--error);
   color: var(--error);
 }
-
+.editor-sidebar .hotspot-custom-input{
+  margin-top: var(--space-xs);
+  margin-bottom: 0;
+  padding: var(--space-sm);
+}
 /* Кнопка добавления хотспота */
 .add-hotspot-btn {
   width: 100%;
@@ -824,6 +830,8 @@
 
 .editor-stat-value.status-published {
   color: var(--success);
+  border-radius: var(--radius-md);
+  padding: 3px;
 }
 
 .editor-stat-value.status-draft {
@@ -1077,7 +1085,9 @@
 .hotspot-editor-panel {
   margin-top: var(--space-lg);
   padding-top: var(--space-lg);
+  padding-bottom: var(--space-lg);
   border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
   opacity: 0;
   animation: fadeInUp var(--transition-slow) forwards;
   animation-delay: 0.7s;
@@ -1096,7 +1106,9 @@
   font-weight: 600;
   color: var(--text-primary);
 }
-
+.hotspot-editor-panel.form-input{
+  background-color: aliceblue;
+}
 .hotspot-editor-close {
   background: none;
   border: none;
@@ -1114,7 +1126,10 @@
   background: var(--bg-secondary);
   color: var(--text-primary);
 }
-
+.hotspot-image-label{
+  display: block;
+  margin-top: var(--space-sm);
+}
 /* ===== Form Elements ===== */
 /*.form-group {
   margin-bottom: var(--space-md);
@@ -1167,44 +1182,55 @@
 
 .image-preview-container {
   position: relative;
-  display: inline-block;
-  margin-bottom: var(--space-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-height: 300px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: var(--space-md);
+  margin-top: var(--space-sm);
 }
 
 .image-preview {
-  max-width: 180px;
-  max-height: 120px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
+  max-width: 50%;
+  max-height: 300px;
+  width: auto;
+  height: auto;
   object-fit: contain;
-  background: var(--bg-card);
+  display: block;
 }
 
 .image-remove-btn {
   position: absolute;
-  top: -8px;
-  right: -8px;
-  width: 24px;
-  height: 24px;
-  border-radius: var(--radius-full);
-  background: var(--error);
-  color: var(--text-inverse);
-  border: none;
-  cursor: pointer;
-  font-size: 0.875rem;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
   transition: all var(--transition-fast);
+  z-index: 10;
 }
 
 .image-remove-btn:hover {
   background: var(--error);
-  filter: brightness(0.9);
+  color: var(--text-inverse);
+  border-color: var(--error);
   transform: scale(1.1);
 }
 
 .image-upload-placeholder {
+  text-align: center;
   padding: var(--space-md);
   color: var(--text-muted);
   font-size: 0.75rem;
@@ -1230,13 +1256,15 @@
 }
 
 .image-upload-btn {
+  width: 100%;
   display: inline-block;
   padding: var(--space-xs) var(--space-md);
   background: var(--accent-primary);
   color: var(--text-inverse);
   border-radius: var(--radius-sm);
-  font-size: 0.75rem;
+  font-size: 1rem;
   cursor: pointer;
+  text-align: center;
   margin-top: var(--space-sm);
   transition: all var(--transition-fast);
 }
@@ -1264,7 +1292,7 @@
 }
 
 /* ===== Target Panorama Select ===== */
-.target-panorama-select .panorama-upload-input {
+.target-panorama-select {
   display: none;
 }
 
@@ -1282,6 +1310,7 @@
   justify-content: center;
   gap: var(--space-xs);
   margin-bottom: var(--space-sm);
+  margin-top: var(--space-sm);
   transition: all var(--transition-fast);
 }
 
@@ -1311,19 +1340,16 @@
   font-size: 0.75rem;
   color: var(--success);
   margin-bottom: var(--space-sm);
+  margin-top: var(--space-sm);
 }
 
 .panorama-divider {
-  margin: var(--space-md) 0;
   border-top: 1px solid var(--border);
   position: relative;
   text-align: center;
 }
 
 .panorama-divider span {
-  position: absolute;
-  top: -10px;
-  left: 50%;
   transform: translateX(-50%);
   background: var(--bg-card);
   padding: 0 var(--space-sm);
@@ -1332,6 +1358,7 @@
 }
 
 .panorama-list {
+  margin-top: var(--space-sm);
   max-height: 200px;
   overflow-y: auto;
   border: 1px solid var(--border);
@@ -1444,7 +1471,7 @@
 
 .hotspot-actions .action-btn {
   flex: 1;
-  padding: var(--space-xs) var(--space-md);
+  padding: var(--space-sm) var(--space-md);
   font-size: 0.75rem;
 }
 /* ----------------------------------------------------------------------------

@@ -104,11 +104,13 @@ func (r *HotspotRepository) Create(ctx context.Context, req models.HotspotReques
 
 func (r *HotspotRepository) Update(ctx context.Context, id uuid.UUID, req models.HotspotRequest) (*models.HotspotResponse, error) {
 	now := time.Now()
+
 	var targetPanoramaID *uuid.UUID
 	if req.TargetPanoramaID != nil {
 		val := *req.TargetPanoramaID
 		targetPanoramaID = &val
 	}
+
 	query := `
 		UPDATE hotspots SET
 			position_yaw = $1, position_pitch = $2,
@@ -116,28 +118,33 @@ func (r *HotspotRepository) Update(ctx context.Context, id uuid.UUID, req models
 			title = $6, tooltip = $7, content_text = $8, media_url = $9, external_url = $10,
 			icon = $11, color = $12, sort_order = $13, is_active = $14, updated_at = $15
 		WHERE id = $16
-		RETURNING panorama_id, created_at, updated_at
+		RETURNING panorama_id, created_at
 	`
 
 	var panoramaID uuid.UUID
 	var createdAt time.Time
 
+	// 🔹 ИСПРАВЛЕНО: добавлены пропущенные аргументы ($13 и $14)
 	err := r.pool.QueryRow(ctx, query,
-		req.PositionYaw, req.PositionPitch,
-		req.TargetType, targetPanoramaID, req.TargetFilename,
-		req.Title, req.Tooltip, req.ContentText, req.MediaURL, req.ExternalURL,
-		req.Icon, req.Color,
-		now,
-		id,
-	).Scan(&panoramaID, &createdAt)
+		req.PositionYaw, req.PositionPitch, // $1, $2
+		req.TargetType, targetPanoramaID, req.TargetFilename, // $3, $4, $5
+		req.Title, req.Tooltip, req.ContentText, req.MediaURL, req.ExternalURL, // $6-$10
+		req.Icon, req.Color, // $11, $12
+		req.SortOrder, // $13 ← ДОБАВЛЕНО
+		req.IsActive,  // $14 ← ДОБАВЛЕНО
+		now,           // $15
+		id,            // $16
+	).Scan(&panoramaID, &createdAt) // 🔹 Убрал updated_at из RETURNING, т.к. Scan принимал только 2 переменные, а RETURNING возвращал 3
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to update hotspot: %w", err)
 	}
+
 	respTargetPanoramaID := uuid.Nil
 	if req.TargetPanoramaID != nil {
 		respTargetPanoramaID = *req.TargetPanoramaID
 	}
+
 	return &models.HotspotResponse{
 		ID:               id,
 		PanoramaID:       panoramaID,
@@ -192,11 +199,12 @@ func (r *HotspotRepository) GetByPanorama(ctx context.Context, panoramaID uuid.U
 	hotspots := make([]models.HotspotResponse, 0)
 	for rows.Next() {
 		var h models.HotspotResponse
-		var sortOrder int32
-		var isActive bool
+
+		// 🔹 ИСПРАВЛЕНО: используем указатели для полей, которые могут быть NULL
+		var sortOrder *int32 // ← было: int32
+		var isActive *bool   // ← было: bool (на всякий случай)
 		var createdAt, updatedAt time.Time
 
-		// 🔹 ИСПРАВЛЕНО: *uuid.UUID для обработки NULL
 		var targetPanoramaID *uuid.UUID
 		var contentText, mediaURL, externalURL *string
 
@@ -205,14 +213,14 @@ func (r *HotspotRepository) GetByPanorama(ctx context.Context, panoramaID uuid.U
 			&h.TargetType, &targetPanoramaID, &h.TargetFilename,
 			&h.Title, &h.Tooltip, &contentText, &mediaURL, &externalURL,
 			&h.Icon, &h.Color,
-			&sortOrder, &isActive, &createdAt, &updatedAt,
+			&sortOrder, &isActive, &createdAt, &updatedAt, // ← теперь сканируем в указатели
 		)
 		if err != nil {
 			log.Printf("ERROR: Scan failed: %v", err)
 			return nil, err
 		}
 
-		// 🔹 ИСПРАВЛЕНО: Присваиваем значения после проверки на nil
+		// 🔹 Обработка NULL-значений после сканирования
 		if contentText != nil {
 			h.ContentText = *contentText
 		}
@@ -222,14 +230,24 @@ func (r *HotspotRepository) GetByPanorama(ctx context.Context, panoramaID uuid.U
 		if externalURL != nil {
 			h.ExternalURL = *externalURL
 		}
-		// 🔹 КЛЮЧЕВОЕ: присваиваем target_panorama_id
 		if targetPanoramaID != nil {
 			h.TargetPanoramaID = *targetPanoramaID
 		}
-		// Если targetPanoramaID == nil, h.TargetPanoramaID останется пустым (uuid.Nil)
 
-		h.SortOrder = int(sortOrder)
-		h.IsActive = isActive
+		// 🔹 КЛЮЧЕВОЕ: обработка sort_order с дефолтным значением 0
+		if sortOrder != nil {
+			h.SortOrder = int(*sortOrder)
+		} else {
+			h.SortOrder = 0 // дефолт, если в БД NULL
+		}
+
+		// 🔹 Аналогично для is_active
+		if isActive != nil {
+			h.IsActive = *isActive
+		} else {
+			h.IsActive = true // дефолт, если в БД NULL
+		}
+
 		h.CreatedAt = createdAt.Format(time.RFC3339)
 		h.UpdatedAt = updatedAt.Format(time.RFC3339)
 

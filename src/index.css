@@ -9,6 +9,7 @@
   --bg-gradient: linear-gradient(135deg, #f9f7f2 0%, #f5f0e6 100%);
   --bg-card: #FFFFFF;
   --bg-header: #fcfbf9;
+  --bg-input-text: #181512;
 
   /* 🔹 Текст */
   --text-primary: #3e3a33;
@@ -70,6 +71,7 @@
   --bg-gradient: linear-gradient(135deg, #181512 0%, #211c18 100%);
   --bg-card: #1e1914;
   --bg-header: #201e1c;
+  --bg-input-text: #f9f6ef;
 
   /* 🔹 Текст */
   --text-primary: #f0e9df;

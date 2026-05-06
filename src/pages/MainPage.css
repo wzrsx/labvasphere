@@ -213,7 +213,9 @@
 .modal-actions {
   display: flex;
   gap: var(--space-md);
-  justify-content: flex-end;
+  justify-content: space-between;
+  padding-left: 5%;
+  padding-right: 5%;
 }
 
 .modal-cancel,
@@ -268,9 +270,9 @@
 }
 
 .file-upload-label:hover,
-.drag-over {
+.modal-content.drag-over .file-upload-label {
   border-color: var(--accent-hover);
-  background: rgba(153, 88, 42, 0.05);
+  background: var(--bg-primary);
 }
 
 .file-hint {
@@ -862,6 +864,8 @@
   font-size: 1.4rem;
   color: var(--text-primary);
   font-family: "BerlinSansFBCyrillic-Regular", sans-serif;
+  width: 100%;
+  text-align: center;
 }
 
 .modal-close {

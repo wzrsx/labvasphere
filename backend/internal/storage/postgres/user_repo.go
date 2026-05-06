@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -293,4 +294,33 @@ func (r *UserRepository) VerifyPassword(email, password string) (*models.User, e
 	user.PasswordHash = ""
 
 	return user, nil
+}
+
+// UpdateAvatar обновляет URL аватара пользователя
+func (r *UserRepository) UpdateAvatar(ctx context.Context, userID string, avatarURL string) error {
+	var newAvatarURL *string
+	if avatarURL != "" {
+		newAvatarURL = &avatarURL
+	}
+
+	query := `
+		UPDATE users 
+		SET avatar_url = $1, updated_at = NOW() 
+		WHERE id = $2
+		RETURNING updated_at
+	`
+
+	err := r.db.QueryRow(ctx, query, newAvatarURL, userID).Scan(&time.Time{})
+	return err
+}
+
+// GetAvatarURL возвращает URL аватара пользователя (вспомогательный метод)
+func (r *UserRepository) GetAvatarURL(ctx context.Context, userID string) (*string, error) {
+	var avatarURL *string
+	query := `SELECT avatar_url FROM users WHERE id = $1`
+	err := r.db.QueryRow(ctx, query, userID).Scan(&avatarURL)
+	if err == sql.ErrNoRows {
+		return nil, errors.New("пользователь не найден")
+	}
+	return avatarURL, err
 }

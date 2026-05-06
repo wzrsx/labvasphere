@@ -1,0 +1,278 @@
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 480px;
+  width: 100%;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.share-modal-h3{
+  text-align: center;
+}
+.modal-content.share-modal{
+  padding: var(--space-lg);
+}
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+}
+
+.share-description {
+  color: #555;
+  margin: 8px 0 20px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.share-link-wrapper {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.share-link-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  background: var(--bg-primary);
+  color: var(--bg-input-text);
+  cursor: pointer;
+}
+
+.share-link-input:focus {
+  outline: none;
+  border-color: #4a90e2;
+}
+
+.copy-btn {
+  padding: 12px 20px;
+  background: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.copy-btn:hover {
+  background: #357abd;
+}
+
+.copy-btn.copied {
+  background: #27ae60;
+}
+
+.share-social {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.social-btn {
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.social-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  opacity: 1;
+}
+
+.social-btn:active {
+  transform: translateY(-1px);
+}
+
+.social-btn svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+/* Цвета кнопок */
+.social-btn.telegram { 
+  background: #0088cc; 
+  padding-right: 3px;
+}
+.social-btn.whatsapp { 
+  background: #25D366; 
+}
+.social-btn.email { 
+  background: #ea4335; 
+}
+.share-toggle {
+  display: flex;
+  background: #f5f5f5;
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 20px;
+  gap: 4px;
+}
+
+.toggle-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toggle-btn.active {
+  background: #fff;
+  color: var(--text-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-btn:hover:not(.active) {
+  color: #333;
+}
+
+/* 👈 Контейнер QR-кода */
+.qr-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 0;
+}
+
+.qr-code-container {
+  padding: 16px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-code-container svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.qr-description {
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-align: center;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.download-qr-btn {
+  padding: 10px 24px;
+  background: var(--accent-primary);
+  color: var(--text-inverse);
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.download-qr-btn:hover {
+  background: var(--accent-hover);
+}
+
+.download-qr-btn:active {
+  transform: translateY(1px);
+}
+
+/* 👈 Разделитель "Или" */
+.share-divider {
+  display: flex;
+  align-items: center;
+  color: #999;
+  font-size: 13px;
+}
+
+.share-divider::before,
+.share-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.share-divider span {
+  padding: 0 12px;
+}
+
+/* 👈 Адаптив для маленьких экранов */
+@media (max-width: 480px) {
+  .share-toggle {
+    margin-bottom: 16px;
+  }
+  
+  .toggle-btn {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  
+  .qr-code-container {
+    padding: 12px;
+  }
+  
+  .qr-code-container svg {
+    width: 180px;
+    height: 180px;
+  }
+}
+/* Адаптив для маленьких экранов */
+@media (max-width: 480px) {
+  .share-social {
+    gap: 12px;
+  }
+  
+  .social-btn {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .social-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+}

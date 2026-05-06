@@ -13,6 +13,7 @@ import {
   updateProject,
   registerPanorama,
 } from '../services/projectService';
+import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 
 const ASPECT_RATIO = 16 / 9;
@@ -51,6 +52,7 @@ const createPreview = (file) => {
 };
 
 const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
+  const { t } = useTranslation(); 
   const [projectName, setProjectName] = useState('');
   const [description, setDescription] = useState('');
   const [panoramaFile, setPanoramaFile] = useState(null);
@@ -337,13 +339,13 @@ const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <h2>Создать новый проект</h2>
+        <h2>{t('newProject.modal.title')}</h2>
         <form onSubmit={handleSubmit} className="modal-form">
           {error && <div className="error-message">{error}</div>}
 
           <input
             type="text"
-            placeholder="Название проекта *"
+            placeholder={t('newProject.form.name_placeholder')}
             value={projectName}
             onChange={(e) => setProjectName(e.target.value)}
             className="modal-input"
@@ -353,7 +355,7 @@ const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
           />
 
           <textarea
-            placeholder="Описание проекта"
+            placeholder={t('newProject.form.description_placeholder')}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             className="modal-textarea"
@@ -366,13 +368,14 @@ const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
               <label className="file-upload-label">
                 {panoramaFile
                   ? panoramaFile.name
-                  : 'Выберите панораму (JPG/PNG)'}
+                  : t('newProject.form.panorama_placeholder')}
                 <input
                   ref={fileInputRef}
                   type="file"
                   accept=".jpg,.jpeg,.png,image/*"
                   onChange={handleFileChange}
                   hidden
+                  aria-label={t('newProject.form.panorama_label')}
                 />
               </label>
             </div>
@@ -381,7 +384,7 @@ const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
           {viewerStep && panoramaPreview && (
             <div className="viewer-section">
               <div className="viewer-header">
-                <h4>Настройте ракурс для обложки</h4>
+                <h4>{t('newProject.viewer.title')}</h4>
               </div>
               <div
                 className="viewer-wrapper"
@@ -410,11 +413,11 @@ const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
                     onClick={captureCoverImage}
                     disabled={isLoading}
                   >
-                    Сохранить выбор
+                    {t('newProject.viewer.capture_button')}
                   </button>
                 ) : (
                   <div className="cover-preview">
-                    <span>Обложка выбрана</span>
+                    <span>{t('newProject.viewer.cover_selected')}</span>
                     <button
                       type="button"
                       className="btn-remove-cover"
@@ -424,7 +427,7 @@ const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
                       }}
                       disabled={isLoading}
                     >
-                      Удалить
+                      {t('newProject.viewer.remove_cover')}
                     </button>
                   </div>
                 )}
@@ -439,14 +442,14 @@ const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
               className="modal-cancel"
               disabled={isLoading}
             >
-              Отмена
+              {t('modal.cancel')}
             </button>
             <button
               type="submit"
               className="modal-create"
               disabled={isLoading || !projectName || !coverFile}
             >
-              {isLoading ? 'Создание...' : 'Создать проект'}
+              {isLoading ? t('newProject.form.creating') : t('newProject.form.create_button')}
             </button>
           </div>
         </form>
