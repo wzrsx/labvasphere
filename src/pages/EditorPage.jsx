@@ -81,7 +81,13 @@ const EditorPage = () => {
   useEffect(() => {
     activeToolRef.current = activeTool;
   }, [activeTool]);
-
+  // 🔹 Отладочный эффект для projectPanoramas
+  useEffect(() => {
+    console.group('📦 projectPanoramas changed');
+    console.log('📏 Длина массива:', projectPanoramas.length);
+    console.log('📄 Данные:', projectPanoramas);
+    console.groupEnd();
+  }, [projectPanoramas]); // ← Обязательно укажите зависимость!
   // Отслеживание изменений
   useEffect(() => {
     if (project) {
@@ -169,6 +175,7 @@ const loadProject = async () => {
                 )
               : null, 
             targetProjectName: h.target_filename || 'Панорама',
+            target_original_filename: h.target_original_filename || null,
             icon: h.icon,
             color: h.color,
             media_url: h.media_url,
@@ -388,8 +395,8 @@ const loadProject = async () => {
           type: 'transition',
           media_url: dbHotspot.media_url || selectedHotspot.media_url, // ← Сохраняем
         };
-
         setSelectedHotspot(updatedHotspot);
+        
         updateHotspotLocal(selectedHotspot.id, updatedHotspot);
         debounceSave(updatedHotspot);
         alert('✅ Точка перехода сохранена!');
@@ -407,6 +414,7 @@ const loadProject = async () => {
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
+  
   const handlePanoramaSelection = async (panorama) => {
     const projectId = project?.id;
     const panoramaId = currentPanoramaId || project?.main_panorama?.id;
@@ -436,6 +444,7 @@ const loadProject = async () => {
         target_type: 'panorama',
         target_panorama_id: panorama.id, // ← ID выбранной панорамы из галереи
         target_filename: panorama.filename, // ← Имя файла
+        target_original_filename: panorama.original_filename || null,
         title: selectedHotspot.title || null,
         tooltip: selectedHotspot.tooltip || null,
         content_text: selectedHotspot.content_text || null,
@@ -445,7 +454,7 @@ const loadProject = async () => {
         color: selectedHotspot.color || '#3498db',
         is_active: true,
       };
-
+      console.log("HANDLE_PANORAMA: ", panorama);
       // 🔹 Проверяем: новый хотспот или существующий
       const isNewHotspot = selectedHotspot.id?.startsWith('hotspot_');
 
@@ -477,6 +486,7 @@ const loadProject = async () => {
         ),
         type: 'transition',
         media_url: dbHotspot.media_url || selectedHotspot.media_url,
+        target_original_filename: panorama.original_filename || null,
       };
 
       setSelectedHotspot(updatedHotspot);
@@ -614,6 +624,7 @@ const loadProject = async () => {
                 )
               : null,
             targetProjectName: h.target_filename || 'Панорама',
+            target_original_filename: h.target_original_filename || null,
             icon: h.icon,
             color: h.color,
             media_url: h.media_url || '', 
@@ -837,6 +848,7 @@ const loadProject = async () => {
         `projects/${project.id}/panoramas/${project.main_panorama.filename}`,
       )
     : null;
+  
   return (
     <div className="editor-container">
       {/* Основная область панорамы */}
@@ -1258,9 +1270,11 @@ const loadProject = async () => {
                       disabled={uploadingFile}
                       style={{display: 'none'}}/>
                     {/* 🔹 Индикатор выбранной панорамы */}
-                    {selectedHotspot.targetFileUrl && (
+                    {selectedHotspot?.targetFileUrl && (
                       <div className="selected-panorama-indicator">
-                        <span>✓ {selectedHotspot.targetProjectName}</span>
+                        <span>
+                          ✓ {selectedHotspot.target_original_filename || selectedHotspot.targetProjectName || 'Панорама'}
+                        </span>
                       </div>
                     )}
                     <button
@@ -1481,7 +1495,11 @@ const loadProject = async () => {
                         if (regRes.success) successCount++;
                       }
 
-                      await getPanoramasByProject(project.id);
+                      const panoramasResponse = await getPanoramasByProject(project.id);
+                      if (panoramasResponse.success) {
+                        setProjectPanoramas(panoramasResponse.panoramas); // ← Обновляем стейт!
+                        console.log('📸 Media list updated:', panoramasResponse.panoramas.length, 'items');
+                      }
                       alert(`✅ Успешно загружено: ${successCount}`);
                     } catch (err) {
                       alert(`❌ Ошибка: ${err.message}`);
@@ -1531,14 +1549,7 @@ const loadProject = async () => {
                     {projectPanoramas.map((panorama) => (
                       <div key={panorama.id} className="media-item">
                         <div className="media-item-thumbnail">
-                          {panorama.thumbnail_url ? (
-                            <img
-                              src={getMediaUrl(panorama.thumbnail_url)}
-                              alt={panorama.title}
-                            />
-                          ) : (
-                            <div className="media-item-placeholder">📷</div>
-                          )}
+                          <div className="media-item-placeholder">📷</div>
                         </div>
                         <div className="media-item-info">
                           <div className="media-item-title">

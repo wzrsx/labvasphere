@@ -223,8 +223,8 @@ func (h *PanoramaHandler) ListByProjectPublic(w http.ResponseWriter, r *http.Req
 	projectIDStr := chi.URLParam(r, "id")
 	projectID, err := uuid.Parse(projectIDStr)
 
-	if len(projectID) != 36 {
-		http.Error(w, "Invalid project ID", http.StatusBadRequest)
+	if err != nil {
+		http.Error(w, "Invalid project ID format", http.StatusBadRequest)
 		return
 	}
 

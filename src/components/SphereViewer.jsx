@@ -117,7 +117,6 @@ const SphereViewer = forwardRef((props, ref) => {
           duration: options.duration || 700, // длительность в мс
           ...options,
         });
-
         console.log('[SV] Panorama changed');
         setIsPanoramaLoaded(true);
         onPanoramaLoad?.();

@@ -2,6 +2,8 @@ package postgres
 
 import (
 	"context"
+	"log/slog"
+	"time"
 
 	"labvasphere-api/internal/models"
 
@@ -53,18 +55,27 @@ func (r *PanoramaRepository) GetByID(ctx context.Context, id uuid.UUID) (*models
 }
 
 func (r *PanoramaRepository) GetByProject(ctx context.Context, projectID uuid.UUID) ([]*models.Panorama, error) {
+	start := time.Now()
+	logger := slog.With("method", "PanoramaRepository.GetByProject", "project_id", projectID.String())
+
+	logger.Debug("Starting query", "sql", "SELECT ... FROM panoramas WHERE project_id = $1")
+
 	query := `
 		SELECT id, project_id, filename, original_filename, title, description,
 		       file_size, mime_type, thumbnail_url, is_main, is_active, sort_order, created_at, updated_at
 		FROM panoramas WHERE project_id = $1 ORDER BY sort_order ASC, created_at DESC
 	`
+
 	rows, err := r.pool.Query(ctx, query, projectID)
 	if err != nil {
+		logger.Error("Query failed", "error", err.Error(), "duration_ms", time.Since(start).Milliseconds())
 		return nil, err
 	}
 	defer rows.Close()
 
 	var panoramas []*models.Panorama
+	count := 0
+
 	for rows.Next() {
 		var p models.Panorama
 		err := rows.Scan(
@@ -73,11 +84,30 @@ func (r *PanoramaRepository) GetByProject(ctx context.Context, projectID uuid.UU
 			&p.CreatedAt, &p.UpdatedAt,
 		)
 		if err != nil {
+			logger.Error("Scan failed", "error", err.Error(), "processed_count", count)
 			return nil, err
 		}
 		panoramas = append(panoramas, &p)
+		count++
 	}
-	return panoramas, rows.Err()
+
+	if err := rows.Err(); err != nil {
+		logger.Error("Rows iteration error", "error", err.Error(), "processed_count", count)
+		return nil, err
+	}
+
+	duration := time.Since(start).Milliseconds()
+	logger.Debug("Query completed successfully",
+		"found_count", count,
+		"duration_ms", duration,
+	)
+
+	// Логируем предупреждение, если панорам не найдено (опционально)
+	if count == 0 {
+		logger.Info("No panoramas found for project", "project_id", projectID.String())
+	}
+
+	return panoramas, nil
 }
 
 // GetMainByProject получает основную панораму проекта

@@ -263,7 +263,7 @@ const preloadAllPanoramas = async (panoramas, projectId) => {
   }
 };
 
-  // 🔹 Переход к другой панораме (с использованием кэша)
+// 🔹 Переход к другой панораме (с использованием кэша)
 const handlePanoramaTransition = async (targetUrl, targetName, targetPanoramaId) => {
   console.log('[ProjectView] 🔄 handlePanoramaTransition called:', { targetUrl, targetName, targetPanoramaId });
   
@@ -283,21 +283,28 @@ const handlePanoramaTransition = async (targetUrl, targetName, targetPanoramaId)
   setIsTransitioning(true);
 
   try {
-    // 🔹 ПРОВЕРКА КЭША: если изображение уже загружено — переход мгновенный
-    const cachedImage = panoramaCache.get(absoluteUrl);
+    // 🔹 🔥 КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Очищаем хотспоты ДО начала перехода!
+    // Это предотвратит отображение старых маркеров на новой панораме
+    setHotspots([]); 
     
-    if (cachedImage) {
-      console.log('[ProjectView] ⚡ Cache hit! Instant transition');
-      // Кэш хит — переходим сразу
-    } else {
-      // Кэш промах — загружаем с прогрессом
+    // 🔹 ПРОВЕРКА КЭША
+    const cachedImage = panoramaCache.get(absoluteUrl);
+    console.log('[ProjectView] 🗃️ Cache check:', {
+      url: absoluteUrl,
+      cached: !!cachedImage,
+      isComplete: cachedImage?.complete,
+      naturalWidth: cachedImage?.naturalWidth,
+    });
+    if (!cachedImage) {
       console.log('[ProjectView] 📥 Cache miss, loading...');
       await panoramaCache.preload(absoluteUrl, (url, percent) => {
         setTransitionProgress(percent);
       });
+    } else {
+      console.log('[ProjectView] ⚡ Cache hit!');
     }
 
-    // Переход через SphereViewer
+    // 🔹 Сначала меняем панораму в SphereViewer
     console.log('[ProjectView] 🎬 Calling changePanorama()...');
     await sphereViewerRef.current?.changePanorama(absoluteUrl, {
       transition: 'fade',
@@ -305,13 +312,13 @@ const handlePanoramaTransition = async (targetUrl, targetName, targetPanoramaId)
     });
     console.log('[ProjectView] ✅ Panorama changed');
     
-    // Обновляем текущую панораму и загружаем её хотспоты
+    // 🔹 Обновляем ID и URL текущей панорамы
     if (targetPanoramaId && project?.id) {
       console.log('[ProjectView] 🔄 Updating current panorama to:', targetPanoramaId);
       setCurrentPanoramaId(targetPanoramaId);
       setCurrentPanoramaUrl(absoluteUrl);
       
-      // 🔹 Загружаем хотспоты новой панорамы
+      // 🔹 Загружаем хотспоты НОВОЙ панорамы (они появятся плавно после загрузки)
       await loadHotspots(targetPanoramaId, project.id);
     }
 
@@ -322,6 +329,8 @@ const handlePanoramaTransition = async (targetUrl, targetName, targetPanoramaId)
     setError(err.message || 'Ошибка загрузки панорамы');
     setIsTransitioning(false);
     setTransitionProgress(0);
+    // 🔹 В случае ошибки тоже очищаем хотспоты, чтобы не было рассинхрона
+    setHotspots([]); 
   }
 };
 

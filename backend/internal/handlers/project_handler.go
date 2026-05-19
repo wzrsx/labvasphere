@@ -147,7 +147,7 @@ func (h *ProjectHandler) List(w http.ResponseWriter, r *http.Request) {
 func (h *ProjectHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	projectID := chi.URLParam(r, "id")
 	if len(projectID) != 36 {
-		http.Error(w, "Invalid project ID", http.StatusBadRequest)
+		http.Error(w, "GetByID: Invalid project ID", http.StatusBadRequest)
 		return
 	}
 
@@ -245,7 +245,7 @@ func (h *ProjectHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 
 	projectID := chi.URLParam(r, "id")
 	if len(projectID) != 36 {
-		http.Error(w, "Invalid project ID", http.StatusBadRequest)
+		http.Error(w, "UpdateProject: Invalid project ID", http.StatusBadRequest)
 		return
 	}
 
@@ -304,7 +304,7 @@ func (h *ProjectHandler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 
 	projectID := chi.URLParam(r, "id")
 	if len(projectID) != 36 {
-		http.Error(w, "Invalid project ID", http.StatusBadRequest)
+		http.Error(w, "DeleteProject: Invalid project ID", http.StatusBadRequest)
 		return
 	}
 
@@ -347,7 +347,7 @@ func (h *ProjectHandler) GetPublicProject(w http.ResponseWriter, r *http.Request
 
 	// Валидация UUID
 	if len(projectID) != 36 {
-		http.Error(w, "Invalid project ID", http.StatusBadRequest)
+		http.Error(w, "GetPublicProject: Invalid project ID", http.StatusBadRequest)
 		return
 	}
 

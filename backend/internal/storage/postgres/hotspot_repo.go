@@ -177,14 +177,16 @@ func (r *HotspotRepository) Update(ctx context.Context, id uuid.UUID, req models
 func (r *HotspotRepository) GetByPanorama(ctx context.Context, panoramaID uuid.UUID) ([]models.HotspotResponse, error) {
 	query := `
         SELECT 
-            id, panorama_id, position_yaw, position_pitch,
-            target_type, target_panorama_id, target_filename,
-            title, tooltip, content_text, media_url, external_url,
-            icon, color,
-            sort_order, is_active, created_at, updated_at
-        FROM hotspots
-        WHERE panorama_id = $1 AND is_active = true
-        ORDER BY sort_order
+            h.id, h.panorama_id, h.position_yaw, h.position_pitch,
+            h.target_type, h.target_panorama_id, h.target_filename,
+            h.title, h.tooltip, h.content_text, h.media_url, h.external_url,
+            h.icon, h.color,
+            h.sort_order, h.is_active, h.created_at, h.updated_at,
+            p.original_filename as target_original_filename 
+        FROM hotspots h
+        LEFT JOIN panoramas p ON h.target_panorama_id = p.id 
+        WHERE h.panorama_id = $1 AND h.is_active = true
+        ORDER BY h.sort_order
     `
 
 	log.Printf("DEBUG: Executing query for panorama_id: %s", panoramaID)
@@ -207,13 +209,13 @@ func (r *HotspotRepository) GetByPanorama(ctx context.Context, panoramaID uuid.U
 
 		var targetPanoramaID *uuid.UUID
 		var contentText, mediaURL, externalURL *string
-
+		var targetOriginalFilename *string
 		err := rows.Scan(
 			&h.ID, &h.PanoramaID, &h.PositionYaw, &h.PositionPitch,
 			&h.TargetType, &targetPanoramaID, &h.TargetFilename,
 			&h.Title, &h.Tooltip, &contentText, &mediaURL, &externalURL,
 			&h.Icon, &h.Color,
-			&sortOrder, &isActive, &createdAt, &updatedAt, // ← теперь сканируем в указатели
+			&sortOrder, &isActive, &createdAt, &updatedAt, &targetOriginalFilename,
 		)
 		if err != nil {
 			log.Printf("ERROR: Scan failed: %v", err)
@@ -233,7 +235,9 @@ func (r *HotspotRepository) GetByPanorama(ctx context.Context, panoramaID uuid.U
 		if targetPanoramaID != nil {
 			h.TargetPanoramaID = *targetPanoramaID
 		}
-
+		if targetOriginalFilename != nil {
+			h.TargetOriginalFilename = targetOriginalFilename
+		}
 		// 🔹 КЛЮЧЕВОЕ: обработка sort_order с дефолтным значением 0
 		if sortOrder != nil {
 			h.SortOrder = int(*sortOrder)

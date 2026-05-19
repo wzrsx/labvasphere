@@ -205,7 +205,12 @@
 .project-view-not-found button:hover {
   background: var(--accent-hover);
 }
-
+.psv-loader-container {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
 /* =============================================================================
    АДАПТИВНОСТЬ
    ============================================================================= */

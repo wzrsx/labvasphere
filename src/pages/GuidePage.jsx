@@ -56,13 +56,8 @@ const [activeTab, setActiveTab] = useState('prepare');
   // Сначала скроллим (всегда)
   scrollToElement(stepId);
 
-  // Если клик по уже открытому — просто скролл, ничего не меняем
-  if (isCurrentlyOpen) {
-    return;
-  }
+  setOpenStepId(isCurrentlyOpen ? null : stepId);
 
-  // Если клик по новому — открываем его (старые не закрываем)
-  setOpenStepId(stepId);
 };
  const tabs = [
     { id: 'prepare', label: t('guide.tabs.prepare') },
