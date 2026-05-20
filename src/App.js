@@ -10,6 +10,7 @@ import Header from './components/Header';
 import LandingPage from './pages/LandingPage';
 import AuthPage from './pages/AuthPage';
 import MainPage from './pages/MainPage';
+import MainPageClient from './pages/MainPageClient';
 import PartnerPage from './pages/PartnerPage';
 import GuidePage from './pages/GuidePage';
 import SettingsPage from './pages/SettingsPage';
@@ -35,6 +36,7 @@ const AppContent = () => {
           <Route path="/" element={<LandingPage />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/main" element={<MainPage />} />
+          <Route path="/main-client" element={<MainPageClient />} />
           <Route path="/partner" element={<PartnerPage />} />
           <Route path="/guide" element={<GuidePage />} />
           <Route path="/settings" element={<SettingsPage />} />

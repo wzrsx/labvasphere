@@ -347,3 +347,73 @@ export const uploadHotspotImage = async (file, projectId) => {
     return { success: false, error: message };
   }
 };
+
+//Переключить лайк проекта
+export const toggleLike = async (projectId) => {
+  try {
+    const response = await api.put(`/projects/${projectId}/like`);
+    return {
+      success: true,
+      liked: response.data.liked,
+      likesCount: response.data.likes_count,
+    };
+  } catch (error) {
+    const message = error.response?.data?.error || 'Ошибка при обновлении лайка';
+    return {
+      success: false,
+      error: message,
+    };
+  }
+};
+
+//Получить статус лайка и счётчик
+export const getLikeStatus = async (projectId) => {
+  try {
+    const response = await api.get(`/projects/${projectId}/like/status`);
+    return {
+      success: true,
+      liked: response.data.liked,
+      likesCount: response.data.likes_count,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.error || 'Ошибка при загрузке статуса лайка',
+    };
+  }
+};
+// ✅ Массовое получение лайков для нескольких проектов (параллельные запросы)
+
+export const getProjectsLikesCounts = async (projectIds) => {
+  if (!projectIds?.length) return {};
+
+  // 1. Параллельно запрашиваем статус лайка для каждого проекта
+  const results = await Promise.all(
+    projectIds.map(async (id) => {
+      try {
+        const res = await getLikeStatus(id);
+        // getLikeStatus уже маппит response.data.likes_count → res.likesCount
+        return { id, count: res.success ? res.likesCount : 0 };
+      } catch {
+        return { id, count: 0 };
+      }
+    })
+  );
+
+  // 2. Собираем объект вида { [projectId]: count }
+  return results.reduce((acc, { id, count }) => {
+    acc[id] = count;
+    return acc;
+  }, {});
+};
+// 🔹 Инкремент счетчика просмотров проекта
+export const incrementProjectViews = async (projectId) => {
+  try {
+    // Используем PUT запрос для обновления views_count в БД
+    const response = await api.put(`/projects/${projectId}/views`);
+    return { success: true, views_count: response.data?.views_count };
+  } catch (error) {
+    console.error('Ошибка инкремента просмотров:', error);
+    return { success: false, error: error.message };
+  }
+};

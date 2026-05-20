@@ -5,9 +5,10 @@ import './ProjectView.css';
 import SphereViewer from '../components/SphereViewer';
 import api from '../services/api';
 import { CONFIG } from '../config';
-import { getMainPanorama, getHotspots, getPanoramasByProject } from '../services/projectService';
+import { getMainPanorama, getHotspots, getPanoramasByProject, toggleLike, getLikeStatus, incrementProjectViews} from '../services/projectService';
 import { convertHotspotsToMarkers } from '../utils/hotspotUtils';
 import { panoramaCache } from '../utils/panoramaCache';
+import { getPublicProfile } from '../services/userService';
 
 const ProjectView = ({ mode = 'public' }) => {
   const { id } = useParams();
@@ -28,12 +29,27 @@ const ProjectView = ({ mode = 'public' }) => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [transitionProgress, setTransitionProgress] = useState(0);  // ← ← ← ДОЛЖНО БЫТЬ ЗДЕСЬ!
   const [transitionError, setTransitionError] = useState(null);
+  const [showAuthorCard, setShowAuthorCard] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [likesCount, setLikesCount] = useState(project?.likes_count || 0);
+  const [authorData, setAuthorData] = useState(null);      // Доп. данные автора
+  const [authorLoading, setAuthorLoading] = useState(false); // Загрузка профиля
+  const [authorError, setAuthorError] = useState(null);     // Ошибка загрузки
   const getMediaUrl = (relativePath) => {
     if (!relativePath) return null;
     if (relativePath.startsWith('http')) return relativePath;
     return `${CONFIG.MEDIA_BASE_URL}/${relativePath}`;
   };
-
+const getRoleLabel = (roleCode) => {
+  const labels = {
+    designer: 'Дизайнер интерьера',
+    architect: 'Архитектор',
+    user: 'Пользователь',
+    admin: 'Администратор',
+  };
+  return labels[roleCode] || 'Автор';
+};
   // 🔹 Загрузка проекта + панорамы + хотспотов
   useEffect(() => {
   console.log('[ProjectView] 🚀 Component mounted, project ID:', id);
@@ -51,7 +67,21 @@ const ProjectView = ({ mode = 'public' }) => {
       const response = await api.get(apiUrl);
       console.log('[ProjectView] ✅ Project loaded:', response.data?.id);
       const projectData = response.data;
+      // 🔹 Инкремент счетчика просмотров (только для публичных проектов)
+      if (isPublic && id) {
+        // Проверяем, был ли уже учтен просмотр в этой сессии
+        const viewedKey = `viewed_project_${id}`;
+        const hasViewed = sessionStorage.getItem(viewedKey);
 
+        if (!hasViewed) {
+          console.log('[ProjectView] 👁️ Incrementing view count for project:', id);
+          await incrementProjectViews(id);
+          // Помечаем, что просмотр уже учтен в этой сессии
+          sessionStorage.setItem(viewedKey, 'true');
+        } else {
+          console.log('[ProjectView] ℹ️ View already counted for this session');
+        }
+      }
       // 2. Загружаем основную панораму
       let mainPanorama = projectData.main_panorama;
       if (!mainPanorama) {
@@ -64,8 +94,21 @@ const ProjectView = ({ mode = 'public' }) => {
       }
 
       setProject({ ...projectData, main_panorama: mainPanorama });
-      
-      // 3. Инициализируем текущую панораму
+      // 🔹 Загружаем статус лайка текущего пользователя
+      if (projectData.id) {
+        const likeResult = await getLikeStatus(projectData.id);
+        if (likeResult.success) {
+          setIsLiked(likeResult.liked);
+          setLikesCount(likeResult.likesCount); // ← счётчик из БД!
+        }
+      }
+      // 🔹 3. ПРЕДЗАГРУЗКА ПРОФИЛЯ АВТОРА (фоновая, не блокирует рендер)
+      if (projectData.author_id) {
+        console.log('[ProjectView] 👤 Preloading author profile:', projectData.author_id);
+        // Запускаем без await, чтобы не блокировать основной поток
+        fetchAuthorProfile(projectData.author_id, true); // true = silent mode
+      }
+      // 4. Инициализируем текущую панораму
       if (mainPanorama?.id) {
         console.log('[ProjectView] 🎯 Setting current panorama:', mainPanorama.id);
         setCurrentPanoramaId(mainPanorama.id);
@@ -83,12 +126,12 @@ const ProjectView = ({ mode = 'public' }) => {
           console.warn('[ProjectView] ⚠️ Failed to preload main panorama:', err);
         }
         
-        // 4. Загружаем хотспоты для текущей панорамы
+        // 5. Загружаем хотспоты для текущей панорамы
         console.log('[ProjectView] 📍 Loading hotspots for panorama:', mainPanorama.id);
         await loadHotspots(mainPanorama.id, projectData.id);
       }
       
-      // 5. Загружаем все панорамы проекта (для переходов + кэширования)
+      // 6. Загружаем все панорамы проекта (для переходов + кэширования)
       console.log('[ProjectView] 📸 Fetching all project panoramas...');
       const panoramasResponse = await getPanoramasByProject(projectData.id);
       if (panoramasResponse.success) {
@@ -333,7 +376,111 @@ const handlePanoramaTransition = async (targetUrl, targetName, targetPanoramaId)
     setHotspots([]); 
   }
 };
+// 🔹 Загрузка профиля автора (с опцией silent для фоновой загрузки)
+const fetchAuthorProfile = async (authorId, silent = false) => {
+  if (!authorId) return;
+  
+  // Если данные уже есть — не загружаем повторно
+  if (authorData?.id === authorId) return;
+  
+  if (!silent) {
+    setAuthorLoading(true);
+    setAuthorError(null);
+  }
+  
+  try {
+    const result = await getPublicProfile(authorId);
+    if (result.success) {
+      setAuthorData(result.user);
+      if (!silent) console.log('[ProjectView] ✅ Author profile loaded');
+    } else {
+      if (!silent) setAuthorError(result.error);
+      console.warn('[ProjectView] ⚠️ Author profile error:', result.error);
+    }
+  } catch (err) {
+    if (!silent) {
+      console.error('Error fetching author profile:', err);
+      setAuthorError('Не удалось загрузить данные автора');
+    }
+  } finally {
+    if (!silent) setAuthorLoading(false);
+  }
+};
+const handleAuthorToggle = () => {
+  setShowAuthorCard(!showAuthorCard);
+};
+const handleLike = async (e) => {
+  e.stopPropagation();
+  
+  // 🔹 ПРОВЕРКА: есть ли токен авторизации?
+  const token = localStorage.getItem('token');
+  console.log("TOKEN: ", token);
+  if (!token) {
+    // 🔹 Редирект на авторизацию с возвратом на текущую страницу
+    const redirect = `/project/public/${id}`;
+    window.location.href = `/auth?redirect=${encodeURIComponent(redirect)}`;
+    return;
+  }
+  
+  // 🔹 Оптимистичное обновление UI (для мгновенного отклика)
+  const previousLiked = isLiked;
+  const previousCount = likesCount;
+  
+  setIsLiked(!isLiked);
+  setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
+  
+  try {
+    const result = await toggleLike(id); // ← API-запрос
+    
+    if (result.success) {
+      // Синхронизируем с ответом сервера
+      setIsLiked(result.liked);
+      setLikesCount(result.likesCount);
+      console.log('[ProjectView] ❤️ Like toggled:', result);
+    } else {
+      // Откат при ошибке
+      setIsLiked(previousLiked);
+      setLikesCount(previousCount);
+      
+      // Если 401 — редирект на логин
+      if (result.error?.includes('авторизация') || result.error?.includes('токен')) {
+        localStorage.removeItem('auth_token');
+        const redirect = `/projects/public/${id}`;
+        window.location.href = `/auth?redirect=${encodeURIComponent(redirect)}`;
+      } else {
+        console.warn('[ProjectView] ⚠️ Like error:', result.error);
+      }
+    }
+  } catch (err) {
+    // Откат при сетевой ошибке
+    setIsLiked(previousLiked);
+    setLikesCount(previousCount);
+    console.error('[ProjectView] ❌ Like failed:', err);
+  }
+};
 
+// 🔹 Обработчик сохранения в избранное
+const handleSave = async (e) => {
+  e.stopPropagation();
+  try {
+    // TODO: API-запрос
+    // await api.post(`/projects/${id}/save`);
+    setIsSaved(!isSaved);
+  } catch (err) {
+    console.error('Error toggling save:', err);
+  }
+};
+
+// 🔹 Закрытие карточки автора при клике вне
+useEffect(() => {
+  const handleClickOutside = (e) => {
+    if (showAuthorCard && !e.target.closest('.author-profile-container')) {
+      setShowAuthorCard(false);
+    }
+  };
+  document.addEventListener('click', handleClickOutside);
+  return () => document.removeEventListener('click', handleClickOutside);
+}, [showAuthorCard]);
   // 🔹 Обработчик нажатия клавиш (Esc для выхода)
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -406,9 +553,6 @@ const handlePanoramaTransition = async (targetUrl, targetName, targetPanoramaId)
       {/* 🔹 Заголовок проекта — плавающий */}
       <div className="project-title-overlay">
         <h1>{project.title}</h1>
-        {project.author_name && (
-          <p className="author-name">Автор: {project.author_name}</p>
-        )}
       </div>
 
       {/* 🔹 SphereViewer на весь экран */}
@@ -419,7 +563,7 @@ const handlePanoramaTransition = async (targetUrl, targetName, targetPanoramaId)
           hotspots={hotspots}
           onHotspotClick={handleHotspotClick}
           autoRotate={false}
-          navbar={true}
+          navbar={false}
         />
       </div>
 
@@ -432,8 +576,127 @@ const handlePanoramaTransition = async (targetUrl, targetName, targetPanoramaId)
           <p>Загрузка панорамы...</p>
         </div>
       )}*/}
+      {/* 🔹 Левый нижний угол: Лайк и Избранное */}
+      <div className="actions-bar">
+        <button 
+          className={`action-btn ${isLiked ? 'liked' : ''}`}
+          onClick={handleLike}
+          title={isLiked ? 'Убрать лайк' : 'Нравится'}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill={isLiked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+          <span className="action-count">{likesCount}</span>
+        </button>
+        
+        <button 
+          className={`action-btn ${isSaved ? 'saved' : ''}`}
+          onClick={handleSave}
+          title={isSaved ? 'Убрать из избранного' : 'Сохранить'}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+          </svg>
+        </button>
+      </div>
+
+      {/* 🔹 Правый нижний угол: Профиль автора */}
+      <div className="author-profile-container">
+        <button 
+          className="author-trigger"
+          onClick={() => setShowAuthorCard(!showAuthorCard)}
+          title="Об авторе"
+        >
+          <div className="author-avatar">
+            {project?.author_avatar 
+              ? <img src={getMediaUrl(project.author_avatar)} alt={project.author_name} />
+              : <span>{project?.author_name?.charAt(0)?.toUpperCase() || 'A'}</span>
+            }
+          </div>
+          <span className="author-name-short">{authorData?.full_name?.split(' ')[0]}</span>
+        </button>
+
+{/* Выпадающая карточка */}
+{showAuthorCard && (
+  <div className="author-card">
+    <div className="author-card-header">
+      <div className="author-avatar-large">
+        {(authorData?.avatar_url || project?.author_avatar) ? (
+          <img 
+            src={getMediaUrl(authorData?.avatar_url || project.author_avatar)} 
+            alt={authorData?.full_name || project?.author_name} 
+          />
+        ) : (
+          <span>
+            {(authorData?.full_name || project?.author_name)?.charAt(0)?.toUpperCase() || 'A'}
+          </span>
+        )}
+      </div>
+      <div>
+        <h4 className="author-full-name">
+          {authorData?.full_name || project?.author_name || 'Автор'}
+        </h4>
+        <p className="author-role">
+          {getRoleLabel(authorData?.role || project?.author_role)}
+        </p>
+      </div>
     </div>
-  );
-};
+    
+    {authorLoading && !authorData && (
+      <div className="author-loading">
+        <div className="mini-spinner" />
+        <span>Загрузка данных...</span>
+      </div>
+    )}
+    
+    {authorError && !authorData && (
+      <p className="author-error">{authorError}</p>
+    )}
+    
+    {(!authorLoading || authorData) && !authorError && (
+      <>
+        {(authorData?.bio || project?.author_bio) && (
+          <p className="author-bio">
+            {authorData?.bio || project.author_bio}
+          </p>
+        )}
+        
+        <div className="author-actions">
+          <a 
+            href={`mailto:${authorData?.email || project?.author_email}`} 
+            className="author-contact-btn"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <polyline points="22,6 12,13 2,6"/>
+            </svg>
+            Написать
+          </a>
+          {(authorData?.portfolio_url || project?.author_portfolio_url) && (
+            <a 
+              href={authorData?.portfolio_url || project.author_portfolio_url} 
+              className="author-portfolio-btn"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                <polyline points="15 3 21 3 21 9"/>
+                <line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+              Портфолио
+            </a>
+          )}
+        </div>
+      </>
+            )} 
+          </div> 
+        )}   
+      </div> 
+    </div>   
+  );         
+};           
 
 export default ProjectView;

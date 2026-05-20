@@ -1,10 +1,12 @@
 // src/components/auth/RegisterForm.jsx
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom'; // ← добавили useLocation
 import { register } from '../../services/authService';
+import { getRedirectPath } from '../../utils/roleRedirect';
 
 const RegisterForm = ({ onSwitchToLogin }) => {
   const navigate = useNavigate();
+  const location = useLocation(); // ← для чтения ?redirect=
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -17,16 +19,17 @@ const RegisterForm = ({ onSwitchToLogin }) => {
 
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  
+  // 🔹 Состояние для редиректа
+  const [redirectPath, setRedirectPath] = useState(null); 
 
-  // 👇 Читаем ТОЛЬКО из localStorage (не из URL)
+  // 👇 Читаем реферал из localStorage
   useEffect(() => {
     const savedRef = localStorage.getItem('pending_ref');
     if (savedRef) {
-      // Проверка времени хранения (опционально: реф актуален 30 дней)
       const clickTime = localStorage.getItem('referral_click_time');
       if (clickTime) {
-        const daysDiff =
-          (new Date() - new Date(clickTime)) / (1000 * 60 * 60 * 24);
+        const daysDiff = (new Date() - new Date(clickTime)) / (1000 * 60 * 60 * 24);
         if (daysDiff <= 30) {
           setFormData((prev) => ({ ...prev, refCode: savedRef }));
         } else {
@@ -38,6 +41,15 @@ const RegisterForm = ({ onSwitchToLogin }) => {
       }
     }
   }, []);
+  
+  // 🔹 Читаем ?redirect= из URL
+  useEffect(() => {
+  const urlParams = new URLSearchParams(location.search);
+  const redirect = urlParams.get('redirect');
+    if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
+      setRedirectPath(redirect);
+    }
+  }, [location.search]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -46,8 +58,7 @@ const RegisterForm = ({ onSwitchToLogin }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { fullName, email, password, confirmPassword, role, refCode } =
-      formData;
+    const { fullName, email, password, confirmPassword, role, refCode } = formData;
 
     if (!fullName || !email || !password || !confirmPassword) {
       setError('Пожалуйста, заполните все поля');
@@ -70,14 +81,19 @@ const RegisterForm = ({ onSwitchToLogin }) => {
         refCode || undefined,
       );
       setIsLoading(false);
-
+      
       if (result.success) {
+        localStorage.setItem('token', result.token); 
         localStorage.setItem('user', JSON.stringify(result.user));
         localStorage.removeItem('pending_ref');
         localStorage.removeItem('referral_click_time');
-        navigate('/main');
-      } else {
-        setError(result.error);
+        
+        // 🔹 Явная проверка на null
+        const finalRedirect = redirectPath !== null 
+          ? redirectPath 
+          : getRedirectPath(result.user.role);
+        
+        navigate(finalRedirect);
       }
     } catch (err) {
       setIsLoading(false);
@@ -92,27 +108,25 @@ const RegisterForm = ({ onSwitchToLogin }) => {
       <p className="subtitle">Создайте аккаунт для начала работы</p>
 
       {error && <div className="error-message">{error}</div>}
+      
+      {/* 🔹 Индикация, куда вернётся пользователь */}
+      {redirectPath && redirectPath !== '/project' && (
+        <p className="redirect-hint" style={{ fontSize: '0.85rem', color: '#666', marginBottom: '1rem' }}>
+          После регистрации вы вернётесь на: <strong>{redirectPath}</strong>
+        </p>
+      )}
 
-      {/* 👇 Индикация реферала */}
       {formData.refCode && (
-        <div
-          className="referral-badge"
-          style={{
-            fontSize: '0.8rem',
-            color: '#8B7355',
-            marginTop: '0.5rem',
-            padding: '0.5rem 1rem',
-            background: '#F5F0E6',
-            borderRadius: '8px',
-            display: 'inline-block',
-            border: '1px solid #D4C4B0',
-          }}
-        >
+        <div className="referral-badge" style={{
+          fontSize: '0.8rem', color: '#8B7355', marginTop: '0.5rem',
+          padding: '0.5rem 1rem', background: '#F5F0E6', borderRadius: '8px',
+          display: 'inline-block', border: '1px solid #D4C4B0',
+        }}>
           🎁 Вы регистрируетесь по приглашению партнёра
         </div>
       )}
 
-      {/* ... остальные поля формы ... */}
+      {/* ... остальные поля формы (без изменений) ... */}
       <input
         name="fullName"
         type="text"

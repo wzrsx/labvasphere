@@ -15,6 +15,7 @@ import (
 	"labvasphere-api/internal/storage/postgres"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 const mediaBaseURL = "http://localhost:8080"
@@ -41,20 +42,25 @@ func toProjectResponse(p *models.ProjectWithMainPanorama) *dto.ProjectResponse {
 		Title:       p.Project.Title,
 		Description: p.Project.Description,
 		AuthorID:    p.Project.AuthorID,
-		AuthorName:  p.Project.AuthorName,
 		Status:      p.Project.Status,
 		ViewsCount:  p.Project.ViewsCount,
 		CreatedAt:   p.Project.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:   p.Project.UpdatedAt.Format(time.RFC3339),
 	}
 
-	// Обложка
 	if p.Project.CoverImageURL != nil && *p.Project.CoverImageURL != "" {
 		coverPath := *p.Project.CoverImageURL
 		resp.CoverImageURL = &coverPath
 	}
 
-	// 🔹 Основная панорама (ВМЕСТО panorama_url)
+	// 🔹 Автор (если загружен)
+	if p.Project.AuthorName != nil {
+		resp.AuthorName = *p.Project.AuthorName
+	}
+	if p.Project.AuthorRole != nil {
+		resp.AuthorRole = *p.Project.AuthorRole
+	}
+
 	if p.MainPanorama != nil {
 		resp.MainPanorama = p.MainPanorama
 	}
@@ -66,27 +72,6 @@ func toProjectResponse(p *models.ProjectWithMainPanorama) *dto.ProjectResponse {
 
 	return resp
 }
-
-func (h *ProjectHandler) RegisterPublicRoutes(r chi.Router) {
-	r.Get("/projects/published", h.ListPublished)
-	r.Get("/projects/public/{id}", h.GetPublicProject)
-}
-func (h *ProjectHandler) RegisterPrivateRoutes(r chi.Router) {
-	r.Get("/", h.List)
-	r.Post("/", h.CreateProject)
-	r.Get("/{id}", h.GetByID)
-	r.Put("/{id}", h.UpdateProject)
-	r.Delete("/{id}", h.DeleteProject)
-}
-
-/*func (h *ProjectHandler) RegisterRoutes(r chi.Router) {
-	r.Get("/published", h.ListPublished)
-	r.Get("/{id}", h.GetByID)
-	r.Post("/", h.CreateProject)
-	r.Get("/", h.List)
-	r.Put("/{id}", h.UpdateProject)
-	r.Delete("/{id}", h.DeleteProject)
-}*/
 
 func (h *ProjectHandler) ListPublished(w http.ResponseWriter, r *http.Request) {
 	limit := 5
@@ -373,4 +358,105 @@ func (h *ProjectHandler) GetPublicProject(w http.ResponseWriter, r *http.Request
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
+}
+
+// LikeProject — переключение лайка: PUT /projects/{id}/like
+func (h *ProjectHandler) LikeProject(w http.ResponseWriter, r *http.Request) {
+	claims := middleware.GetUserFromContext(r.Context())
+	if claims == nil {
+		http.Error(w, "Пользователь не авторизован", http.StatusUnauthorized)
+		return
+	}
+
+	// 🔹 Парсим ID проекта
+	projectIDStr := chi.URLParam(r, "id")
+	if projectIDStr == "" {
+		http.Error(w, `{"error":"ID проекта не указан"}`, http.StatusBadRequest)
+		return
+	}
+	projectID, err := uuid.Parse(projectIDStr)
+	if err != nil {
+		http.Error(w, `{"error":"Неверный формат ID проекта"}`, http.StatusBadRequest)
+		return
+	}
+
+	// 🔹 Переключаем лайк
+	liked, count, err := h.projectRepo.ToggleLike(r.Context(), projectID, claims.UserID)
+	if err != nil {
+		log.Printf("ERROR: ToggleLike failed: %v", err)
+		http.Error(w, `{"error":"Ошибка при обновлении лайка"}`, http.StatusInternalServerError)
+		return
+	}
+
+	// 🔹 JSON-ответ
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":     true,
+		"liked":       liked,
+		"likes_count": count,
+	})
+}
+
+// GetLikeStatus — получение статуса лайка: GET /projects/{id}/like/status
+func (h *ProjectHandler) GetLikeStatus(w http.ResponseWriter, r *http.Request) {
+	projectIDStr := chi.URLParam(r, "id")
+	projectID, err := uuid.Parse(projectIDStr)
+	if err != nil {
+		http.Error(w, `{"error":"Неверный формат ID проекта"}`, http.StatusBadRequest)
+		return
+	}
+	claims := middleware.GetUserFromContext(r.Context())
+
+	var liked bool
+	var count int
+
+	if claims != nil {
+		// Авторизованный пользователь — получаем персональный статус
+		liked, count, err = h.projectRepo.GetLikeStatus(r.Context(), projectID, claims.UserID)
+		log.Printf("GetLikeStatus AUTH")
+		if err != nil {
+			log.Printf("ERROR: GetLikeStatus failed: %v", err)
+			http.Error(w, `{"error":"Ошибка при загрузке статуса"}`, http.StatusInternalServerError)
+			return
+		}
+	} else {
+		// Неавторизованный — только счётчик
+		liked = false
+		count, err = h.projectRepo.GetLikesCount(r.Context(), projectID)
+		log.Printf("GetLikeStatus NOT AUTH")
+		if err != nil {
+			log.Printf("ERROR: GetLikesCount failed: %v", err)
+			http.Error(w, `{"error":"Ошибка при загрузке счётчика"}`, http.StatusInternalServerError)
+			return
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"liked":       liked,
+		"likes_count": count,
+	})
+}
+func (h *ProjectHandler) IncrementViews(w http.ResponseWriter, r *http.Request) {
+	projectID := chi.URLParam(r, "id")
+
+	// Валидация UUID
+	if len(projectID) != 36 {
+		http.Error(w, "IncrementViews: Invalid project ID", http.StatusBadRequest)
+		return
+	}
+
+	// Увеличиваем счетчик просмотров
+	newCount, err := h.projectRepo.IncrementViews(r.Context(), projectID)
+	if err != nil {
+		log.Printf("Error incrementing views for project %s: %v", projectID, err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	// Возвращаем новое значение views_count
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"views_count": newCount,
+	})
 }

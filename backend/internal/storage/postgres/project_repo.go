@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"fmt"
 	"labvasphere-api/internal/models"
 	"log"
 	"os"
@@ -27,10 +28,12 @@ func NewProjectRepository(db *pgxpool.Pool) *ProjectRepository {
 
 // ListPublished получает опубликованные проекты с основными панорамами
 func (r *ProjectRepository) ListPublished(ctx context.Context, limit, offset int) ([]*models.ProjectWithMainPanorama, error) {
+	// 🔹 Запрос возвращает 22 поля (с author_name и author_role)
 	const query = `
 		SELECT 
 			p.id, p.title, p.description, p.cover_image_url, p.author_id,
-			u.full_name, p.status, p.views_count, p.created_at, p.published_at, p.updated_at,
+			u.full_name, u.role,
+			p.status, p.views_count, p.created_at, p.published_at, p.updated_at,
 			pan.id, pan.filename, pan.original_filename, pan.title, pan.description,
 			pan.is_main, pan.is_active, pan.sort_order, pan.created_at, pan.updated_at
 		FROM projects p
@@ -52,34 +55,35 @@ func (r *ProjectRepository) ListPublished(ctx context.Context, limit, offset int
 	for rows.Next() {
 		var proj models.Project
 
-		// 🔹 Указатели для nullable полей панорамы (10 штук, не 11!)
+		// Nullable поля панорамы (10 штук)
 		var panID *string
 		var panFilename, panOriginalFilename, panTitle, panDescription *string
 		var panIsMain, panIsActive *bool
 		var panSortOrder *int
 		var panCreatedAt, panUpdatedAt *time.Time
 
+		// 🔹 Scan: ровно 22 поля (12 проект + 10 панорама)
 		err := rows.Scan(
-			// Project (11 полей)
+			// Project (12 полей)
 			&proj.ID, &proj.Title, &proj.Description, &proj.CoverImageURL, &proj.AuthorID,
-			&proj.AuthorName, &proj.Status, &proj.ViewsCount, &proj.CreatedAt, &proj.PublishedAt, &proj.UpdatedAt,
-			// Panorama (10 полей — без panProjectID!)
+			&proj.AuthorName, &proj.AuthorRole, // ← эти два поля ДОЛЖНЫ быть *string в модели
+			&proj.Status, &proj.ViewsCount, &proj.CreatedAt, &proj.PublishedAt, &proj.UpdatedAt,
+			// Panorama (10 полей)
 			&panID, &panFilename, &panOriginalFilename, &panTitle, &panDescription,
 			&panIsMain, &panIsActive, &panSortOrder, &panCreatedAt, &panUpdatedAt,
 		)
 		if err != nil {
-			log.Printf("ERROR: rows.Scan failed: %v", err)
+			log.Printf("ERROR: ListPublished rows.Scan failed: %v", err)
 			return nil, err
 		}
 
-		// Конвертируем панораму в Response если есть
+		// Собираем панораму
 		var mainPanResp *models.PanoramaResponse
 		if panID != nil && *panID != "" {
 			panUUID, _ := uuid.Parse(*panID)
-
 			panorama := models.Panorama{
 				ID:               panUUID,
-				ProjectID:        uuid.MustParse(proj.ID), // ← используем proj.ID
+				ProjectID:        uuid.MustParse(proj.ID),
 				Filename:         ptrStr(panFilename),
 				OriginalFilename: ptrStr(panOriginalFilename),
 				Title:            ptrStr(panTitle),
@@ -99,15 +103,7 @@ func (r *ProjectRepository) ListPublished(ctx context.Context, limit, offset int
 		})
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	if projects == nil {
-		return []*models.ProjectWithMainPanorama{}, nil
-	}
-
-	return projects, nil
+	return projects, rows.Err()
 }
 
 // Create создаёт проект + автоматически создаёт запись в panoramas если передана основная панорама
@@ -322,8 +318,9 @@ func (r *ProjectRepository) GetMainPanoramaByProject(ctx context.Context, projec
 	return &pan, nil
 }
 
-// GetByID получает проект + основную панораму (безопасная версия с обработкой NULL)
+// GetByID получает только данные проекта (без информации об авторе)
 func (r *ProjectRepository) GetByID(ctx context.Context, id string) (*models.ProjectWithMainPanorama, error) {
+	// 🔹 Запрос возвращает ровно 20 полей (без author_name/author_role)
 	const query = `
 		SELECT 
 			p.id, p.title, p.description, p.cover_image_url, p.author_id,
@@ -339,34 +336,34 @@ func (r *ProjectRepository) GetByID(ctx context.Context, id string) (*models.Pro
 
 	var proj models.Project
 
-	// 🔹 Указатели для nullable полей панорамы
+	// Nullable поля панорамы (10 штук)
 	var panID *string
 	var panFilename, panOriginalFilename, panTitle, panDescription *string
 	var panIsMain, panIsActive *bool
 	var panSortOrder *int
 	var panCreatedAt, panUpdatedAt *time.Time
 
+	// 🔹 Scan: ровно 20 полей (10 проект + 10 панорама)
 	err := row.Scan(
-		// Project fields (обязательные)
+		// Project (10 полей)
 		&proj.ID, &proj.Title, &proj.Description, &proj.CoverImageURL, &proj.AuthorID,
 		&proj.Status, &proj.ViewsCount, &proj.CreatedAt, &proj.PublishedAt, &proj.UpdatedAt,
-		// Panorama fields (nullable — указатели)
-		&panID, &panFilename, &panOriginalFilename, &panTitle,
-		&panDescription, &panIsMain, &panIsActive, &panSortOrder, &panCreatedAt, &panUpdatedAt,
+		// Panorama (10 полей)
+		&panID, &panFilename, &panOriginalFilename, &panTitle, &panDescription,
+		&panIsMain, &panIsActive, &panSortOrder, &panCreatedAt, &panUpdatedAt,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
-		log.Printf("ERROR: row.Scan failed: %v", err)
+		log.Printf("ERROR: GetByID row.Scan failed: %v", err)
 		return nil, err
 	}
 
-	// 🔹 Если панорама есть — собираем объект и конвертируем в Response
+	// Собираем панораму если есть
 	var mainPanResp *models.PanoramaResponse
 	if panID != nil && *panID != "" {
 		panUUID, _ := uuid.Parse(*panID)
-
 		panorama := models.Panorama{
 			ID:               panUUID,
 			ProjectID:        uuid.MustParse(proj.ID),
@@ -380,13 +377,111 @@ func (r *ProjectRepository) GetByID(ctx context.Context, id string) (*models.Pro
 			CreatedAt:        ptrTime(panCreatedAt),
 			UpdatedAt:        ptrTime(panUpdatedAt),
 		}
-		mainPanResp = panorama.ToResponse() // ← КОНВЕРТАЦИЯ В RESPONSE
+		mainPanResp = panorama.ToResponse()
 	}
 
 	return &models.ProjectWithMainPanorama{
 		Project:      proj,
-		MainPanorama: mainPanResp, // ← *PanoramaResponse, не *Panorama!
+		MainPanorama: mainPanResp,
 	}, nil
+}
+
+// ToggleLike переключает лайк: добавляет или удаляет запись
+// Возвращает: новый статус лайка (после операции) и общее количество
+func (r *ProjectRepository) ToggleLike(ctx context.Context, projectID uuid.UUID, userID string) (bool, int, error) {
+	// Проверяем, есть ли уже лайк
+	var exists bool
+	err := r.db.QueryRow(ctx,
+		`SELECT EXISTS(SELECT 1 FROM public.likes WHERE project_id = $1 AND user_id = $2)`,
+		projectID, userID,
+	).Scan(&exists)
+	if err != nil {
+		return false, 0, fmt.Errorf("check like exists: %w", err)
+	}
+
+	if exists {
+		// Удаляем лайк (по композитному ключу)
+		_, err = r.db.Exec(ctx,
+			`DELETE FROM public.likes WHERE project_id = $1 AND user_id = $2`,
+			projectID, userID,
+		)
+		if err != nil {
+			return false, 0, fmt.Errorf("delete like: %w", err)
+		}
+	} else {
+		// Добавляем лайк (композитный PK создаётся автоматически)
+		_, err = r.db.Exec(ctx,
+			`INSERT INTO public.likes (user_id, project_id, created_at) VALUES ($1, $2, NOW())`,
+			userID, projectID,
+		)
+		if err != nil {
+			return false, 0, fmt.Errorf("insert like: %w", err)
+		}
+	}
+
+	// Получаем актуальное количество лайков проекта
+	var count int
+	err = r.db.QueryRow(ctx,
+		`SELECT COUNT(*) FROM public.likes WHERE project_id = $1`,
+		projectID,
+	).Scan(&count)
+	if err != nil {
+		return false, 0, fmt.Errorf("count likes: %w", err)
+	}
+
+	return !exists, count, nil // !exists = новый статус (поставили/убрали)
+}
+
+// GetLikeStatus проверяет, лайкнул ли текущий пользователь проект
+func (r *ProjectRepository) GetLikeStatus(ctx context.Context, projectID uuid.UUID, userID string) (bool, int, error) {
+	// Проверяем статус лайка
+	var liked bool
+	err := r.db.QueryRow(ctx,
+		`SELECT EXISTS(SELECT 1 FROM public.likes WHERE project_id = $1 AND user_id = $2)`,
+		projectID, userID,
+	).Scan(&liked)
+	if err != nil {
+		return false, 0, fmt.Errorf("check like status: %w", err)
+	}
+
+	// Получаем счётчик
+	var count int
+	err = r.db.QueryRow(ctx,
+		`SELECT COUNT(*) FROM public.likes WHERE project_id = $1`,
+		projectID,
+	).Scan(&count)
+	if err != nil {
+		return false, 0, fmt.Errorf("count likes: %w", err)
+	}
+
+	return liked, count, nil
+}
+
+// GetLikesCount возвращает количество лайков проекта (публичный метод)
+func (r *ProjectRepository) GetLikesCount(ctx context.Context, projectID uuid.UUID) (int, error) {
+	var count int
+	err := r.db.QueryRow(ctx,
+		`SELECT COUNT(*) FROM public.likes WHERE project_id = $1`,
+		projectID,
+	).Scan(&count)
+	return count, err
+}
+
+// IncrementViews увеличивает счетчик просмотров проекта на 1
+func (r *ProjectRepository) IncrementViews(ctx context.Context, id string) (int, error) {
+	const query = `
+                UPDATE projects
+                SET views_count = views_count + 1, updated_at = NOW()
+                WHERE id = $1
+                RETURNING views_count
+        `
+
+	var newCount int
+	err := r.db.QueryRow(ctx, query, id).Scan(&newCount)
+	if err != nil {
+		return 0, err
+	}
+	return newCount, nil
 }
 
 // 🔹 Вспомогательные функции для безопасного получения значений

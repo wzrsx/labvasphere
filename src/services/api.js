@@ -55,9 +55,17 @@ api.interceptors.response.use(
         requestUrl.includes(endpoint)
       );
 
-      // 🧹 Всегда очищаем невалидный токен
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      if (!isPublicRequest && currentPath !== '/auth') {
+        // Проверяем, есть ли токен вообще
+        const token = localStorage.getItem('token');
+        if (token) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        }
+        
+        // Редирект только если это не публичный запрос
+        window.location.href = `/auth?redirect=${encodeURIComponent(currentPath)}`;
+      }
 
       // 🚫 Не редиректим, если:
       // 1. Запрос к публичному API, ИЛИ

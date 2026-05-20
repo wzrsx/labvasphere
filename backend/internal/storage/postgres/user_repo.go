@@ -324,3 +324,35 @@ func (r *UserRepository) GetAvatarURL(ctx context.Context, userID string) (*stri
 	}
 	return avatarURL, err
 }
+
+// GetPublicInfoByID получает только публичные поля пользователя по ID
+func (r *UserRepository) GetPublicInfoByID(ctx context.Context, id string) (*models.User, error) {
+	user := &models.User{}
+	query := `
+		SELECT id, full_name, email, avatar_url, bio, role, created_at, updated_at
+		FROM users
+		WHERE id = $1
+	`
+	err := r.db.QueryRow(ctx, query, id).Scan(
+		&user.ID,
+		&user.FullName,
+		&user.Email,
+		&user.AvatarURL,
+		&user.Bio,
+		&user.Role,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// Очищаем приватные данные
+	user.Email = ""
+	user.PasswordHash = ""
+
+	return user, nil
+}

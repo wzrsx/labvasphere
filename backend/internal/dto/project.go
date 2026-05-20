@@ -22,16 +22,18 @@ type UpdateProjectRequest struct {
 
 // ProjectResponse — ответ клиенту
 type ProjectResponse struct {
-	ID            string                   `json:"id"`
-	Title         string                   `json:"title"`
-	Description   *string                  `json:"description,omitempty"`
-	CoverImageURL *string                  `json:"cover_image_url,omitempty"`
-	AuthorID      string                   `json:"author_id"`
-	AuthorName    string                   `json:"author_name"`
-	Status        string                   `json:"status"`
-	ViewsCount    int                      `json:"views_count"`
-	CreatedAt     string                   `json:"created_at"`
-	PublishedAt   *string                  `json:"published_at,omitempty"`
-	UpdatedAt     string                   `json:"updated_at"`
-	MainPanorama  *models.PanoramaResponse `json:"main_panorama,omitempty"`
+	ID              string                   `json:"id"`
+	Title           string                   `json:"title"`
+	Description     *string                  `json:"description,omitempty"`
+	CoverImageURL   *string                  `json:"cover_image_url,omitempty"`
+	AuthorID        string                   `json:"author_id"`
+	AuthorName      string                   `json:"author_name,omitempty"`       // ← заполняется отдельно
+	AuthorRole      string                   `json:"author_role,omitempty"`       // ← заполняется отдельно
+	AuthorAvatarURL *string                  `json:"author_avatar_url,omitempty"` // ← заполняется отдельно
+	Status          string                   `json:"status"`
+	ViewsCount      int                      `json:"views_count"`
+	CreatedAt       string                   `json:"created_at"`
+	PublishedAt     *string                  `json:"published_at,omitempty"`
+	UpdatedAt       string                   `json:"updated_at"`
+	MainPanorama    *models.PanoramaResponse `json:"main_panorama,omitempty"`
 }

@@ -10,7 +10,8 @@ type Project struct {
 	Description   *string    `json:"description,omitempty" db:"description"`
 	CoverImageURL *string    `json:"cover_image_url,omitempty" db:"cover_image_url"`
 	AuthorID      string     `json:"author_id" db:"author_id"`
-	AuthorName    string     `json:"author_name" db:"author_name"`
+	AuthorName    *string    `json:"author_name,omitempty" db:"author_name"`
+	AuthorRole    *string    `json:"author_role,omitempty" db:"author_role"`
 	Status        string     `json:"status" db:"status"`
 	ViewsCount    int        `json:"views_count" db:"views_count"`
 	CreatedAt     time.Time  `json:"created_at" db:"created_at"`

@@ -105,19 +105,39 @@ func main() {
 			r.Delete("/avatar", avatarHandler.DeleteAvatar)
 		})
 		r.Get("/projects/public/{id}", projectHandler.GetPublicProject)
+
 		r.Get("/panoramas/project/{id}", panoramaHandler.ListByProjectPublic)
 		r.Get("/hotspots/panorama/{id}", hotspotHandler.ListByPanoramaPublic)
-		projectHandler.RegisterPublicRoutes(r)
-		// Роуты проектов (требуют токен)
 		r.Route("/projects", func(r chi.Router) {
-			r.Use(middleware.AuthMiddleware)
-			projectHandler.RegisterPrivateRoutes(r)
+			// ✅ Опциональная авторизация: токен есть → пользователь, нет → аноним
+			r.Get("/{id}/like/status", middleware.OptionalAuth(projectHandler.GetLikeStatus))
+			// === ПУБЛИЧНЫЕ МАРШРУТЫ (без авторизации) ===
+			r.Get("/published", projectHandler.ListPublished)
+			r.Get("/public/{id}", projectHandler.GetPublicProject)
+			r.Put("/public/{id}/views", projectHandler.IncrementViews)
+
+			// === ПРИВАТНЫЕ МАРШРУТЫ (требуют авторизации) ===
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.AuthMiddleware) // ← 🔐 Только для этой группы
+
+				r.Get("/", projectHandler.List)
+				r.Post("/", projectHandler.CreateProject)
+				r.Get("/{id}", projectHandler.GetByID)
+				r.Put("/{id}", projectHandler.UpdateProject)
+				r.Delete("/{id}", projectHandler.DeleteProject)
+				r.Put("/{id}/like", projectHandler.LikeProject) // ← PUT, с auth
+			})
 		})
 		// Роуты профиля (требуют аутентификации)
 		r.Route("/profile", func(r chi.Router) {
 			r.Use(middleware.AuthMiddleware)
 			r.Get("/", userHandler.GetProfile)
 			r.Put("/", userHandler.UpdateProfile)
+		})
+		// Публичные роуты пользователя
+		r.Route("/users", func(r chi.Router) {
+			// Публичный просмотр профиля по ID: GET /users/{id}
+			r.Get("/{id}", userHandler.GetPublicProfile)
 		})
 		// Роуты хотспотов
 		r.Route("/hotspots", func(r chi.Router) {

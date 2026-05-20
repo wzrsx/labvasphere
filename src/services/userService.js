@@ -16,7 +16,30 @@ export const getProfile = async () => {
     };
   }
 };
-
+//Получение публичного профиля пользователя по ID
+export const getPublicProfile = async (userId) => {
+  try {
+    if (!userId) {
+      return {
+        success: false,
+        error: 'ID пользователя не указан',
+      };
+    }
+    
+    const response = await api.get(`/users/${userId}`);
+    return {
+      success: true,
+      user: response.data,
+    };
+  } catch (error) {
+    const message =
+      error.response?.data?.error || 'Ошибка при загрузке профиля';
+    return {
+      success: false,
+      error: message,
+    };
+  }
+};
 // Обновление профиля пользователя
 export const updateProfile = async (profileData) => {
   try {

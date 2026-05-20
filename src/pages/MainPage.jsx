@@ -4,6 +4,7 @@ import {
   getProjects,
   deleteProject,
   updateProjectStatus,
+  getProjectsLikesCounts
 } from '../services/projectService';
 import { getCurrentUser } from '../services/authService';
 import { useTranslation } from 'react-i18next';
@@ -87,6 +88,7 @@ const [publishConfirmModal, setPublishConfirmModal] = useState({
   project: null,
   isLoading: false,
 });
+
   const handleShareClick = (project) => {
   // Если проект в черновике — показываем подтверждение публикации
   if (project.status === 'draft') {
@@ -152,19 +154,33 @@ const handleConfirmPublishAndShare = async () => {
     setError(null);
 
     try {
-      const result = await getProjects();
+    const result = await getProjects();
 
-      if (result.success) {
-        setProjects(result.projects || []);
-      } else {
-        setError(result.error);
+    if (result.success) {
+      const projectsList = result.projects || [];
+      setProjects(projectsList);
+      
+      // 🔹 🔥 ДОБАВЛЕНО: Загружаем актуальные счётчики лайков
+      if (projectsList.length > 0) {
+        const projectIds = projectsList.map(p => p.id);
+        const likesMap = await getProjectsLikesCounts(projectIds);
+        console.log(likesMap);
+        
+        // Обновляем проекты с новыми счётчиками лайков
+        setProjects(prev => prev.map(project => ({
+          ...project,
+          likes_count: likesMap[project.id] ?? project.likes_count, // fallback на старое значение
+        })));
       }
-    } catch (err) {
-      console.error('Ошибка загрузки проектов:', err);
-      setError('Не удалось загрузить список проектов');
-    } finally {
-      setLoading(false);
+    } else {
+      setError(result.error);
     }
+  } catch (err) {
+    console.error('Ошибка загрузки проектов:', err);
+    setError('Не удалось загрузить список проектов');
+  } finally {
+    setLoading(false);
+  }
   };
   const handleToggleStatus = async (e, projectId) => {
     e.stopPropagation();
