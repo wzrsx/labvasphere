@@ -114,7 +114,7 @@ func main() {
 			// === ПУБЛИЧНЫЕ МАРШРУТЫ (без авторизации) ===
 			r.Get("/published", projectHandler.ListPublished)
 			r.Get("/public/{id}", projectHandler.GetPublicProject)
-			r.Put("/public/{id}/views", projectHandler.IncrementViews)
+			r.Put("/{id}/views", projectHandler.IncrementViews)
 
 			// === ПРИВАТНЫЕ МАРШРУТЫ (требуют авторизации) ===
 			r.Group(func(r chi.Router) {

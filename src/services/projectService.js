@@ -383,7 +383,6 @@ export const getLikeStatus = async (projectId) => {
   }
 };
 // ✅ Массовое получение лайков для нескольких проектов (параллельные запросы)
-
 export const getProjectsLikesCounts = async (projectIds) => {
   if (!projectIds?.length) return {};
 
