@@ -15,6 +15,7 @@ import {
   getPanoramasByProject,
   uploadHotspotImage,
 } from '../services/projectService';
+import { getUserSettings } from '../services/userSettingsService.js';
 import {
   convertHotspotToEditor,
   convertHotspotsToMarkers,
@@ -25,7 +26,7 @@ import SphereViewer from '../components/SphereViewer';
 import './EditorPage.css';
 import { CONFIG } from '../config';
 import MiniMapHotspots from '../components/MiniMap/MiniMapHotspots.jsx';
-
+console.log('🔍 [Import Debug] getUserSettings =', typeof getUserSettings);
 const EditorPage = () => {
   const { t } = useTranslation();
   const { id } = useParams();
@@ -50,9 +51,10 @@ const EditorPage = () => {
   // Список всех панорам проекта (медиа-галерея)
   const [projectPanoramas, setProjectPanoramas] = useState([]);
   const [uploadingMedia, setUploadingMedia] = useState(false);
-  const [selectedPanoramaForTransition, setSelectedPanoramaForTransition] =
-    useState(null);
-
+  const [selectedPanoramaForTransition, setSelectedPanoramaForTransition] = useState(null);
+  const [userDefaultIcon, setUserDefaultIcon] = useState('pin');
+    const [userDefaultColor, setUserDefaultColor] = useState('#99582A');
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const fileInputRef = useRef(null);
   const sphereViewerRef = useRef(null);
   const activeToolRef = useRef(activeTool);
@@ -81,13 +83,40 @@ const EditorPage = () => {
   useEffect(() => {
     activeToolRef.current = activeTool;
   }, [activeTool]);
-  // 🔹 Отладочный эффект для projectPanoramas
+    // 🔹 Загрузка пользовательских настроек
   useEffect(() => {
-    console.group('📦 projectPanoramas changed');
-    console.log('📏 Длина массива:', projectPanoramas.length);
-    console.log('📄 Данные:', projectPanoramas);
-    console.groupEnd();
-  }, [projectPanoramas]); // ← Обязательно укажите зависимость!
+    let isMounted = true;
+    
+    const loadSettings = async () => {
+      try {
+        console.log('⚙️ [Settings] Calling getUserSettings()...');
+        const response = await getUserSettings();
+        console.log('⚙️ [Settings] Response:', response);
+        
+        if (response?.success && response?.settings?.default_icon) {
+          if (isMounted) {
+            setUserDefaultIcon(response.settings.default_icon);
+            console.log('✅ [Settings] Icon set to:', response.settings.default_icon);
+          }
+        }
+        if (isMounted && response.settings.default_color) {
+            setUserDefaultColor(response.settings.default_color);
+            console.log('✅ [Settings] Color set to:', response.settings.default_color);
+        }
+      } catch (err) {
+        console.error('❌ [Settings] Error:', err);
+      } finally {
+        // 🔹🔹🔹 Гарантированно снимаем флаг загрузки
+        if (isMounted) {
+          console.log('✅ [Settings] settingsLoaded = true');
+          setSettingsLoaded(true);
+        }
+      }
+    };
+
+    loadSettings();
+    return () => { isMounted = false; };
+  }, []); // ← пустой массив = один раз при монтировании
   // Отслеживание изменений
   useEffect(() => {
     if (project) {
@@ -658,6 +687,9 @@ const loadProject = async () => {
 
   // 🔹 Клик по панораме для добавления хотспота
   const handlePositionClick = useCallback(async (position) => {
+    console.log('🎯 [Click] handlePositionClick fired');
+    console.log('🎯 [Click] settingsLoaded =', settingsLoaded);
+    console.log('🎯 [Click] userDefaultIcon =', userDefaultIcon);
     console.log('[Editor] 🎯 handlePositionClick called', {
       activeTool: activeToolRef.current,
       selectedHotspot: !!selectedHotspot,
@@ -670,7 +702,6 @@ const loadProject = async () => {
       );
       return; // ← просто игнорируем клик, не вызываем handleHotspotClick!
     }
-
     // Парсим координаты в ЧИСЛА (убираем "rad" если есть)
     const parseCoord = (val) => {
       if (typeof val === 'number') return val;
@@ -691,13 +722,16 @@ const loadProject = async () => {
       tooltip: 'Новая точка перехода',
       type: 'transition',
       targetProjectId: null,
-      icon: null,
-      color: '#3498db',
+      icon: userDefaultIcon || 'pin',
+      color: userDefaultColor || '#99582A',
       targetFileUrl: null,
       linkUrl: '',
     };
 
-    console.log('[Editor] 📍 New hotspot position:', newHotspot.position);
+    console.log('[Editor] 📍 New hotspot created:', {
+      position: newHotspot.position,
+      icon: newHotspot.icon,  // ← лог для проверки
+    });
 
     // 1. Обновляем состояние — SphereViewer синхронизирует маркеры автоматически
     setEditorData((prev) => ({
@@ -708,7 +742,7 @@ const loadProject = async () => {
     // 2. Переключаем в режим редактирования НОВОГО хотспота
     setSelectedHotspot(newHotspot);
     setActiveTool('hotspot-edit'); // ← ← ← переключаем в режим редактирования!
-  }, []);
+  }, [userDefaultIcon, userDefaultColor]);
 
   // Локальное обновление хотспота (без отправки на сервер)
   const updateHotspotLocal = (id, updates) => {

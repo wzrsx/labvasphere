@@ -28,7 +28,13 @@
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: var(--space-lg);
 }
-
+.full-column {
+    grid-column: span 2 / span 2;
+}
+.full-column-flex {
+  display: flex;
+  justify-content: space-between;
+}
 .settings-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -139,7 +145,10 @@ input:checked + .slider:before { transform: translateX(22px); background-color: 
 .color-swatch { border-radius: var(--radius-full); }
 
 /* 🔹 Кнопки и действия */
-.action-group { margin-bottom: var(--space-lg);display: flex;
+.action-group { 
+  width: 45%;
+  margin-bottom: var(--space-md);
+  display: flex;
   flex-direction: column; }
 .divider { height: 1px; background: var(--border); margin: var(--space-lg) 0; }
 .action-desc{
@@ -192,6 +201,11 @@ input:checked + .slider:before { transform: translateX(22px); background-color: 
 }
 .settings-toast.info { border-left-color: var(--warning); }
 
+.some-points{
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
 /* 📱 Адаптив */
 @media (max-width: 640px) {
   .settings-grid { grid-template-columns: 1fr; }

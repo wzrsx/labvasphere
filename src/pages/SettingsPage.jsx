@@ -157,9 +157,10 @@ const SettingsPage = () => {
       </header>
 
       <main className="settings-grid">
-        {/* 📬 Контакты */}
-        <section className="settings-card hover-lift">
-          <h2>📬 Видимость контактов</h2>
+        {/* Контакты */}
+        <section className="settings-card hover-lift some-points">
+           <div>
+            <h2>Видимость контактов</h2>
           <div className="setting-row">
             <div className="setting-info">
               <span className="setting-label">Отображать email в профиле</span>
@@ -174,12 +175,31 @@ const SettingsPage = () => {
               <span className="slider"></span>
             </label>
           </div>
+            </div> 
+          <div>
+            <h2>Защита работ</h2>
+          <div className="setting-row">
+            <div className="setting-info">
+              <span className="setting-label">Запретить сохранение панорам</span>
+              <span className="setting-desc">Отключает контекстное меню и скрывает прямые ссылки на изображения</span>
+            </div>
+            <label className="toggle-switch">
+              <input 
+                type="checkbox" 
+                checked={protectDownloads} 
+                onChange={(e) => handleProtectToggle(e.target.checked)} 
+              />
+              <span className="slider"></span>
+            </label>
+          </div>
+          </div>
         </section>
 
-        {/* 🎯 Метки на панораме */}
+        {/* Метки на панораме */}
         <section className="settings-card hover-lift">
-          <h2>🎯 Стиль точек на панораме</h2>
+          <h2>Стиль точек на панораме</h2>
           <p className="setting-desc">Выберите вид и цвет меток, которыми вы отмечаете детали в 360° туре</p>
+          <p className="setting-desc">На странице редактирования вы также сможете добавить свое изображение</p>
           
           <div className="picker-group">
             <span className="picker-label">Иконка:</span>
@@ -217,30 +237,11 @@ const SettingsPage = () => {
           </div>
         </section>
 
-        {/* 🔒 Безопасность */}
-        <section className="settings-card hover-lift">
-          <h2>🔒 Защита работ</h2>
-          <div className="setting-row">
-            <div className="setting-info">
-              <span className="setting-label">Запретить сохранение панорам</span>
-              <span className="setting-desc">Отключает контекстное меню и скрывает прямые ссылки на изображения</span>
-            </div>
-            <label className="toggle-switch">
-              <input 
-                type="checkbox" 
-                checked={protectDownloads} 
-                onChange={(e) => handleProtectToggle(e.target.checked)} 
-              />
-              <span className="slider"></span>
-            </label>
-          </div>
-        </section>
-
-        {/* 💾 Данные */}
-        <section className="settings-card hover-lift">
-          <h2>💾 Данные и обслуживание</h2>
-          
-          <div className="action-group">
+        {/* Данные */}
+        <section className="settings-card hover-lift full-column">
+          <h2>Данные и обслуживание</h2>
+          <div className="full-column-flex">
+              <div className="action-group">
             <button 
               className={`btn btn-primary ${isDownloading ? 'loading' : ''}`} 
               onClick={handleDownload}
@@ -263,8 +264,10 @@ const SettingsPage = () => {
             >
               {isClearing ? 'Очистка...' : 'Очистить кэш'}
             </button>
-            <span className="action-desc">Используйте, если панорамы грузятся медленно или отображаются некорректно</span>
+            <span className="action-desc">Используйте, если панорамы загружаются медленно или отображаются некорректно</span>
           </div>
+          </div>
+          
         </section>
       </main>
     </div>

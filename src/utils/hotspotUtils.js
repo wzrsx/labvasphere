@@ -216,3 +216,31 @@ export const prepareHotspotForApi = (hotspot, panoramaId) => {
     is_active: hotspot.is_active !== undefined ? hotspot.is_active : true,
   };
 };
+
+// 🔹 Генерация SVG-иконки с цветом как Data URL
+export const getColoredIconUrl = (iconName, color) => {
+  // Пути к иконкам (если не нужно перекрашивать)
+  const ALLOWED_ICONS = ['pin', 'dot', 'star', 'camera'];
+  
+  // Если это кастомное изображение — возвращаем как есть
+  if (!ALLOWED_ICONS.includes(iconName)) {
+    return iconName; // уже полный URL или путь
+  }
+  
+  // SVG-пути для наших иконок
+  const iconPaths = {
+    pin: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z',
+    dot: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z',
+    star: 'M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z',
+    camera: 'M9 2l-1.85 2H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2h-3.15L15 2H9zm3 15a5 5 0 110-10 5 5 0 010 10z'
+  };
+  
+  const path = iconPaths[iconName];
+  if (!path) return '/finger-32.svg'; // фолбэк
+  
+  // Создаём SVG с нужным цветом
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="${color}"><path d="${path}"/></svg>`;
+  
+  // Кодируем в Data URL
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+};
