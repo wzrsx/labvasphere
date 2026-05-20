@@ -45,6 +45,8 @@ func main() {
 	hotspotRepo := postgres.NewHotspotRepository(db)
 	panoramaRepo := postgres.NewPanoramaRepository(db)
 	partnerRepo := postgres.NewPartnerRepository(db)
+	userSettingsRepo := postgres.NewUserSettingsRepository(db)
+
 	// Хендлеры
 	emailService := email.NewEmailService()
 	authHandler := handlers.NewAuthHandler(userRepo, emailService)
@@ -57,6 +59,7 @@ func main() {
 	hotspotUploadHandler := handlers.NewHotspotUploadHandler("./uploads")
 	partnerHandler := handlers.NewPartnerHandler(partnerRepo)
 	avatarHandler := handlers.NewAvatarHandler(userRepo, "./uploads")
+	userSettingsHandler := handlers.NewUserSettingsHandler(userSettingsRepo)
 
 	// Настраиваем роутер
 	r := chi.NewRouter()
@@ -67,7 +70,7 @@ func main() {
 	// CORS
 	corsMiddleware := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:5173"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"}, 
 		AllowedHeaders:   []string{"*"},
 		AllowCredentials: false,
 	})
@@ -155,6 +158,10 @@ func main() {
 			r.Post("/withdraw", partnerHandler.CreateWithdrawal)
 			r.Get("/transactions", partnerHandler.GetTransactions)
 			r.Get("/referrals", partnerHandler.GetReferrals)
+		})
+		r.Route("/user/settings", func(r chi.Router) {
+			r.Use(middleware.AuthMiddleware)
+			userSettingsHandler.RegisterRoutes(r)
 		})
 	})
 
