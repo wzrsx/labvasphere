@@ -12,7 +12,7 @@ const Header = () => {
   const { isDark } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, role, canAccessProjects, canAccessSettings, logout } = useAuth();
 
   // Получаем имя пользователя (второе слово из ФИО)
   const getUserName = () => {
@@ -43,18 +43,26 @@ const Header = () => {
     <header className="dashboard-header">
       <div className="logo">LABVASPHERE</div>
       <nav className="nav-links">
-        <Link to="/main" className={isActive('/main') ? 'active' : ''}>
-          {t('nav.projects')}
-        </Link>
+        {canAccessProjects ? (
+          <Link to="/main" className={isActive('/main') ? 'active' : ''}>
+            {t('nav.projects')}
+          </Link>
+        ) : (
+          <Link to="/main-client" className={isActive('/main-client') ? 'active' : ''}>
+            {t('nav.projects_client')}
+          </Link>
+        )}
         <Link to="/partner" className={isActive('/partner') ? 'active' : ''}>
           {t('nav.partner')}
         </Link>
         <Link to="/guide" className={isActive('/guide') ? 'active' : ''}>
           {t('nav.guide')}
         </Link>
-        <Link to="/settings" className={isActive('/settings') ? 'active' : ''}>
-          {t('nav.settings')}
-        </Link>
+        {canAccessSettings && (
+          <Link to="/settings" className={isActive('/settings') ? 'active' : ''}>
+            {t('nav.settings')}
+          </Link>
+        )}
       </nav>
       {isAuthenticated && (
         <div className="user-profile">

@@ -1,6 +1,7 @@
 {
   "nav": {
     "projects": "My Projects",
+    "projects_client": "Catalog",
     "partner": "Partner Program",
     "guide": "Guide",
     "settings": "Settings"
@@ -559,6 +560,66 @@
       "text": "Still have questions?",
       "link": "Contact Support",
       "time": "— we'll help within 15 minutes."
+    }
+  },
+  "settings": {
+    "loading": "Loading settings...",
+    "header": {
+      "title": "Portfolio Settings",
+      "subtitle": "Control how clients see your projects"
+    },
+    "notifications": {
+      "icon_saved": "Hotspot style saved",
+      "color_saved": "Hotspot color saved",
+      "email_shown": "Email will be displayed",
+      "email_hidden": "Email is hidden",
+      "protect_on": "Protection enabled",
+      "protect_off": "Protection disabled",
+      "download_ready": "Portfolio ready for download",
+      "cache_cleared": "Temporary data cleared. Please reload the page.",
+      "save_error": "Failed to save settings",
+      "load_error": "Failed to load settings"
+    },
+    "contacts": {
+      "title": "Contact Visibility",
+      "email": {
+        "label": "Show email in profile",
+        "desc": "Clients will be able to contact you directly from your portfolio page"
+      }
+    },
+    "protection": {
+      "title": "Work Protection",
+      "downloads": {
+        "label": "Prevent panorama downloads",
+        "desc": "Disables context menu and hides direct image links"
+      }
+    },
+    "markers": {
+      "title": "Hotspot Style on Panoramas",
+      "desc": "Choose the appearance and color of markers you use to highlight details in 360° tours",
+      "custom_image_hint": "On the edit page, you can also add your own custom image",
+      "icon_label": "Icon:",
+      "color_label": "Color:",
+      "icons": {
+        "pin": "Pin",
+        "dot": "Dot",
+        "star": "Star",
+        "camera": "Camera"
+      },
+      "color_aria": "Select color {{color}}"
+    },
+    "data": {
+      "title": "Data & Maintenance",
+      "download": {
+        "button": "Download Portfolio (PDF)",
+        "loading": "Preparing...",
+        "desc": "Collects all projects into one archive for offline presentation"
+      },
+      "cache": {
+        "button": "Clear Cache",
+        "loading": "Clearing...",
+        "desc": "Use if panoramas load slowly or display incorrectly"
+      }
     }
   },
   "lang_btn": "🇬🇧 EN"

@@ -102,7 +102,28 @@ const LoginForm = ({ onSwitchToRegister, onSwitchToResetPass }) => {
         onChange={handleChange}
         disabled={isLoading}
       />
-
+      <div className="register-link">
+        <p>Еще нет профиля?</p>
+        <button
+          type="button"
+          className="link-button"
+          onClick={onSwitchToRegister}
+          disabled={isLoading}
+        >
+          Зарегистрируйтесь
+        </button>
+      </div>
+      <div className="register-link">
+        <p>Забыли пароль?</p>
+        <button
+          type="button"
+          className="link-button"
+          onClick={onSwitchToResetPass}
+          disabled={isLoading}
+        >
+          Восстановить
+        </button>
+      </div>
       {/* ... кнопки ... */}
       <button type="submit" className="login-button" disabled={isLoading}>
         {isLoading ? 'Вход...' : 'Войти'}

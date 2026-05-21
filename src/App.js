@@ -18,12 +18,20 @@ import ProjectView from './pages/ProjectView';
 import EditorPage from './pages/EditorPage';
 import ProfilePage from './pages/ProfilePage';
 import ReferralHandler from './components/ReferralHandler';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import AccessDenied from './pages/AccessDenied';
 // Компонент-обёртка, чтобы получить доступ к location внутри Router
 const AppContent = () => {
   const location = useLocation();
 
   // Список путей, где НУЖЕН хедер
-  const routesWithHeader = ['/main', '/partner', '/guide', '/settings'];
+  const routesWithHeader = [
+    '/main',
+    '/partner',
+    '/guide',
+    '/settings',
+    '/main-client',
+  ];
 
   const showHeader = routesWithHeader.includes(location.pathname);
 
@@ -35,8 +43,22 @@ const AppContent = () => {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/auth" element={<AuthPage />} />
-          <Route path="/main" element={<MainPage />} />
-          <Route path="/main-client" element={<MainPageClient />} />
+          <Route
+            path="/main"
+            element={
+              <ProtectedRoute>
+                <MainPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/main-client"
+            element={
+              <ProtectedRoute>
+                <MainPageClient />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/partner" element={<PartnerPage />} />
           <Route path="/guide" element={<GuidePage />} />
           <Route path="/settings" element={<SettingsPage />} />
@@ -47,6 +69,7 @@ const AppContent = () => {
             element={<ProjectView mode="public" />}
           />
           <Route path="/editor/:id" element={<EditorPage />} />
+          <Route path="/access-denied" element={<AccessDenied />} />
         </Routes>
       </div>
     </>

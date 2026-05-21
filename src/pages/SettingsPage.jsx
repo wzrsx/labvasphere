@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next'; // 🔥 Добавляем
 import './SettingsPage.css';
 import {
   getUserSettings,
@@ -9,6 +10,8 @@ import {
 } from '../services/userSettingsService.js';
 
 const SettingsPage = () => {
+  const { t } = useTranslation(); // 🔥 Инициализируем
+
   // 🔹 Состояния
   const [showEmail, setShowEmail] = useState(true);
   const [protectDownloads, setProtectDownloads] = useState(false);
@@ -17,7 +20,7 @@ const SettingsPage = () => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [notification, setNotification] = useState(null);
-  const [loading, setLoading] = useState(true); // ← добавлено
+  const [loading, setLoading] = useState(true);
 
   // 🔹 Ref для debounce цвета
   const colorSaveTimeout = useRef(null);
@@ -31,25 +34,26 @@ const SettingsPage = () => {
     '#b87b6e',
     '#4a4035',
   ];
+
   const iconOptions = [
     {
       id: 'pin',
-      label: 'Буллавка',
+      labelKey: 'settings.markers.icons.pin',
       svg: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z',
     },
     {
       id: 'dot',
-      label: 'Точка',
+      labelKey: 'settings.markers.icons.dot',
       svg: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z',
     },
     {
       id: 'star',
-      label: 'Звезда',
+      labelKey: 'settings.markers.icons.star',
       svg: 'M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z',
     },
     {
       id: 'camera',
-      label: 'Камера',
+      labelKey: 'settings.markers.icons.camera',
       svg: 'M9 2l-1.85 2H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2h-3.15L15 2H9zm3 15a5 5 0 110-10 5 5 0 010 10z',
     },
   ];
@@ -61,7 +65,6 @@ const SettingsPage = () => {
       const result = await getUserSettings();
 
       if (result.success && result.settings) {
-        // Применяем настройки из БД
         if (result.settings.default_icon !== undefined)
           setMarkerIcon(result.settings.default_icon);
         if (result.settings.default_color !== undefined)
@@ -71,17 +74,13 @@ const SettingsPage = () => {
         if (result.settings.protect_downloads !== undefined)
           setProtectDownloads(result.settings.protect_downloads);
       } else if (!result.success) {
-        showNotification(
-          result.error || 'Не удалось загрузить настройки',
-          'error',
-        );
+        showNotification(t('settings.notifications.load_error'), 'error');
       }
-      // Fallback на дефолты уже установлен в useState
       setLoading(false);
     };
 
     loadSettings();
-  }, []);
+  }, [t]); // 🔥 Добавили t в зависимости
 
   // 🔹 Очистка таймера при размонтировании
   useEffect(() => {
@@ -105,49 +104,60 @@ const SettingsPage = () => {
   }, [notification]);
 
   // 🔹 Универсальная функция сохранения настроек
-  const saveSettings = async (updates, successMessage) => {
+  const saveSettings = async (updates, successKey) => {
     const result = await updateUserSettings(updates);
     if (result.success) {
-      if (successMessage) showNotification(successMessage, 'success');
+      if (successKey) showNotification(t(successKey), 'success');
     } else {
-      showNotification(result.error, 'error');
+      showNotification(
+        result.error || t('settings.notifications.save_error'),
+        'error',
+      );
     }
   };
 
   // 🔹 Обработчик смены иконки
   const handleIconChange = async (newIcon) => {
-    setMarkerIcon(newIcon); // мгновенная реакция UI
-    await saveSettings({ default_icon: newIcon }, 'Стиль точек сохранён');
+    setMarkerIcon(newIcon);
+    await saveSettings(
+      { default_icon: newIcon },
+      'settings.notifications.icon_saved',
+    );
   };
 
   // 🔹 Обработчик смены цвета (с debounce 500ms)
   const handleColorChange = (newColor) => {
-    setMarkerColor(newColor); // мгновенная реакция UI
+    setMarkerColor(newColor);
 
-    // Отменяем предыдущий таймер
     if (colorSaveTimeout.current) clearTimeout(colorSaveTimeout.current);
 
-    // Создаём новый: сохраняем через 500мс после последнего изменения
     colorSaveTimeout.current = setTimeout(async () => {
-      await saveSettings({ default_color: newColor }, 'Цвет точек сохранён');
+      await saveSettings(
+        { default_color: newColor },
+        'settings.notifications.color_saved',
+      );
     }, 500);
   };
 
   // 🔹 Обработчик email-visibility
   const handleEmailToggle = async (value) => {
-    setShowEmail(value); // мгновенная реакция UI
+    setShowEmail(value);
     await saveSettings(
       { show_email: value },
-      value ? 'Email будет отображаться' : 'Email скрыт',
+      value
+        ? 'settings.notifications.email_shown'
+        : 'settings.notifications.email_hidden',
     );
   };
 
   // 🔹 Обработчик защиты от скачивания
   const handleProtectToggle = async (value) => {
-    setProtectDownloads(value); // мгновенная реакция UI
+    setProtectDownloads(value);
     await saveSettings(
       { protect_downloads: value },
-      value ? 'Защита включена' : 'Защита отключена',
+      value
+        ? 'settings.notifications.protect_on'
+        : 'settings.notifications.protect_off',
     );
   };
 
@@ -156,7 +166,7 @@ const SettingsPage = () => {
     setIsDownloading(true);
     setTimeout(() => {
       setIsDownloading(false);
-      showNotification('Портфолио готово к скачиванию', 'success');
+      showNotification(t('settings.notifications.download_ready'), 'success');
     }, 1500);
   };
 
@@ -164,10 +174,7 @@ const SettingsPage = () => {
     setIsClearing(true);
     setTimeout(() => {
       setIsClearing(false);
-      showNotification(
-        'Временные данные очищены. Перезагрузите страницу.',
-        'info',
-      );
+      showNotification(t('settings.notifications.cache_cleared'), 'info');
     }, 1200);
   };
 
@@ -176,7 +183,7 @@ const SettingsPage = () => {
     return (
       <div className="settings-page settings-loading">
         <div className="loading-spinner animate-spin">⏳</div>
-        <p>Загрузка настроек...</p>
+        <p>{t('settings.loading')}</p>
       </div>
     );
   }
@@ -193,24 +200,22 @@ const SettingsPage = () => {
       )}
 
       <header className="settings-header">
-        <h1>Настройки портфолио</h1>
-        <p className="settings-subtitle">
-          Управляйте тем, как клиенты видят ваши проекты
-        </p>
+        <h1>{t('settings.header.title')}</h1>
+        <p className="settings-subtitle">{t('settings.header.subtitle')}</p>
       </header>
 
       <main className="settings-grid">
         {/* Контакты */}
         <section className="settings-card hover-lift some-points">
           <div>
-            <h2>Видимость контактов</h2>
+            <h2>{t('settings.contacts.title')}</h2>
             <div className="setting-row">
               <div className="setting-info">
                 <span className="setting-label">
-                  Отображать email в профиле
+                  {t('settings.contacts.email.label')}
                 </span>
                 <span className="setting-desc">
-                  Клиенты смогут писать вам напрямую со страницы портфолио
+                  {t('settings.contacts.email.desc')}
                 </span>
               </div>
               <label className="toggle-switch">
@@ -218,21 +223,21 @@ const SettingsPage = () => {
                   type="checkbox"
                   checked={showEmail}
                   onChange={(e) => handleEmailToggle(e.target.checked)}
+                  aria-label={t('settings.contacts.email.label')}
                 />
                 <span className="slider"></span>
               </label>
             </div>
           </div>
           <div>
-            <h2>Защита работ</h2>
+            <h2>{t('settings.protection.title')}</h2>
             <div className="setting-row">
               <div className="setting-info">
                 <span className="setting-label">
-                  Запретить сохранение панорам
+                  {t('settings.protection.downloads.label')}
                 </span>
                 <span className="setting-desc">
-                  Отключает контекстное меню и скрывает прямые ссылки на
-                  изображения
+                  {t('settings.protection.downloads.desc')}
                 </span>
               </div>
               <label className="toggle-switch">
@@ -240,6 +245,7 @@ const SettingsPage = () => {
                   type="checkbox"
                   checked={protectDownloads}
                   onChange={(e) => handleProtectToggle(e.target.checked)}
+                  aria-label={t('settings.protection.downloads.label')}
                 />
                 <span className="slider"></span>
               </label>
@@ -249,24 +255,24 @@ const SettingsPage = () => {
 
         {/* Метки на панораме */}
         <section className="settings-card hover-lift">
-          <h2>Стиль точек на панораме</h2>
+          <h2>{t('settings.markers.title')}</h2>
+          <p className="setting-desc">{t('settings.markers.desc')}</p>
           <p className="setting-desc">
-            Выберите вид и цвет меток, которыми вы отмечаете детали в 360° туре
-          </p>
-          <p className="setting-desc">
-            На странице редактирования вы также сможете добавить свое
-            изображение
+            {t('settings.markers.custom_image_hint')}
           </p>
 
           <div className="picker-group">
-            <span className="picker-label">Иконка:</span>
+            <span className="picker-label">
+              {t('settings.markers.icon_label')}
+            </span>
             <div className="icon-grid">
               {iconOptions.map((icon) => (
                 <button
                   key={icon.id}
                   className={`icon-btn ${markerIcon === icon.id ? 'active' : ''}`}
                   onClick={() => handleIconChange(icon.id)}
-                  title={icon.label}
+                  title={t(icon.labelKey)}
+                  aria-label={t(icon.labelKey)}
                   type="button"
                 >
                   <svg viewBox="0 0 24 24" fill="currentColor">
@@ -278,7 +284,9 @@ const SettingsPage = () => {
           </div>
 
           <div className="picker-group">
-            <span className="picker-label">Цвет:</span>
+            <span className="picker-label">
+              {t('settings.markers.color_label')}
+            </span>
             <div className="color-grid">
               {colorOptions.map((color) => (
                 <button
@@ -286,7 +294,7 @@ const SettingsPage = () => {
                   className={`color-swatch ${markerColor === color ? 'active' : ''}`}
                   style={{ backgroundColor: color }}
                   onClick={() => handleColorChange(color)}
-                  aria-label={`Выбрать цвет ${color}`}
+                  aria-label={t('settings.markers.color_aria', { color })}
                   type="button"
                 />
               ))}
@@ -296,7 +304,7 @@ const SettingsPage = () => {
 
         {/* Данные */}
         <section className="settings-card hover-lift full-column">
-          <h2>Данные и обслуживание</h2>
+          <h2>{t('settings.data.title')}</h2>
           <div className="full-column-flex">
             <div className="action-group">
               <button
@@ -305,10 +313,12 @@ const SettingsPage = () => {
                 disabled={isDownloading}
                 type="button"
               >
-                {isDownloading ? 'Подготовка...' : 'Скачать портфолио (PDF)'}
+                {isDownloading
+                  ? t('settings.data.download.loading')
+                  : t('settings.data.download.button')}
               </button>
               <span className="action-desc">
-                Соберёт все проекты в один архив для офлайн-презентации
+                {t('settings.data.download.desc')}
               </span>
             </div>
 
@@ -321,11 +331,12 @@ const SettingsPage = () => {
                 disabled={isClearing}
                 type="button"
               >
-                {isClearing ? 'Очистка...' : 'Очистить кэш'}
+                {isClearing
+                  ? t('settings.data.cache.loading')
+                  : t('settings.data.cache.button')}
               </button>
               <span className="action-desc">
-                Используйте, если панорамы загружаются медленно или отображаются
-                некорректно
+                {t('settings.data.cache.desc')}
               </span>
             </div>
           </div>

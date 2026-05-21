@@ -1,28 +1,39 @@
-import { useState, useEffect } from 'react';
-import { getToken, logout as logoutService } from '../services/authService';
-
+// src/hooks/useAuth.js
 export const useAuth = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const getUser = () => {
+    try {
+      const userStr = localStorage.getItem('user');
+      return userStr ? JSON.parse(userStr) : null;
+    } catch {
+      return null;
+    }
+  };
 
-  useEffect(() => {
-    const checkAuth = () => {
-      const token = getToken();
-      setIsAuthenticated(!!token);
-      setLoading(false);
-    };
+  const user = getUser();
+  const token = localStorage.getItem('token');
+  const isAuthenticated = !!token && !!user;
+  const role = user?.role;
 
-    checkAuth();
-  }, []);
+  const hasRole = (roles) => Array.isArray(roles) 
+    ? roles.includes(role) 
+    : role === roles;
+
+  const canAccessProjects = hasRole(['designer', 'admin']);
+  const canAccessSettings = hasRole(['designer', 'admin']);
 
   const logout = () => {
-    logoutService();
-    setIsAuthenticated(false);
+    localStorage.clear();
+    window.location.href = '/auth';
   };
 
   return {
+    user,
+    token,
+    role,
     isAuthenticated,
-    loading,
-    logout,
+    hasRole,
+    canAccessProjects,
+    canAccessSettings,
+    logout
   };
 };

@@ -990,10 +990,9 @@
   cursor: not-allowed;
   opacity: 0.7;
 }
-.projects-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: var(--space-lg);
+
+.project-card-client {
+  height: 350px;
 }
 
 /* ===== Адаптивность ===== */
