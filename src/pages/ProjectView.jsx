@@ -700,14 +700,14 @@ const ProjectView = ({ mode = 'public' }) => {
           title="Об авторе"
         >
           <div className="author-avatar">
-            {project?.author_avatar ? (
+            {authorData?.avatar_url ? (
               <img
-                src={getMediaUrl(project.author_avatar)}
-                alt={project.author_name}
+                src={getMediaUrl(authorData?.avatar_url)}
+                alt={authorData?.full_name?.charAt(0)?.toUpperCase()}
               />
             ) : (
               <span>
-                {project?.author_name?.charAt(0)?.toUpperCase() || 'A'}
+                {authorData?.full_name?.charAt(0)?.toUpperCase() || 'A'}
               </span>
             )}
           </div>
@@ -764,54 +764,6 @@ const ProjectView = ({ mode = 'public' }) => {
                     {authorData?.bio || project.author_bio}
                   </p>
                 )}
-
-                <div className="author-actions">
-                  <a
-                    href={`mailto:${authorData?.email || project?.author_email}`}
-                    className="author-contact-btn"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                      <polyline points="22,6 12,13 2,6" />
-                    </svg>
-                    Написать
-                  </a>
-                  {(authorData?.portfolio_url ||
-                    project?.author_portfolio_url) && (
-                    <a
-                      href={
-                        authorData?.portfolio_url ||
-                        project.author_portfolio_url
-                      }
-                      className="author-portfolio-btn"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                        <polyline points="15 3 21 3 21 9" />
-                        <line x1="10" y1="14" x2="21" y2="3" />
-                      </svg>
-                      Портфолио
-                    </a>
-                  )}
-                </div>
               </>
             )}
           </div>
