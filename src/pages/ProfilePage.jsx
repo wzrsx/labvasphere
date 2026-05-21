@@ -268,7 +268,7 @@ const ProfilePage = () => {
   const getAvatarSrc = () => {
     if (avatarPreview) return avatarPreview;
     if (formData.avatarUrl)
-      return `${CONFIG.MEDIA_BASE_URL}${formData.avatarUrl}`;
+      return `${CONFIG.MEDIA_BASE_URL}/${formData.avatarUrl}`;
     return '';
   };
   if (loading) {

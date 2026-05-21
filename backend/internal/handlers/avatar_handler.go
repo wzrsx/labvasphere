@@ -98,7 +98,7 @@ func (h *AvatarHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 
 	// Формируем URL для доступа к аватару
 	// В продакшене здесь может быть URL к S3/CDN
-	avatarURL := "/avatars/" + newFilename
+	avatarURL := "avatars/" + newFilename
 
 	// Обновляем аватар в БД
 	err = h.userRepo.UpdateAvatar(r.Context(), claims.UserID, avatarURL)
@@ -139,7 +139,7 @@ func (h *AvatarHandler) DeleteAvatar(w http.ResponseWriter, r *http.Request) {
 	// Удаляем файл, если он существовал
 	if user.AvatarURL != nil && *user.AvatarURL != "" {
 		// Извлекаем имя файла из пути
-		avatarPath := strings.TrimPrefix(*user.AvatarURL, "/avatars/")
+		avatarPath := strings.TrimPrefix(*user.AvatarURL, "avatars/")
 		filePath := filepath.Join(h.uploadDir, avatarPath)
 		os.Remove(filePath) // Игнорируем ошибку, если файла нет
 	}
