@@ -34,53 +34,47 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      const requestUrl = error.config?.url || '';
-      const currentPath = window.location.pathname;
+    // 🔹 Единый параметр 'redirect' везде
+if (error.response?.status === 401) {
+  const requestUrl = error.config?.url || '';
+  const currentPath = window.location.pathname;
 
-      // 📋 Список публичных эндпоинтов (не требуют авторизации)
-      const publicEndpoints = [
-        '/auth/login',
-        '/auth/register',
-        '/auth/reset-password',
-        '/health',
-        '/projects/published',      // ← Список опубликованных
-        '/projects/public/',        // ← Детали проекта (с слэшем!)
-        '/panoramas/project/',
-        '/hotspots/panorama/',
-      ];
+  const publicEndpoints = [
+    '/auth/login',
+    '/auth/register',
+    '/auth/reset-password',
+    '/health',
+    '/projects/published',
+    '/projects/public/',
+    '/panoramas/project/',
+    '/hotspots/panorama/',
+  ];
 
-      // Проверяем, был ли запрос к публичному эндпоинту
-      const isPublicRequest = publicEndpoints.some(endpoint => 
-        requestUrl.includes(endpoint)
-      );
+  const isPublicRequest = publicEndpoints.some(endpoint => 
+    requestUrl.includes(endpoint)
+  );
 
-      if (!isPublicRequest && currentPath !== '/auth') {
-        // Проверяем, есть ли токен вообще
-        const token = localStorage.getItem('token');
-        if (token) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-        }
-        
-        // Редирект только если это не публичный запрос
-        window.location.href = `/auth?redirect=${encodeURIComponent(currentPath)}`;
-      }
-
-      // 🚫 Не редиректим, если:
-      // 1. Запрос к публичному API, ИЛИ
-      // 2. Пользователь уже на странице авторизации
-      if (isPublicRequest || currentPath === '/auth') {
-        console.warn('⚠️ 401 on public endpoint, no redirect');
-        return Promise.reject(error);
-      }
-
-      // 🔐 Для защищённых эндпоинтов — редирект на авторизацию
-      // Сохраняем путь, чтобы вернуть пользователя после входа
-      window.location.href = `/auth?returnTo=${encodeURIComponent(currentPath)}`;
-    }
+  // 🔹 Если уже на /auth — не редиректим, чтобы не зациклить
+  if (currentPath === '/auth') {
     return Promise.reject(error);
-  },
+  }
+
+  // 🔹 Если 401 на публичном эндпоинте — просто отклоняем (показать ошибку в UI)
+  if (isPublicRequest) {
+    console.warn('⚠️ 401 on public endpoint, no redirect');
+    return Promise.reject(error);
+  }
+
+  // 🔹 Для защищённых эндпоинтов — редирект на авторизацию с ?redirect=
+  if (!localStorage.getItem('token')) {
+    // Токена нет — чистим и редиректим
+    localStorage.removeItem('user');
+  }
+  
+  window.location.href = `/auth?redirect=${encodeURIComponent(currentPath)}`;
+  return Promise.reject(error);
+}
+  }
 );
 
 export default api;
