@@ -46,7 +46,7 @@ export const updateUserSettings = async (preferences) => {
 //Обновление только иконки по умолчанию
 export const updateDefaultIcon = async (icon) => {
   const allowedIcons = ['pin', 'dot', 'star', 'camera'];
-  
+
   if (!icon || !allowedIcons.includes(icon)) {
     return {
       success: false,
@@ -61,7 +61,7 @@ export const updateDefaultIcon = async (icon) => {
 export const updateDefaultColor = async (color) => {
   // Простая валидация HEX
   const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
-  
+
   if (!color || !hexRegex.test(color)) {
     return {
       success: false,
@@ -94,9 +94,9 @@ export const validateSettings = (settings) => {
   if (settings.default_icon !== undefined) {
     const allowed = ['pin', 'dot', 'star', 'camera'];
     if (!allowed.includes(settings.default_icon)) {
-      return { 
-        valid: false, 
-        error: `default_icon: разрешено ${allowed.join(', ')}` 
+      return {
+        valid: false,
+        error: `default_icon: разрешено ${allowed.join(', ')}`,
       };
     }
   }
@@ -104,9 +104,9 @@ export const validateSettings = (settings) => {
   if (settings.default_color !== undefined) {
     const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
     if (!hexRegex.test(settings.default_color)) {
-      return { 
-        valid: false, 
-        error: 'default_color: неверный HEX-формат (#RRGGBB)' 
+      return {
+        valid: false,
+        error: 'default_color: неверный HEX-формат (#RRGGBB)',
       };
     }
   }

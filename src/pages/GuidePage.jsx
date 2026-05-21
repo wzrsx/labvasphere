@@ -2,9 +2,21 @@ import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import './GuidePage.css';
 
-const ExpandableStep = ({ id, number, title, description, screenshot, screenshotAlt, isOpen, onStepClick }) => {
+const ExpandableStep = ({
+  id,
+  number,
+  title,
+  description,
+  screenshot,
+  screenshotAlt,
+  isOpen,
+  onStepClick,
+}) => {
   return (
-    <div id={`step-${id}`} className={`step-item expandable ${isOpen ? 'open' : ''}`}>
+    <div
+      id={`step-${id}`}
+      className={`step-item expandable ${isOpen ? 'open' : ''}`}
+    >
       <div className="step-header" onClick={onStepClick}>
         <span className="step-number">{number}</span>
         <div className="step-content">
@@ -24,49 +36,49 @@ const ExpandableStep = ({ id, number, title, description, screenshot, screenshot
 };
 
 export const GuidePage = () => {
-    const { t } = useTranslation();
+  const { t } = useTranslation();
 
-const [activeTab, setActiveTab] = useState('prepare');
+  const [activeTab, setActiveTab] = useState('prepare');
   const [openStepId, setOpenStepId] = useState(null);
-  const timeoutRef = useRef(null); 
+  const timeoutRef = useRef(null);
 
- const handleStepClick = (stepId, isCurrentlyOpen) => {
-  // Функция плавного скролла с учётом шапки
-  const scrollToElement = (id, offset = 10) => {
-    const element = document.getElementById(`step-${id}`);
-    if (!element) return;
+  const handleStepClick = (stepId, isCurrentlyOpen) => {
+    // Функция плавного скролла с учётом шапки
+    const scrollToElement = (id, offset = 10) => {
+      const element = document.getElementById(`step-${id}`);
+      if (!element) return;
 
-    // 1. Ждём 1 кадр, чтобы браузер пересчитал макет после клика
-    requestAnimationFrame(() => {
-      // 2. Получаем координаты элемента относительно окна
-      const rect = element.getBoundingClientRect();
-      // 3. Текущая прокрутка страницы
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      // 4. Целевая позиция: текущий скролл + позиция элемента - отступ под шапку
-      const targetPosition = scrollTop + rect.top - offset;
+      // 1. Ждём 1 кадр, чтобы браузер пересчитал макет после клика
+      requestAnimationFrame(() => {
+        // 2. Получаем координаты элемента относительно окна
+        const rect = element.getBoundingClientRect();
+        // 3. Текущая прокрутка страницы
+        const scrollTop =
+          window.pageYOffset || document.documentElement.scrollTop;
+        // 4. Целевая позиция: текущий скролл + позиция элемента - отступ под шапку
+        const targetPosition = scrollTop + rect.top - offset;
 
-      // 5. Скроллим
-      window.scrollTo({
-        top: targetPosition,
-        behavior: 'smooth'
+        // 5. Скроллим
+        window.scrollTo({
+          top: targetPosition,
+          behavior: 'smooth',
+        });
       });
-    });
+    };
+
+    // Сначала скроллим (всегда)
+    scrollToElement(stepId);
+
+    setOpenStepId(isCurrentlyOpen ? null : stepId);
   };
-
-  // Сначала скроллим (всегда)
-  scrollToElement(stepId);
-
-  setOpenStepId(isCurrentlyOpen ? null : stepId);
-
-};
- const tabs = [
+  const tabs = [
     { id: 'prepare', label: t('guide.tabs.prepare') },
     { id: 'upload', label: t('guide.tabs.upload') },
     { id: 'view', label: t('guide.tabs.view') },
     { id: 'share', label: t('guide.tabs.share') },
     { id: 'faq', label: t('guide.tabs.faq') },
   ];
-  
+
   const renderContent = () => {
     switch (activeTab) {
       case 'prepare':
@@ -97,7 +109,10 @@ const [activeTab, setActiveTab] = useState('prepare');
               </div>
             </div>
             <div className="tip-box">
-            {t('guide.prepare.tip.icon')} <strong>{t('guide.prepare.tip.label')}</strong> {t('guide.prepare.tip.text')}            </div>
+              {t('guide.prepare.tip.icon')}{' '}
+              <strong>{t('guide.prepare.tip.label')}</strong>{' '}
+              {t('guide.prepare.tip.text')}{' '}
+            </div>
           </section>
         );
 
@@ -106,17 +121,22 @@ const [activeTab, setActiveTab] = useState('prepare');
           <section className="guide-section">
             <h2>{t('guide.upload.title')}</h2>
             <div className="steps-list">
-              <ExpandableStep 
-                id={`${activeTab}-1`}  
+              <ExpandableStep
+                id={`${activeTab}-1`}
                 number="1"
                 title={t('guide.upload.step1.title')}
-                description={t('guide.upload.step1.desc')}                
+                description={t('guide.upload.step1.desc')}
                 screenshot="/screenshots-guide/upload-step1.png"
                 screenshotAlt="Создание нового проекта"
                 isOpen={openStepId === `${activeTab}-1`}
-                onStepClick={() => handleStepClick(`${activeTab}-1`, openStepId === `${activeTab}-1`)}
+                onStepClick={() =>
+                  handleStepClick(
+                    `${activeTab}-1`,
+                    openStepId === `${activeTab}-1`,
+                  )
+                }
               />
-              <ExpandableStep 
+              <ExpandableStep
                 id={`${activeTab}-2`}
                 number="2"
                 title={t('guide.upload.step2.title')}
@@ -124,9 +144,14 @@ const [activeTab, setActiveTab] = useState('prepare');
                 screenshot="/screenshots-guide/upload-step2.png"
                 screenshotAlt="Добавление описания"
                 isOpen={openStepId === `${activeTab}-2`}
-                onStepClick={() => handleStepClick(`${activeTab}-2`, openStepId === `${activeTab}-2`)}
+                onStepClick={() =>
+                  handleStepClick(
+                    `${activeTab}-2`,
+                    openStepId === `${activeTab}-2`,
+                  )
+                }
               />
-              <ExpandableStep 
+              <ExpandableStep
                 id={`${activeTab}-3`}
                 number="3"
                 title={t('guide.upload.step3.title')}
@@ -134,10 +159,15 @@ const [activeTab, setActiveTab] = useState('prepare');
                 screenshot="/screenshots-guide/upload-step3.png"
                 screenshotAlt="Загрузка файлов"
                 isOpen={openStepId === `${activeTab}-3`}
-                onStepClick={() => handleStepClick(`${activeTab}-3`, openStepId === `${activeTab}-3`)}
+                onStepClick={() =>
+                  handleStepClick(
+                    `${activeTab}-3`,
+                    openStepId === `${activeTab}-3`,
+                  )
+                }
               />
-              
-              <ExpandableStep 
+
+              <ExpandableStep
                 id={`${activeTab}-4`}
                 number="4"
                 title={t('guide.upload.step4.title')}
@@ -145,9 +175,14 @@ const [activeTab, setActiveTab] = useState('prepare');
                 screenshot="/screenshots-guide/upload-step4.png"
                 screenshotAlt="Выбор ракурса для обложки проекта"
                 isOpen={openStepId === `${activeTab}-4`}
-                onStepClick={() => handleStepClick(`${activeTab}-4`, openStepId === `${activeTab}-4`)}
+                onStepClick={() =>
+                  handleStepClick(
+                    `${activeTab}-4`,
+                    openStepId === `${activeTab}-4`,
+                  )
+                }
               />
-              <ExpandableStep 
+              <ExpandableStep
                 id={`${activeTab}-5`}
                 number="5"
                 title={t('guide.upload.step5.title')}
@@ -155,11 +190,18 @@ const [activeTab, setActiveTab] = useState('prepare');
                 screenshot="/screenshots-guide/upload-step5.png"
                 screenshotAlt="Публикация проекта"
                 isOpen={openStepId === `${activeTab}-5`}
-                onStepClick={() => handleStepClick(`${activeTab}-5`, openStepId === `${activeTab}-5`)}
+                onStepClick={() =>
+                  handleStepClick(
+                    `${activeTab}-5`,
+                    openStepId === `${activeTab}-5`,
+                  )
+                }
               />
             </div>
             <div className="tip-box">
-              {t('guide.upload.tip.icon')} <strong>{t('guide.upload.tip.label')}</strong> {t('guide.upload.tip.text')}          
+              {t('guide.upload.tip.icon')}{' '}
+              <strong>{t('guide.upload.tip.label')}</strong>{' '}
+              {t('guide.upload.tip.text')}
             </div>
           </section>
         );
@@ -180,7 +222,8 @@ const [activeTab, setActiveTab] = useState('prepare');
                 <span className="step-number">2</span>
                 <div>
                   <strong>{t('guide.view.step2.title')}</strong>
-                  <p>{t('guide.view.step2.desc')}</p>                </div>
+                  <p>{t('guide.view.step2.desc')}</p>{' '}
+                </div>
               </div>
               <div className="step-item">
                 <span className="step-number">3</span>
@@ -198,7 +241,9 @@ const [activeTab, setActiveTab] = useState('prepare');
               </div>
             </div>
             <div className="tip-box">
-              {t('guide.view.tip.icon')} <strong>{t('guide.view.tip.label')}</strong> {t('guide.view.tip.text')}          
+              {t('guide.view.tip.icon')}{' '}
+              <strong>{t('guide.view.tip.label')}</strong>{' '}
+              {t('guide.view.tip.text')}
             </div>
           </section>
         );
@@ -212,18 +257,22 @@ const [activeTab, setActiveTab] = useState('prepare');
                 <h3>{t('guide.share.link.title')}</h3>
                 <p>{t('guide.share.link.desc')}</p>
                 <ul>
-                  {t('guide.share.link.benefits', { returnObjects: true }).map((item, i) => (
-                    <li key={i}>✅ {item}</li>
-                  ))}
+                  {t('guide.share.link.benefits', { returnObjects: true }).map(
+                    (item, i) => (
+                      <li key={i}>✅ {item}</li>
+                    ),
+                  )}
                 </ul>
               </div>
               <div className="card">
                 <h3>{t('guide.share.qr.title')}</h3>
                 <p>{t('guide.share.qr.desc')}</p>
                 <ul>
-                  {t('guide.share.qr.benefits', { returnObjects: true }).map((item, i) => (
-                    <li key={i}>✅ {item}</li>
-                  ))}
+                  {t('guide.share.qr.benefits', { returnObjects: true }).map(
+                    (item, i) => (
+                      <li key={i}>✅ {item}</li>
+                    ),
+                  )}
                 </ul>
               </div>
             </div>
@@ -231,28 +280,32 @@ const [activeTab, setActiveTab] = useState('prepare');
         );
 
       case 'faq':
-  return (
-    <section className="guide-section">
-      <h2>{t('guide.faq.title')}</h2>
-      <table className="guide-faq">
-        <thead>
-          <tr>
-            {(t('guide.faq.table.headers', { returnObjects: true }) || []).map((header, i) => (
-              <th key={i}>{header}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {(t('guide.faq.table.rows', { returnObjects: true }) || []).map((row, i) => (
-            <tr key={i}>
-              <td>{row.q}</td>
-              <td>{row.a}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </section>
-  );
+        return (
+          <section className="guide-section">
+            <h2>{t('guide.faq.title')}</h2>
+            <table className="guide-faq">
+              <thead>
+                <tr>
+                  {(
+                    t('guide.faq.table.headers', { returnObjects: true }) || []
+                  ).map((header, i) => (
+                    <th key={i}>{header}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(t('guide.faq.table.rows', { returnObjects: true }) || []).map(
+                  (row, i) => (
+                    <tr key={i}>
+                      <td>{row.q}</td>
+                      <td>{row.a}</td>
+                    </tr>
+                  ),
+                )}
+              </tbody>
+            </table>
+          </section>
+        );
       default:
         return null;
     }
@@ -265,9 +318,8 @@ const [activeTab, setActiveTab] = useState('prepare');
         <p>{t('guide.header.subtitle')}</p>
       </header>
 
-
       <nav className="guide-tabs" role="tablist">
-        {tabs.map(tab => (
+        {tabs.map((tab) => (
           <button
             key={tab.id}
             role="tab"

@@ -24,10 +24,10 @@ const ThemeToggle = () => {
         justifyContent: 'center',
         boxShadow: 'var(--shadow-md)',
         fontSize: '16px',
-        transition: 'transform 0.2s ease'
+        transition: 'transform 0.2s ease',
       }}
-      onMouseEnter={(e) => e.target.style.transform = 'scale(1.1)'}
-      onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+      onMouseEnter={(e) => (e.target.style.transform = 'scale(1.1)')}
+      onMouseLeave={(e) => (e.target.style.transform = 'scale(1)')}
     >
       {isDark ? '☀️' : '🌙'}
     </button>

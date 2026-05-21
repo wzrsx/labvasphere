@@ -4,9 +4,9 @@ import {
   getProfile,
   updateProfile,
   changePassword,
-    uploadAvatar,     
-  deleteAvatar,        
-  validateAvatarFile, 
+  uploadAvatar,
+  deleteAvatar,
+  validateAvatarFile,
 } from '../services/userService';
 import { CONFIG } from '../config';
 import Header from '../components/Header';
@@ -197,77 +197,78 @@ const ProfilePage = () => {
     localStorage.removeItem('user');
     navigate('/auth');
   };
-const handleAvatarChange = (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  const validation = validateAvatarFile(file);
-  if (!validation.valid) {
-    setError(validation.error);
-    e.target.value = '';
-    return;
-  }
-
-  setAvatarFile(file);
-  setError(null);
-
-  const reader = new FileReader();
-  reader.onloadend = () => setAvatarPreview(reader.result);
-  reader.readAsDataURL(file);
-};
-
-// Обработчик загрузки аватара
-const handleUploadAvatar = async () => {
-  if (!avatarFile) return;
-
-  setUploading(true);
-  setError(null);
-
-  try {
-    const result = await uploadAvatar(avatarFile);
-    
-    if (result.success) {
-      // Обновляем состояние пользователя
-      setUser(prev => ({ ...prev, avatar_url: result.avatarUrl }));
-      setFormData(prev => ({ ...prev, avatarUrl: result.avatarUrl }));
-      setAvatarPreview(null);
-      setAvatarFile(null);
-      setSuccess('Аватар успешно обновлён!');
-      setTimeout(() => setSuccess(null), 3000);
-    } else {
-      setError(result.error);
+    const validation = validateAvatarFile(file);
+    if (!validation.valid) {
+      setError(validation.error);
+      e.target.value = '';
+      return;
     }
-  } catch (err) {
-    console.error('Ошибка:', err);
-    setError('Не удалось загрузить аватар');
-  } finally {
-    setUploading(false);
-  }
-};
 
-// Обработчик удаления аватара
-const handleDeleteAvatar = async () => {
-  if (!window.confirm('Удалить аватар?')) return;
+    setAvatarFile(file);
+    setError(null);
 
-  try {
-    const result = await deleteAvatar();
-    
-    if (result.success) {
-      setUser(prev => ({ ...prev, avatar_url: null }));
-      setFormData(prev => ({ ...prev, avatarUrl: null }));
-      setAvatarPreview(null);
-      setSuccess('Аватар удалён');
-      setTimeout(() => setSuccess(null), 3000);
-    } else {
-      setError(result.error);
+    const reader = new FileReader();
+    reader.onloadend = () => setAvatarPreview(reader.result);
+    reader.readAsDataURL(file);
+  };
+
+  // Обработчик загрузки аватара
+  const handleUploadAvatar = async () => {
+    if (!avatarFile) return;
+
+    setUploading(true);
+    setError(null);
+
+    try {
+      const result = await uploadAvatar(avatarFile);
+
+      if (result.success) {
+        // Обновляем состояние пользователя
+        setUser((prev) => ({ ...prev, avatar_url: result.avatarUrl }));
+        setFormData((prev) => ({ ...prev, avatarUrl: result.avatarUrl }));
+        setAvatarPreview(null);
+        setAvatarFile(null);
+        setSuccess('Аватар успешно обновлён!');
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        setError(result.error);
+      }
+    } catch (err) {
+      console.error('Ошибка:', err);
+      setError('Не удалось загрузить аватар');
+    } finally {
+      setUploading(false);
     }
-  } catch (err) {
-    setError('Не удалось удалить аватар');
-  }
-};
-const getAvatarSrc = () => {
+  };
+
+  // Обработчик удаления аватара
+  const handleDeleteAvatar = async () => {
+    if (!window.confirm('Удалить аватар?')) return;
+
+    try {
+      const result = await deleteAvatar();
+
+      if (result.success) {
+        setUser((prev) => ({ ...prev, avatar_url: null }));
+        setFormData((prev) => ({ ...prev, avatarUrl: null }));
+        setAvatarPreview(null);
+        setSuccess('Аватар удалён');
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        setError(result.error);
+      }
+    } catch (err) {
+      setError('Не удалось удалить аватар');
+    }
+  };
+  const getAvatarSrc = () => {
     if (avatarPreview) return avatarPreview;
-    if (formData.avatarUrl) return `${CONFIG.MEDIA_BASE_URL}${formData.avatarUrl}`;
+    if (formData.avatarUrl)
+      return `${CONFIG.MEDIA_BASE_URL}${formData.avatarUrl}`;
     return '';
   };
   if (loading) {
@@ -310,88 +311,87 @@ const getAvatarSrc = () => {
         <div className="profile-card">
           {/* Аватар */}
           <div className="avatar-section">
-  <div className="avatar-preview">
-    {(avatarPreview || formData.avatarUrl) ? (
-      <img
-  src={getAvatarSrc()}
-  alt="Аватар"
-  className="avatar-img"
-  onError={(e) => {
-    console.error('❌ Ошибка загрузки аватара:', e);
-    console.log('🔗 URL:', getAvatarSrc());
-    
-    // Показываем заглушку при ошибке
-    e.target.style.display = 'none';
-    const placeholder = document.createElement('div');
-    placeholder.className = 'avatar-placeholder';
-    placeholder.textContent = formData.fullName?.charAt(0)?.toUpperCase() || '?';
-    e.target.parentElement.appendChild(placeholder);
-  }}
-  onLoad={() => {
-    console.log('✅ Аватар загружен:', formData.avatarUrl);
-  }}
-/>
-    ) : (
-      <div className="avatar-placeholder">
-        {formData.fullName?.charAt(0)?.toUpperCase() || '?'}
-      </div>
-    )}
-  </div>
+            <div className="avatar-preview">
+              {avatarPreview || formData.avatarUrl ? (
+                <img
+                  src={getAvatarSrc()}
+                  alt="Аватар"
+                  className="avatar-img"
+                  onError={(e) => {
+                    console.error('❌ Ошибка загрузки аватара:', e);
+                    console.log('🔗 URL:', getAvatarSrc());
 
-  {/* Кнопки управления аватаром */}
-  <div className="avatar-actions">
-    {/* Скрытый input для выбора файла */}
-    <label className="btn-secondary avatar-btn">
-      <input
-        type="file"
-        accept="image/jpeg,image/jpg,image/png,image/webp"
-        onChange={handleAvatarChange}
-        disabled={uploading || saving}
-        style={{ display: 'none' }}
-      />
-      {uploading ? '⏳ Загрузка...' : '📷 Выбрать фото'}
-    </label>
+                    // Показываем заглушку при ошибке
+                    e.target.style.display = 'none';
+                    const placeholder = document.createElement('div');
+                    placeholder.className = 'avatar-placeholder';
+                    placeholder.textContent =
+                      formData.fullName?.charAt(0)?.toUpperCase() || '?';
+                    e.target.parentElement.appendChild(placeholder);
+                  }}
+                  onLoad={() => {
+                    console.log('✅ Аватар загружен:', formData.avatarUrl);
+                  }}
+                />
+              ) : (
+                <div className="avatar-placeholder">
+                  {formData.fullName?.charAt(0)?.toUpperCase() || '?'}
+                </div>
+              )}
+            </div>
 
-    {/* Кнопка "Сохранить" — появляется после выбора файла */}
-    {avatarFile && !uploading && (
-      <button 
-        onClick={handleUploadAvatar}
-        className="btn-primary avatar-btn"
-        disabled={uploading}
-      >
-        💾 Сохранить
-      </button>
-    )}
+            {/* Кнопки управления аватаром */}
+            <div className="avatar-actions">
+              {/* Скрытый input для выбора файла */}
+              <label className="btn-secondary avatar-btn">
+                <input
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  onChange={handleAvatarChange}
+                  disabled={uploading || saving}
+                  style={{ display: 'none' }}
+                />
+                {uploading ? '⏳ Загрузка...' : '📷 Выбрать фото'}
+              </label>
 
-    {/* Кнопка "Отмена" — если выбран файл, но ещё не загружен */}
-    {avatarFile && (
-      <button 
-        onClick={() => {
-          setAvatarFile(null);
-          setAvatarPreview(null);
-        }}
-        className="btn-secondary avatar-btn"
-        disabled={uploading}
-      >
-        ✕ Отмена
-      </button>
-    )}
+              {/* Кнопка "Сохранить" — появляется после выбора файла */}
+              {avatarFile && !uploading && (
+                <button
+                  onClick={handleUploadAvatar}
+                  className="btn-primary avatar-btn"
+                  disabled={uploading}
+                >
+                  💾 Сохранить
+                </button>
+              )}
 
-    {/* Кнопка "Удалить" — если есть сохранённый аватар и не выбран новый */}
-    {formData.avatarUrl && !avatarFile && (
-      <button 
-        onClick={handleDeleteAvatar}
-        className="btn-danger avatar-btn"
-        disabled={uploading}
-      >
-        🗑️ Удалить
-      </button>
-    )}
-  </div>
-  
-  <small className="form-hint">
-    JPG, PNG или WebP, макс. 5MB
-  </small>
+              {/* Кнопка "Отмена" — если выбран файл, но ещё не загружен */}
+              {avatarFile && (
+                <button
+                  onClick={() => {
+                    setAvatarFile(null);
+                    setAvatarPreview(null);
+                  }}
+                  className="btn-secondary avatar-btn"
+                  disabled={uploading}
+                >
+                  ✕ Отмена
+                </button>
+              )}
+
+              {/* Кнопка "Удалить" — если есть сохранённый аватар и не выбран новый */}
+              {formData.avatarUrl && !avatarFile && (
+                <button
+                  onClick={handleDeleteAvatar}
+                  className="btn-danger avatar-btn"
+                  disabled={uploading}
+                >
+                  🗑️ Удалить
+                </button>
+              )}
+            </div>
+
+            <small className="form-hint">JPG, PNG или WebP, макс. 5MB</small>
           </div>
 
           {/* Форма профиля */}

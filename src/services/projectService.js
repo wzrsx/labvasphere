@@ -185,7 +185,7 @@ export const getPanoramasByProject = async (projectId) => {
 export const getHotspots = async (panoramaId) => {
   try {
     const response = await api.get(`/hotspots/panorama/${panoramaId}`);
-    console.log("[GET H raw]: ", response);
+    console.log('[GET H raw]: ', response);
     return {
       success: true,
       hotspots: Array.isArray(response.data) ? response.data : [],
@@ -358,7 +358,8 @@ export const toggleLike = async (projectId) => {
       likesCount: response.data.likes_count,
     };
   } catch (error) {
-    const message = error.response?.data?.error || 'Ошибка при обновлении лайка';
+    const message =
+      error.response?.data?.error || 'Ошибка при обновлении лайка';
     return {
       success: false,
       error: message,
@@ -396,7 +397,7 @@ export const getProjectsLikesCounts = async (projectIds) => {
       } catch {
         return { id, count: 0 };
       }
-    })
+    }),
   );
 
   // 2. Собираем объект вида { [projectId]: count }

@@ -9,11 +9,7 @@ const LanguageToggle = () => {
   };
 
   return (
-    <button 
-      type="button" 
-      onClick={toggle} 
-      className="lang-button"
-    >
+    <button type="button" onClick={toggle} className="lang-button">
       {t('lang_btn')}
     </button>
   );

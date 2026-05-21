@@ -51,9 +51,10 @@ const EditorPage = () => {
   // Список всех панорам проекта (медиа-галерея)
   const [projectPanoramas, setProjectPanoramas] = useState([]);
   const [uploadingMedia, setUploadingMedia] = useState(false);
-  const [selectedPanoramaForTransition, setSelectedPanoramaForTransition] = useState(null);
+  const [selectedPanoramaForTransition, setSelectedPanoramaForTransition] =
+    useState(null);
   const [userDefaultIcon, setUserDefaultIcon] = useState('pin');
-    const [userDefaultColor, setUserDefaultColor] = useState('#99582A');
+  const [userDefaultColor, setUserDefaultColor] = useState('#99582A');
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const fileInputRef = useRef(null);
   const sphereViewerRef = useRef(null);
@@ -83,25 +84,31 @@ const EditorPage = () => {
   useEffect(() => {
     activeToolRef.current = activeTool;
   }, [activeTool]);
-    // 🔹 Загрузка пользовательских настроек
+  // 🔹 Загрузка пользовательских настроек
   useEffect(() => {
     let isMounted = true;
-    
+
     const loadSettings = async () => {
       try {
         console.log('⚙️ [Settings] Calling getUserSettings()...');
         const response = await getUserSettings();
         console.log('⚙️ [Settings] Response:', response);
-        
+
         if (response?.success && response?.settings?.default_icon) {
           if (isMounted) {
             setUserDefaultIcon(response.settings.default_icon);
-            console.log('✅ [Settings] Icon set to:', response.settings.default_icon);
+            console.log(
+              '✅ [Settings] Icon set to:',
+              response.settings.default_icon,
+            );
           }
         }
         if (isMounted && response.settings.default_color) {
-            setUserDefaultColor(response.settings.default_color);
-            console.log('✅ [Settings] Color set to:', response.settings.default_color);
+          setUserDefaultColor(response.settings.default_color);
+          console.log(
+            '✅ [Settings] Color set to:',
+            response.settings.default_color,
+          );
         }
       } catch (err) {
         console.error('❌ [Settings] Error:', err);
@@ -115,7 +122,9 @@ const EditorPage = () => {
     };
 
     loadSettings();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, []); // ← пустой массив = один раз при монтировании
   // Отслеживание изменений
   useEffect(() => {
@@ -147,7 +156,7 @@ const EditorPage = () => {
   // добавляем маркеры загруженных хотспотов в viewer
 
   // Загрузка проекта + основной панорамы + хотспотов
-const loadProject = async () => {
+  const loadProject = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -202,7 +211,7 @@ const loadProject = async () => {
               ? getMediaUrl(
                   `projects/${foundProject.id}/panoramas/${h.target_filename}`,
                 )
-              : null, 
+              : null,
             targetProjectName: h.target_filename || 'Панорама',
             target_original_filename: h.target_original_filename || null,
             icon: h.icon,
@@ -243,7 +252,6 @@ const loadProject = async () => {
       setLoading(false);
     }
   };
-
 
   const handleInputChange = (field, value) => {
     setEditorData((prev) => ({ ...prev, [field]: value }));
@@ -425,7 +433,7 @@ const loadProject = async () => {
           media_url: dbHotspot.media_url || selectedHotspot.media_url, // ← Сохраняем
         };
         setSelectedHotspot(updatedHotspot);
-        
+
         updateHotspotLocal(selectedHotspot.id, updatedHotspot);
         debounceSave(updatedHotspot);
         alert('✅ Точка перехода сохранена!');
@@ -443,7 +451,7 @@ const loadProject = async () => {
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
-  
+
   const handlePanoramaSelection = async (panorama) => {
     const projectId = project?.id;
     const panoramaId = currentPanoramaId || project?.main_panorama?.id;
@@ -483,7 +491,7 @@ const loadProject = async () => {
         color: selectedHotspot.color || '#3498db',
         is_active: true,
       };
-      console.log("HANDLE_PANORAMA: ", panorama);
+      console.log('HANDLE_PANORAMA: ', panorama);
       // 🔹 Проверяем: новый хотспот или существующий
       const isNewHotspot = selectedHotspot.id?.startsWith('hotspot_');
 
@@ -615,7 +623,7 @@ const loadProject = async () => {
         setIsTransitioning(false);
         setTransitionProgress(0);
       }, 300);
-        console.log("NEXT PANORAMA:", targetPanoramaId)
+      console.log('NEXT PANORAMA:', targetPanoramaId);
 
       // Обновляем currentPanoramaId и загружаем хотспоты новой панорамы
       if (targetPanoramaId) {
@@ -628,7 +636,7 @@ const loadProject = async () => {
         setCurrentPanoramaId(targetPanoramaId);
 
         // Загружаем хотспоты для новой панорамы
-        console.log("NEXT PANORAMA:", targetPanoramaId)
+        console.log('NEXT PANORAMA:', targetPanoramaId);
         const hotspotResponse = await getHotspots(targetPanoramaId);
         if (hotspotResponse.success) {
           const newHotspots = hotspotResponse.hotspots.map((h) => ({
@@ -656,7 +664,7 @@ const loadProject = async () => {
             target_original_filename: h.target_original_filename || null,
             icon: h.icon,
             color: h.color,
-            media_url: h.media_url || '', 
+            media_url: h.media_url || '',
           }));
 
           console.log(
@@ -686,63 +694,66 @@ const loadProject = async () => {
   };
 
   // 🔹 Клик по панораме для добавления хотспота
-  const handlePositionClick = useCallback(async (position) => {
-    console.log('🎯 [Click] handlePositionClick fired');
-    console.log('🎯 [Click] settingsLoaded =', settingsLoaded);
-    console.log('🎯 [Click] userDefaultIcon =', userDefaultIcon);
-    console.log('[Editor] 🎯 handlePositionClick called', {
-      activeTool: activeToolRef.current,
-      selectedHotspot: !!selectedHotspot,
-    });
-    // Проверка: только в режиме добавления новых хотспотов
-    if (activeToolRef.current !== 'hotspot') {
-      console.log(
-        '[Editor] ⚠️ Click ignored: activeTool is',
-        activeToolRef.current,
-      );
-      return; // ← просто игнорируем клик, не вызываем handleHotspotClick!
-    }
-    // Парсим координаты в ЧИСЛА (убираем "rad" если есть)
-    const parseCoord = (val) => {
-      if (typeof val === 'number') return val;
-      if (typeof val === 'string') {
-        const num = parseFloat(val.replace(/[^\d.\-]/g, ''));
-        return isNaN(num) ? 0 : num;
+  const handlePositionClick = useCallback(
+    async (position) => {
+      console.log('🎯 [Click] handlePositionClick fired');
+      console.log('🎯 [Click] settingsLoaded =', settingsLoaded);
+      console.log('🎯 [Click] userDefaultIcon =', userDefaultIcon);
+      console.log('[Editor] 🎯 handlePositionClick called', {
+        activeTool: activeToolRef.current,
+        selectedHotspot: !!selectedHotspot,
+      });
+      // Проверка: только в режиме добавления новых хотспотов
+      if (activeToolRef.current !== 'hotspot') {
+        console.log(
+          '[Editor] ⚠️ Click ignored: activeTool is',
+          activeToolRef.current,
+        );
+        return; // ← просто игнорируем клик, не вызываем handleHotspotClick!
       }
-      return 0;
-    };
+      // Парсим координаты в ЧИСЛА (убираем "rad" если есть)
+      const parseCoord = (val) => {
+        if (typeof val === 'number') return val;
+        if (typeof val === 'string') {
+          const num = parseFloat(val.replace(/[^\d.\-]/g, ''));
+          return isNaN(num) ? 0 : num;
+        }
+        return 0;
+      };
 
-    const newHotspot = {
-      id: `hotspot_${Date.now()}`,
-      position: {
-        yaw: parseCoord(position.yaw),
-        pitch: parseCoord(position.pitch),
-      },
-      title: 'Новая точка',
-      tooltip: 'Новая точка перехода',
-      type: 'transition',
-      targetProjectId: null,
-      icon: userDefaultIcon || 'pin',
-      color: userDefaultColor || '#99582A',
-      targetFileUrl: null,
-      linkUrl: '',
-    };
+      const newHotspot = {
+        id: `hotspot_${Date.now()}`,
+        position: {
+          yaw: parseCoord(position.yaw),
+          pitch: parseCoord(position.pitch),
+        },
+        title: 'Новая точка',
+        tooltip: 'Новая точка перехода',
+        type: 'transition',
+        targetProjectId: null,
+        icon: userDefaultIcon || 'pin',
+        color: userDefaultColor || '#99582A',
+        targetFileUrl: null,
+        linkUrl: '',
+      };
 
-    console.log('[Editor] 📍 New hotspot created:', {
-      position: newHotspot.position,
-      icon: newHotspot.icon,  // ← лог для проверки
-    });
+      console.log('[Editor] 📍 New hotspot created:', {
+        position: newHotspot.position,
+        icon: newHotspot.icon, // ← лог для проверки
+      });
 
-    // 1. Обновляем состояние — SphereViewer синхронизирует маркеры автоматически
-    setEditorData((prev) => ({
-      ...prev,
-      hotspots: [...prev.hotspots, newHotspot],
-    }));
+      // 1. Обновляем состояние — SphereViewer синхронизирует маркеры автоматически
+      setEditorData((prev) => ({
+        ...prev,
+        hotspots: [...prev.hotspots, newHotspot],
+      }));
 
-    // 2. Переключаем в режим редактирования НОВОГО хотспота
-    setSelectedHotspot(newHotspot);
-    setActiveTool('hotspot-edit'); // ← ← ← переключаем в режим редактирования!
-  }, [userDefaultIcon, userDefaultColor]);
+      // 2. Переключаем в режим редактирования НОВОГО хотспота
+      setSelectedHotspot(newHotspot);
+      setActiveTool('hotspot-edit'); // ← ← ← переключаем в режим редактирования!
+    },
+    [userDefaultIcon, userDefaultColor],
+  );
 
   // Локальное обновление хотспота (без отправки на сервер)
   const updateHotspotLocal = (id, updates) => {
@@ -882,7 +893,7 @@ const loadProject = async () => {
         `projects/${project.id}/panoramas/${project.main_panorama.filename}`,
       )
     : null;
-  
+
   return (
     <div className="editor-container">
       {/* Основная область панорамы */}
@@ -917,12 +928,15 @@ const loadProject = async () => {
                 <div className="spinner-ring" />
               </div>
               <p className="transition-text">
-                  {t('editor.transition.loading', { progress: Math.round(transitionProgress) })}
+                {t('editor.transition.loading', {
+                  progress: Math.round(transitionProgress),
+                })}
               </p>
               <p className="transition-subtext">
                 {editorData.hotspots.find(
                   (h) => h.targetFileUrl === project.panorama_url,
-                )?.targetProjectName || t('editor.hotspot_editor.transition.label')}
+                )?.targetProjectName ||
+                  t('editor.hotspot_editor.transition.label')}
               </p>
             </div>
 
@@ -970,7 +984,11 @@ const loadProject = async () => {
           <button
             className={`collapse-btn ${isSidebarCollapsed ? 'collapsed' : ''}`}
             onClick={toggleSidebar}
-            title={isSidebarCollapsed ? t('editor.sidebar.expand') : t('editor.sidebar.collapse')}
+            title={
+              isSidebarCollapsed
+                ? t('editor.sidebar.expand')
+                : t('editor.sidebar.collapse')
+            }
           >
             {isSidebarCollapsed ? (
               <svg viewBox="0 0 24 24" width="20" height="20">
@@ -1106,8 +1124,10 @@ const loadProject = async () => {
                 </div>
 
                 <div className="form-group" style={{ marginBottom: '12px' }}>
-                    <label className="form-label">{t('editor.hotspot_editor.name_label')}</label>                  
-                    <input
+                  <label className="form-label">
+                    {t('editor.hotspot_editor.name_label')}
+                  </label>
+                  <input
                     type="text"
                     className="hotspot-title-input hotspot-custom-input"
                     value={selectedHotspot.title || ''}
@@ -1125,9 +1145,11 @@ const loadProject = async () => {
                 </div>
 
                 <div className="form-group" style={{ marginBottom: '12px' }}>
-                  <label className="form-label">{t('editor.hotspot_editor.tooltip_label')}</label>
+                  <label className="form-label">
+                    {t('editor.hotspot_editor.tooltip_label')}
+                  </label>
                   <textarea
-                    className="hotspot-tooltip-input hotspot-custom-input" 
+                    className="hotspot-tooltip-input hotspot-custom-input"
                     value={selectedHotspot.tooltip || ''}
                     onChange={(e) => {
                       const updated = {
@@ -1144,7 +1166,9 @@ const loadProject = async () => {
                 </div>
 
                 <div className="form-group" style={{ marginBottom: '12px' }}>
-                  <label className="form-label">{t('editor.hotspot_editor.type_label')}</label>
+                  <label className="form-label">
+                    {t('editor.hotspot_editor.type_label')}
+                  </label>
                   <select
                     value={selectedHotspot.type || 'transition'}
                     onChange={(e) => {
@@ -1166,14 +1190,24 @@ const loadProject = async () => {
                       boxSizing: 'border-box',
                     }}
                   >
-                    <option value="transition">{t('editor.hotspot_editor.types.transition')}</option>
-                    <option value="info">{t('editor.hotspot_editor.types.info')}</option>
-                    <option value="media">{t('editor.hotspot_editor.types.media')}</option>
-                    <option value="link">{t('editor.hotspot_editor.types.link')}</option>
+                    <option value="transition">
+                      {t('editor.hotspot_editor.types.transition')}
+                    </option>
+                    <option value="info">
+                      {t('editor.hotspot_editor.types.info')}
+                    </option>
+                    <option value="media">
+                      {t('editor.hotspot_editor.types.media')}
+                    </option>
+                    <option value="link">
+                      {t('editor.hotspot_editor.types.link')}
+                    </option>
                   </select>
                   {/* 🔹 Загрузка кастомного изображения */}
                   <div className="form-group" style={{ marginBottom: '16px' }}>
-                    <label className="hotspot-image-label">{t('editor.hotspot_editor.image.label')}</label>
+                    <label className="hotspot-image-label">
+                      {t('editor.hotspot_editor.image.label')}
+                    </label>
 
                     <div className="image-upload-area">
                       {/* Превью изображения */}
@@ -1204,8 +1238,12 @@ const loadProject = async () => {
                       ) : (
                         <div className="image-upload-placeholder">
                           <div className="placeholder-icon">📷</div>
-                          <p className="placeholder-text">{t('editor.hotspot_editor.image.placeholder')}</p>
-                          <p className="placeholder-hint">{t('editor.hotspot_editor.image.hint')}</p>
+                          <p className="placeholder-text">
+                            {t('editor.hotspot_editor.image.placeholder')}
+                          </p>
+                          <p className="placeholder-hint">
+                            {t('editor.hotspot_editor.image.hint')}
+                          </p>
                         </div>
                       )}
 
@@ -1270,10 +1308,10 @@ const loadProject = async () => {
                         htmlFor="hotspot-image-input"
                         className={`image-upload-btn ${uploadingImage ? 'uploading' : ''} ${selectedHotspot.media_url ? 'has-image' : ''}`}
                       >
-                        {uploadingImage 
-                          ? t('editor.hotspot_editor.image.uploading') 
-                          : selectedHotspot.media_url 
-                            ? t('editor.hotspot_editor.image.replace') 
+                        {uploadingImage
+                          ? t('editor.hotspot_editor.image.uploading')
+                          : selectedHotspot.media_url
+                            ? t('editor.hotspot_editor.image.replace')
                             : t('editor.hotspot_editor.image.upload')}
                       </label>
                     </div>
@@ -1293,7 +1331,9 @@ const loadProject = async () => {
                 </div>
                 {selectedHotspot.type === 'transition' && (
                   <div className="form-group" style={{ marginBottom: '12px' }}>
-                    <label className="form-label">{t('editor.hotspot_editor.transition.label')}</label>
+                    <label className="form-label">
+                      {t('editor.hotspot_editor.transition.label')}
+                    </label>
 
                     {/* 🔹 Кнопка загрузки нового файла */}
                     <input
@@ -1302,12 +1342,16 @@ const loadProject = async () => {
                       accept="image/*"
                       onChange={handleFileSelect}
                       disabled={uploadingFile}
-                      style={{display: 'none'}}/>
+                      style={{ display: 'none' }}
+                    />
                     {/* 🔹 Индикатор выбранной панорамы */}
                     {selectedHotspot?.targetFileUrl && (
                       <div className="selected-panorama-indicator">
                         <span>
-                          ✓ {selectedHotspot.target_original_filename || selectedHotspot.targetProjectName || 'Панорама'}
+                          ✓{' '}
+                          {selectedHotspot.target_original_filename ||
+                            selectedHotspot.targetProjectName ||
+                            'Панорама'}
                         </span>
                       </div>
                     )}
@@ -1318,7 +1362,6 @@ const loadProject = async () => {
                       disabled={uploadingFile}
                       className={`panorama-upload-btn ${uploadingFile ? 'uploading' : ''}`}
                     >
-                      
                       {uploadingFile ? (
                         <>
                           <div className="spinner-mini" />
@@ -1342,8 +1385,6 @@ const loadProject = async () => {
                         </>
                       )}
                     </button>
-
-                    
 
                     {/* 🔹 Разделитель */}
                     <div className="panorama-divider">
@@ -1448,7 +1489,9 @@ const loadProject = async () => {
                           linkUrl: e.target.value,
                         });
                       }}
-                      placeholder={t('editor.hotspot_editor.link.url_placeholder')}
+                      placeholder={t(
+                        'editor.hotspot_editor.link.url_placeholder',
+                      )}
                       style={{
                         width: '100%',
                         padding: '8px 12px',
@@ -1529,10 +1572,16 @@ const loadProject = async () => {
                         if (regRes.success) successCount++;
                       }
 
-                      const panoramasResponse = await getPanoramasByProject(project.id);
+                      const panoramasResponse = await getPanoramasByProject(
+                        project.id,
+                      );
                       if (panoramasResponse.success) {
                         setProjectPanoramas(panoramasResponse.panoramas); // ← Обновляем стейт!
-                        console.log('📸 Media list updated:', panoramasResponse.panoramas.length, 'items');
+                        console.log(
+                          '📸 Media list updated:',
+                          panoramasResponse.panoramas.length,
+                          'items',
+                        );
                       }
                       alert(`✅ Успешно загружено: ${successCount}`);
                     } catch (err) {
@@ -1554,8 +1603,8 @@ const loadProject = async () => {
                   disabled={uploadingMedia}
                   className="media-upload-btn"
                 >
-                  {uploadingMedia 
-                    ? t('editor.media_panel.uploading') 
+                  {uploadingMedia
+                    ? t('editor.media_panel.uploading')
                     : t('editor.media_panel.add')}
                 </button>
               </div>
@@ -1590,8 +1639,8 @@ const loadProject = async () => {
                             {panorama.original_filename || panorama.filename}
                           </div>
                           <div className="media-item-subtitle">
-                            {panorama.is_main 
-                              ? t('editor.media_panel.main') 
+                            {panorama.is_main
+                              ? t('editor.media_panel.main')
                               : t('editor.media_panel.additional')}
                           </div>
                         </div>
@@ -1618,7 +1667,8 @@ const loadProject = async () => {
 
               {/* 🔹 Статистика */}
               <div className="media-stats">
-                <strong>{t('editor.media_panel.stats')}:</strong> {projectPanoramas.length}
+                <strong>{t('editor.media_panel.stats')}:</strong>{' '}
+                {projectPanoramas.length}
               </div>
             </div>
           )}
@@ -1700,13 +1750,12 @@ const loadProject = async () => {
           <div className="stat-item">
             <span className="stat-label">{t('editor.stats.status')}</span>
             <span className={`editor-stat-value status-${project.status}`}>
-              {project.status === 'published' 
-                ? t('editor.stats.status_published') 
+              {project.status === 'published'
+                ? t('editor.stats.status_published')
                 : t('editor.stats.status_draft')}
             </span>
           </div>
         </div>
-        
       </div>
     </div>
   );

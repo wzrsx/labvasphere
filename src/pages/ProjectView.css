@@ -464,29 +464,29 @@
     left: var(--space-sm);
     padding: var(--space-xs);
   }
-  
+
   .action-btn {
     padding: var(--space-xs) var(--space-sm);
   }
-  
+
   .action-btn span.action-count {
     display: none; /* Скрываем счётчик на мобильных */
   }
-  
+
   .author-profile-container {
     bottom: var(--space-sm);
     right: var(--space-sm);
   }
-  
+
   .author-trigger {
     padding: var(--space-xs);
     gap: var(--space-xs);
   }
-  
+
   .author-name-short {
     display: none; /* Оставляем только аватар на мобильных */
   }
-  
+
   .author-card {
     width: 240px;
     right: -10px; /* Небольшой сдвиг для центровки */
@@ -509,15 +509,15 @@
     padding: var(--space-xs) var(--space-sm);
     font-size: 13px;
   }
-  
+
   .back-btn-fixed span {
     display: none; /* Скрываем текст на мобильных, оставляем иконку */
   }
-  
+
   .project-title-overlay {
     padding: var(--space-xs) var(--space-md);
   }
-  
+
   .project-title-overlay h1 {
     font-size: 1rem;
     max-width: 200px;

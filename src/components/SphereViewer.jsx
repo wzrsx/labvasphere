@@ -41,12 +41,12 @@ const SphereViewer = forwardRef((props, ref) => {
   const [loadProgress, setLoadProgress] = useState(0);
   const [initError, setInitError] = useState(null);
 
-    // Конвертация маркеров с правильной очередностью: media_url → icon → fallback
-    // Конвертация маркеров с поддержкой цвета
-    const convertToMarkers = useCallback((hotspotsList) => {
+  // Конвертация маркеров с правильной очередностью: media_url → icon → fallback
+  // Конвертация маркеров с поддержкой цвета
+  const convertToMarkers = useCallback((hotspotsList) => {
     return hotspotsList.map((hotspot) => {
       let iconUrl;
-      
+
       // 🔹 1. Приоритет №1: кастомное изображение (media_url)
       if (hotspot.media_url && hotspot.media_url.trim() !== '') {
         iconUrl = hotspot.media_url.startsWith('http')
@@ -54,7 +54,10 @@ const SphereViewer = forwardRef((props, ref) => {
           : `${CONFIG.MEDIA_BASE_URL}/${hotspot.media_url}`;
       }
       // 🔹 2. Приоритет №2: иконка из настроек с цветом
-      else if (hotspot.icon && ['pin', 'dot', 'star', 'camera'].includes(hotspot.icon)) {
+      else if (
+        hotspot.icon &&
+        ['pin', 'dot', 'star', 'camera'].includes(hotspot.icon)
+      ) {
         // 🔹 Генерируем SVG с цветом на лету
         const color = hotspot.color || '#99582A';
         iconUrl = getColoredIconUrl(hotspot.icon, color);
@@ -328,61 +331,69 @@ const SphereViewer = forwardRef((props, ref) => {
         );
       }
       // 🔹 Горячие клавиши: F — полный экран, Esc — выход
-const handleKeyDown = (e) => {
-  // Игнорируем, если пользователь печатает в инпуте
-  if (e.target.matches('input, textarea, [contenteditable="true"]')) {
-    return;
-  }
+      const handleKeyDown = (e) => {
+        // Игнорируем, если пользователь печатает в инпуте
+        if (e.target.matches('input, textarea, [contenteditable="true"]')) {
+          return;
+        }
 
-  const container = containerRef.current;
-  if (!container) return;
-  // 🔹 F11 — блокируем и показываем подсказку
-if (e.key === 'F11') {
-    e.preventDefault();
-    e.stopPropagation();
-    setTimeout(() => alert('⚠️ Используйте клавишу F для полноэкранного режима — F11 может работать некорректно'), 0);
-    return;
-  }
-  const isFullscreenKey = 
-    e.key.toLowerCase() === 'f' ||  // Английская раскладка
-    e.key === 'а' || e.key === 'А'; // Русская раскладка
-  if (isFullscreenKey) {
-    e.preventDefault();
-    
-    const isAlreadyFullscreen = document.fullscreenElement || 
-                                document.webkitFullscreenElement || 
-                                document.mozFullScreenElement || 
-                                document.msFullscreenElement;
-    
-    if (!isAlreadyFullscreen) {
-      if (container.requestFullscreen) {
-        container.requestFullscreen();
-      } else if (container.webkitRequestFullscreen) {
-        container.webkitRequestFullscreen();
-      } else if (container.mozRequestFullScreen) {
-        container.mozRequestFullScreen();
-      } else if (container.msRequestFullscreen) {
-        container.msRequestFullscreen();
-      }
-    }
-  }
-  
-  // 🔹 Esc — выход из полноэкранного режима
-  // (photo-sphere-viewer обычно обрабатывает это сам, но для надёжности дублируем)
-  if (e.key === 'Escape') {
-    if (document.exitFullscreen) {
-      document.exitFullscreen();
-    } else if (document.webkitExitFullscreen) {
-      document.webkitExitFullscreen();
-    } else if (document.mozCancelFullScreen) {
-      document.mozCancelFullScreen();
-    } else if (document.msExitFullscreen) {
-      document.msExitFullscreen();
-    }
-  }
-};
+        const container = containerRef.current;
+        if (!container) return;
+        // 🔹 F11 — блокируем и показываем подсказку
+        if (e.key === 'F11') {
+          e.preventDefault();
+          e.stopPropagation();
+          setTimeout(
+            () =>
+              alert(
+                '⚠️ Используйте клавишу F для полноэкранного режима — F11 может работать некорректно',
+              ),
+            0,
+          );
+          return;
+        }
+        const isFullscreenKey =
+          e.key.toLowerCase() === 'f' || // Английская раскладка
+          e.key === 'а' ||
+          e.key === 'А'; // Русская раскладка
+        if (isFullscreenKey) {
+          e.preventDefault();
 
-window.addEventListener('keydown', handleKeyDown);
+          const isAlreadyFullscreen =
+            document.fullscreenElement ||
+            document.webkitFullscreenElement ||
+            document.mozFullScreenElement ||
+            document.msFullscreenElement;
+
+          if (!isAlreadyFullscreen) {
+            if (container.requestFullscreen) {
+              container.requestFullscreen();
+            } else if (container.webkitRequestFullscreen) {
+              container.webkitRequestFullscreen();
+            } else if (container.mozRequestFullScreen) {
+              container.mozRequestFullScreen();
+            } else if (container.msRequestFullscreen) {
+              container.msRequestFullscreen();
+            }
+          }
+        }
+
+        // 🔹 Esc — выход из полноэкранного режима
+        // (photo-sphere-viewer обычно обрабатывает это сам, но для надёжности дублируем)
+        if (e.key === 'Escape') {
+          if (document.exitFullscreen) {
+            document.exitFullscreen();
+          } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+          } else if (document.mozCancelFullScreen) {
+            document.mozCancelFullScreen();
+          } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+          }
+        }
+      };
+
+      window.addEventListener('keydown', handleKeyDown);
       return () => {
         console.log('[SV] === CLEANUP ===');
         clearTimeout(timeout);
@@ -420,18 +431,17 @@ window.addEventListener('keydown', handleKeyDown);
   // Рендер
   if (!isViewerReady || !isPanoramaLoaded) {
     // ✅ Всегда рендерим ОДИН контейнер, лоадер — поверх
-return (
-  <div
-    ref={containerRef}
-    style={{ 
-      width: '100%', 
-      height: '100%', 
-      position: 'relative',  // ← Для позиционирования оверлея
-      ...style 
-    }}
-  >
-  </div>
-);
+    return (
+      <div
+        ref={containerRef}
+        style={{
+          width: '100%',
+          height: '100%',
+          position: 'relative', // ← Для позиционирования оверлея
+          ...style,
+        }}
+      ></div>
+    );
   }
 
   return (
@@ -439,7 +449,6 @@ return (
       ref={containerRef}
       style={{ width: '100%', height: '100%', ...style }}
     />
-    
   );
 });
 

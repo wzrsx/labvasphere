@@ -11,12 +11,14 @@ export const convertHotspotToEditor = (h, projectId) => {
   return {
     id: h.id,
     position: {
-      yaw: typeof h.position_yaw === 'number' 
-        ? h.position_yaw 
-        : parseFloat(h.position_yaw) || 0,
-      pitch: typeof h.position_pitch === 'number' 
-        ? h.position_pitch 
-        : parseFloat(h.position_pitch) || 0,
+      yaw:
+        typeof h.position_yaw === 'number'
+          ? h.position_yaw
+          : parseFloat(h.position_yaw) || 0,
+      pitch:
+        typeof h.position_pitch === 'number'
+          ? h.position_pitch
+          : parseFloat(h.position_pitch) || 0,
     },
     title: h.title || '',
     tooltip: h.tooltip || '',
@@ -57,11 +59,11 @@ export const convertHotspotToMarker = (hotspot) => {
     position: hotspot.position,
     image: iconUrl,
     size: { width: 32, height: 32 },
-    tooltip: hotspot.tooltip 
-      ? { content: hotspot.tooltip, position: 'top' } 
+    tooltip: hotspot.tooltip
+      ? { content: hotspot.tooltip, position: 'top' }
       : { content: hotspot.title || 'Точка перехода', position: 'top' },
-    style: { 
-      cursor: 'pointer', 
+    style: {
+      cursor: 'pointer',
       transition: 'transform 0.2s',
     },
     className: isCustomImage ? 'hotspot-custom-image' : 'hotspot-default',
@@ -80,57 +82,60 @@ export const loadHotspotsForPanorama = async (panoramaId, projectId) => {
   console.log('[hotspotUtils] 🚀 loadHotspotsForPanorama called:', {
     panoramaId,
     projectId,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
-  
+
   // 🔹 2. Валидация параметров
   if (!panoramaId || !projectId) {
     console.warn('[hotspotUtils] ⚠️ Validation failed:', {
       panoramaId: panoramaId || 'MISSING',
-      projectId: projectId || 'MISSING'
+      projectId: projectId || 'MISSING',
     });
-    return { 
-      success: false, 
-      error: 'panoramaId и projectId обязательны', 
-      hotspots: [] 
+    return {
+      success: false,
+      error: 'panoramaId и projectId обязательны',
+      hotspots: [],
     };
   }
 
   try {
     // 🔹 3. Перед вызовом API
-    console.log('[hotspotUtils] 📡 Calling getHotspots API for panorama:', panoramaId);
-    
+    console.log(
+      '[hotspotUtils] 📡 Calling getHotspots API for panorama:',
+      panoramaId,
+    );
+
     const response = await getHotspots(panoramaId);
-    
+
     // 🔹 4. Лог ответа от API
     console.log('[hotspotUtils] 🔹 API response:', {
       success: response?.success,
       error: response?.error,
       hotspotsCount: response?.hotspots?.length || 0,
-      rawHotspots: response?.hotspots?.map(h => ({
+      rawHotspots: response?.hotspots?.map((h) => ({
         id: h?.id,
         title: h?.title,
         hasMediaUrl: !!h?.media_url,
-        targetPanoramaId: h?.target_panorama_id
-      }))
+        targetPanoramaId: h?.target_panorama_id,
+      })),
     });
-    
+
     // 🔹 5. Проверка успеха
     if (!response?.success) {
       console.warn('[hotspotUtils] ⚠️ API returned error:', response?.error);
-      return { 
-        success: false, 
-        error: response?.error || 'Неизвестная ошибка', 
-        hotspots: [] 
+      return {
+        success: false,
+        error: response?.error || 'Неизвестная ошибка',
+        hotspots: [],
       };
     }
 
     // 🔹 6. Конвертация хотспотов
     console.log('[hotspotUtils] 🎨 Converting hotspots to editor format...');
-    
+
     const editorHotspots = (response.hotspots || []).map((h, index) => {
       const converted = convertHotspotToEditor(h, projectId);
-      
+
       // Лог каждой конвертации (только первые 5, чтобы не засорять консоль)
       if (index < 5) {
         console.log(`[hotspotUtils] 🎨 Converted hotspot #${index + 1}:`, {
@@ -139,23 +144,26 @@ export const loadHotspotsForPanorama = async (panoramaId, projectId) => {
           type: converted?.type,
           hasMediaUrl: !!converted?.media_url,
           targetProjectId: converted?.targetProjectId,
-          position: converted?.position
+          position: converted?.position,
         });
       }
-      
+
       return converted;
     });
 
     // 🔹 7. Итоговый лог
-    console.log('[hotspotUtils] ✅ Successfully loaded and converted hotspots:', {
-      total: editorHotspots.length,
-      withMediaUrl: editorHotspots.filter(h => h.media_url).length,
-      transitions: editorHotspots.filter(h => h.type === 'transition').length,
-      info: editorHotspots.filter(h => h.type === 'info').length
-    });
-    
+    console.log(
+      '[hotspotUtils] ✅ Successfully loaded and converted hotspots:',
+      {
+        total: editorHotspots.length,
+        withMediaUrl: editorHotspots.filter((h) => h.media_url).length,
+        transitions: editorHotspots.filter((h) => h.type === 'transition')
+          .length,
+        info: editorHotspots.filter((h) => h.type === 'info').length,
+      },
+    );
+
     return { success: true, hotspots: editorHotspots };
-    
   } catch (err) {
     // 🔹 8. Обработка ошибок
     console.error('[hotspotUtils] ❌ Error in loadHotspotsForPanorama:', {
@@ -163,13 +171,13 @@ export const loadHotspotsForPanorama = async (panoramaId, projectId) => {
       stack: err?.stack,
       name: err?.name,
       panoramaId,
-      projectId
+      projectId,
     });
-    
-    return { 
-      success: false, 
-      error: err?.message || 'Ошибка загрузки хотспотов', 
-      hotspots: [] 
+
+    return {
+      success: false,
+      error: err?.message || 'Ошибка загрузки хотспотов',
+      hotspots: [],
     };
   }
 };
@@ -221,26 +229,27 @@ export const prepareHotspotForApi = (hotspot, panoramaId) => {
 export const getColoredIconUrl = (iconName, color) => {
   // Пути к иконкам (если не нужно перекрашивать)
   const ALLOWED_ICONS = ['pin', 'dot', 'star', 'camera'];
-  
+
   // Если это кастомное изображение — возвращаем как есть
   if (!ALLOWED_ICONS.includes(iconName)) {
     return iconName; // уже полный URL или путь
   }
-  
+
   // SVG-пути для наших иконок
   const iconPaths = {
     pin: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z',
     dot: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z',
     star: 'M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z',
-    camera: 'M9 2l-1.85 2H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2h-3.15L15 2H9zm3 15a5 5 0 110-10 5 5 0 010 10z'
+    camera:
+      'M9 2l-1.85 2H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2h-3.15L15 2H9zm3 15a5 5 0 110-10 5 5 0 010 10z',
   };
-  
+
   const path = iconPaths[iconName];
   if (!path) return '/finger-32.svg'; // фолбэк
-  
+
   // Создаём SVG с нужным цветом
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="${color}"><path d="${path}"/></svg>`;
-  
+
   // Кодируем в Data URL
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 };

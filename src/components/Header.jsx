@@ -58,9 +58,11 @@ const Header = () => {
       </nav>
       {isAuthenticated && (
         <div className="user-profile">
-          <span onClick={handleProfile}>{getUserName() || t('user.default')}</span>
-           <LanguageToggle />
-           <ThemeToggle />
+          <span onClick={handleProfile}>
+            {getUserName() || t('user.default')}
+          </span>
+          <LanguageToggle />
+          <ThemeToggle />
         </div>
       )}
     </header>

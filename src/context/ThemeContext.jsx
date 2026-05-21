@@ -17,7 +17,7 @@ export const ThemeProvider = ({ children }) => {
     document.documentElement.classList.toggle('dark-theme', isDark);
   }, [isDark]);
 
-  const toggleTheme = () => setIsDark(prev => !prev);
+  const toggleTheme = () => setIsDark((prev) => !prev);
 
   return (
     <ThemeContext.Provider value={{ isDark, toggleTheme }}>

@@ -56,14 +56,14 @@
       "confirm_button": "Delete",
       "deleting": "Deleting..."
     },
-     "publish_before_share": {
-    "title": "Publish project?",
-    "confirm": "The project is in drafts. To allow other users to view it via the link, you need to publish the project.",
-    "warning": "After publishing, the project will be accessible to anyone with the link.",
-    "cancel": "Cancel",
-    "publish_and_share": "Publish and share",
-    "publishing": "Publishing..."
-  },
+    "publish_before_share": {
+      "title": "Publish project?",
+      "confirm": "The project is in drafts. To allow other users to view it via the link, you need to publish the project.",
+      "warning": "After publishing, the project will be accessible to anyone with the link.",
+      "cancel": "Cancel",
+      "publish_and_share": "Publish and share",
+      "publishing": "Publishing..."
+    },
     "close": "Close",
     "cancel": "Cancel"
   },

@@ -52,7 +52,7 @@ const createPreview = (file) => {
 };
 
 const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
-  const { t } = useTranslation(); 
+  const { t } = useTranslation();
   const [projectName, setProjectName] = useState('');
   const [description, setDescription] = useState('');
   const [panoramaFile, setPanoramaFile] = useState(null);
@@ -449,7 +449,9 @@ const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
               className="modal-create"
               disabled={isLoading || !projectName || !coverFile}
             >
-              {isLoading ? t('newProject.form.creating') : t('newProject.form.create_button')}
+              {isLoading
+                ? t('newProject.form.creating')
+                : t('newProject.form.create_button')}
             </button>
           </div>
         </form>

@@ -11,7 +11,7 @@ const LoginForm = ({ onSwitchToRegister, onSwitchToResetPass }) => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // 🔹 ИСПРАВЛЕНИЕ: начальное значение null (не '/projects'!)
   const [redirectPath, setRedirectPath] = useState(null);
 
@@ -19,7 +19,7 @@ const LoginForm = ({ onSwitchToRegister, onSwitchToResetPass }) => {
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const redirect = urlParams.get('redirect');
-    
+
     // 🔹 Валидация: только безопасные внутренние пути
     if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
       setRedirectPath(redirect);
@@ -48,14 +48,15 @@ const LoginForm = ({ onSwitchToRegister, onSwitchToResetPass }) => {
       setIsLoading(false);
 
       if (result.success) {
-        localStorage.setItem('token', result.token); 
+        localStorage.setItem('token', result.token);
         localStorage.setItem('user', JSON.stringify(result.user));
-        
+
         // 🔹 ИСПРАВЛЕНИЕ: явная проверка на null
-        const finalRedirect = redirectPath !== null 
-          ? redirectPath 
-          : getRedirectPath(result.user.role);
-        
+        const finalRedirect =
+          redirectPath !== null
+            ? redirectPath
+            : getRedirectPath(result.user.role);
+
         navigate(finalRedirect);
       }
     } catch (err) {
@@ -74,7 +75,10 @@ const LoginForm = ({ onSwitchToRegister, onSwitchToResetPass }) => {
 
       {/* Показываем подсказку только если есть явный редирект */}
       {redirectPath && (
-        <p className="redirect-hint" style={{ fontSize: '0.85rem', color: '#666', marginBottom: '1rem' }}>
+        <p
+          className="redirect-hint"
+          style={{ fontSize: '0.85rem', color: '#666', marginBottom: '1rem' }}
+        >
           После входа вы вернётесь на: <strong>{redirectPath}</strong>
         </p>
       )}

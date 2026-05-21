@@ -48,7 +48,9 @@ class PanoramaCache {
       img.crossOrigin = 'anonymous';
 
       img.onload = () => {
-        console.log(`[PanoramaCache] ✅ Loaded: ${url} (${img.width}x${img.height})`);
+        console.log(
+          `[PanoramaCache] ✅ Loaded: ${url} (${img.width}x${img.height})`,
+        );
         this.cache.set(url, img);
         this.loading.delete(url);
         resolve(img);
@@ -81,13 +83,17 @@ class PanoramaCache {
    */
   async preloadMany(urls, onProgress) {
     const results = await Promise.allSettled(
-      urls.map(url => this.preload(url, onProgress).catch(err => ({ url, error: err })))
+      urls.map((url) =>
+        this.preload(url, onProgress).catch((err) => ({ url, error: err })),
+      ),
     );
 
-    const successful = results.filter(r => r.status === 'fulfilled').length;
-    const failed = results.filter(r => r.status === 'rejected').length;
+    const successful = results.filter((r) => r.status === 'fulfilled').length;
+    const failed = results.filter((r) => r.status === 'rejected').length;
 
-    console.log(`[PanoramaCache] 📊 Preload complete: ${successful} success, ${failed} failed`);
+    console.log(
+      `[PanoramaCache] 📊 Preload complete: ${successful} success, ${failed} failed`,
+    );
     return { successful, failed, results };
   }
 

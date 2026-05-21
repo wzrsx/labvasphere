@@ -35,46 +35,46 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     // 🔹 Единый параметр 'redirect' везде
-if (error.response?.status === 401) {
-  const requestUrl = error.config?.url || '';
-  const currentPath = window.location.pathname;
+    if (error.response?.status === 401) {
+      const requestUrl = error.config?.url || '';
+      const currentPath = window.location.pathname;
 
-  const publicEndpoints = [
-    '/auth/login',
-    '/auth/register',
-    '/auth/reset-password',
-    '/health',
-    '/projects/published',
-    '/projects/public/',
-    '/panoramas/project/',
-    '/hotspots/panorama/',
-  ];
+      const publicEndpoints = [
+        '/auth/login',
+        '/auth/register',
+        '/auth/reset-password',
+        '/health',
+        '/projects/published',
+        '/projects/public/',
+        '/panoramas/project/',
+        '/hotspots/panorama/',
+      ];
 
-  const isPublicRequest = publicEndpoints.some(endpoint => 
-    requestUrl.includes(endpoint)
-  );
+      const isPublicRequest = publicEndpoints.some((endpoint) =>
+        requestUrl.includes(endpoint),
+      );
 
-  // 🔹 Если уже на /auth — не редиректим, чтобы не зациклить
-  if (currentPath === '/auth') {
-    return Promise.reject(error);
-  }
+      // 🔹 Если уже на /auth — не редиректим, чтобы не зациклить
+      if (currentPath === '/auth') {
+        return Promise.reject(error);
+      }
 
-  // 🔹 Если 401 на публичном эндпоинте — просто отклоняем (показать ошибку в UI)
-  if (isPublicRequest) {
-    console.warn('⚠️ 401 on public endpoint, no redirect');
-    return Promise.reject(error);
-  }
+      // 🔹 Если 401 на публичном эндпоинте — просто отклоняем (показать ошибку в UI)
+      if (isPublicRequest) {
+        console.warn('⚠️ 401 on public endpoint, no redirect');
+        return Promise.reject(error);
+      }
 
-  // 🔹 Для защищённых эндпоинтов — редирект на авторизацию с ?redirect=
-  if (!localStorage.getItem('token')) {
-    // Токена нет — чистим и редиректим
-    localStorage.removeItem('user');
-  }
-  
-  window.location.href = `/auth?redirect=${encodeURIComponent(currentPath)}`;
-  return Promise.reject(error);
-}
-  }
+      // 🔹 Для защищённых эндпоинтов — редирект на авторизацию с ?redirect=
+      if (!localStorage.getItem('token')) {
+        // Токена нет — чистим и редиректим
+        localStorage.removeItem('user');
+      }
+
+      window.location.href = `/auth?redirect=${encodeURIComponent(currentPath)}`;
+      return Promise.reject(error);
+    }
+  },
 );
 
 export default api;

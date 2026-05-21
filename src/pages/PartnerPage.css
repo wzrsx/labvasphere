@@ -59,7 +59,10 @@
   padding: var(--space-lg);
   display: flex;
   flex-direction: column;
-  transition: transform var(--transition-normal), box-shadow var(--transition-normal), border-color var(--transition-fast);
+  transition:
+    transform var(--transition-normal),
+    box-shadow var(--transition-normal),
+    border-color var(--transition-fast);
   box-shadow: var(--shadow);
 }
 
@@ -83,7 +86,11 @@
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, var(--accent-primary), var(--accent-light));
+  background: linear-gradient(
+    90deg,
+    var(--accent-primary),
+    var(--accent-light)
+  );
 }
 
 .stat-icon {
@@ -173,7 +180,9 @@
   color: var(--text-primary);
   font-size: 0.9rem;
   font-family: var(--font-mono);
-  transition: border-color var(--transition-fast), background var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast);
   min-width: 0;
 }
 
@@ -200,7 +209,9 @@
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  transition: background var(--transition-fast), transform var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    transform var(--transition-fast);
   flex-shrink: 0;
 }
 
@@ -261,7 +272,9 @@
   background: var(--bg-primary);
   color: var(--text-primary);
   font-size: 0.95rem;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .form-input:focus,
@@ -295,7 +308,9 @@
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
-  transition: background var(--transition-fast), transform var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 .submit-btn:hover:not(:disabled) {
@@ -352,7 +367,9 @@
   border-radius: var(--radius-md);
   padding: var(--space-lg);
   text-align: center;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .level-card:hover {
@@ -411,16 +428,15 @@
   gap: var(--space-sm);
 }
 
-
 .notification.success {
   background: var(--success-bg);
-  color: #4A6B47;
+  color: #4a6b47;
   border: 1px solid rgba(122, 155, 118, 0.3);
 }
 
 .notification.error {
   background: var(--error-bg);
-  color: #7A4A44;
+  color: #7a4a44;
   border: 1px solid rgba(184, 123, 110, 0.3);
 }
 
@@ -452,7 +468,6 @@
   margin: 0 auto var(--space-md);
 }
 
-
 /* ===== Анимация появления элементов ===== */
 .stat-card,
 .referral-section,
@@ -462,14 +477,27 @@
   opacity: 0;
 }
 
-.stat-card:nth-child(1) { animation-delay: 0.1s; }
-.stat-card:nth-child(2) { animation-delay: 0.2s; }
-.stat-card:nth-child(3) { animation-delay: 0.3s; }
-.stat-card:nth-child(4) { animation-delay: 0.4s; }
-.referral-section { animation-delay: 0.5s; }
-.withdraw-section { animation-delay: 0.6s; }
-.how-it-works-section { animation-delay: 0.7s; }
-
+.stat-card:nth-child(1) {
+  animation-delay: 0.1s;
+}
+.stat-card:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.stat-card:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.stat-card:nth-child(4) {
+  animation-delay: 0.4s;
+}
+.referral-section {
+  animation-delay: 0.5s;
+}
+.withdraw-section {
+  animation-delay: 0.6s;
+}
+.how-it-works-section {
+  animation-delay: 0.7s;
+}
 
 /* ===== SVG иконки (общие стили) ===== */
 .icon {
@@ -497,33 +525,33 @@
   .partner-page {
     padding: var(--space-lg) var(--space-md);
   }
-  
+
   .partner-header h1 {
     font-size: 1.75rem;
   }
-  
+
   .partner-header p {
     font-size: 1rem;
   }
-  
+
   .stat-value {
     font-size: 1.25rem;
   }
-  
+
   .link-input-wrapper {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .copy-btn {
     justify-content: center;
     width: 100%;
   }
-  
+
   .section-title {
     font-size: 1rem;
   }
-  
+
   .level-rate {
     font-size: 1.25rem;
   }
@@ -533,26 +561,26 @@
   .partner-header h1 {
     font-size: 1.5rem;
   }
-  
+
   .stat-card {
     padding: var(--space-md);
   }
-  
+
   .stat-icon {
     width: 36px;
     height: 36px;
   }
-  
+
   .stat-value {
     font-size: 1.1rem;
   }
-  
+
   .referral-section,
   .withdraw-section,
   .how-it-works-section {
     padding: var(--space-md);
   }
-  
+
   .form-input,
   .form-select,
   .submit-btn {
@@ -581,16 +609,16 @@ html {
     width: 8px;
     height: 8px;
   }
-  
+
   ::-webkit-scrollbar-track {
     background: var(--bg-primary);
   }
-  
+
   ::-webkit-scrollbar-thumb {
     background: var(--accent-light);
     border-radius: var(--radius-full);
   }
-  
+
   ::-webkit-scrollbar-thumb:hover {
     background: var(--accent-primary);
   }

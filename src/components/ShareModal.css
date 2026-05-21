@@ -1,6 +1,9 @@
 .modal-overlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
@@ -16,12 +19,12 @@
   max-width: 480px;
   width: 100%;
   position: relative;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
-.share-modal-h3{
+.share-modal-h3 {
   text-align: center;
 }
-.modal-content.share-modal{
+.modal-content.share-modal {
   padding: var(--space-lg);
 }
 .modal-close {
@@ -123,15 +126,15 @@
 }
 
 /* Цвета кнопок */
-.social-btn.telegram { 
-  background: #0088cc; 
+.social-btn.telegram {
+  background: #0088cc;
   padding-right: 3px;
 }
-.social-btn.whatsapp { 
-  background: #25D366; 
+.social-btn.whatsapp {
+  background: #25d366;
 }
-.social-btn.email { 
-  background: #ea4335; 
+.social-btn.email {
+  background: #ea4335;
 }
 .share-toggle {
   display: flex;
@@ -245,16 +248,16 @@
   .share-toggle {
     margin-bottom: 16px;
   }
-  
+
   .toggle-btn {
     padding: 8px 12px;
     font-size: 13px;
   }
-  
+
   .qr-code-container {
     padding: 12px;
   }
-  
+
   .qr-code-container svg {
     width: 180px;
     height: 180px;
@@ -265,12 +268,12 @@
   .share-social {
     gap: 12px;
   }
-  
+
   .social-btn {
     width: 48px;
     height: 48px;
   }
-  
+
   .social-btn svg {
     width: 20px;
     height: 20px;

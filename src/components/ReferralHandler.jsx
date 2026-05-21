@@ -11,16 +11,17 @@ const ReferralHandler = () => {
 
     if (ref) {
       // Валидация UUID
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const uuidRegex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (uuidRegex.test(ref)) {
         console.log('🔗 Referral detected:', ref);
         localStorage.setItem('pending_ref', ref);
         localStorage.setItem('referral_click_time', new Date().toISOString());
-    }
+      }
     }
   }, [location.search]);
 
-  return null; 
+  return null;
 };
 
 export default ReferralHandler;

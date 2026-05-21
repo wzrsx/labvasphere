@@ -11,14 +11,14 @@ i18n
   .init({
     resources: {
       en: { translation: en },
-      ru: { translation: ru }
+      ru: { translation: ru },
     },
     fallbackLng: 'en',
     interpolation: { escapeValue: false },
     detection: {
       order: ['localStorage', 'navigator'], // Сначала проверяем localStorage, потом язык браузера
-      caches: ['localStorage']              // Запоминаем выбор пользователя
-    }
+      caches: ['localStorage'], // Запоминаем выбор пользователя
+    },
   });
 
 export default i18n;

@@ -1,10 +1,16 @@
 // src/components/MiniMapHotspots.jsx
-import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useMemo,
+} from 'react';
 import './MiniMapHotspots.css';
 
 /**
  * MiniMapHotspots - Мини-карта переходов между панорамами
- * 
+ *
  * @param {Object} props
  * @param {Array} props.projectPanoramas - Все панорамы проекта (с полями: id, filename, original_filename, yaw/position_yaw)
  * @param {Array} props.hotspots - Хотспоты текущей панорамы (с полем target_filename)
@@ -23,7 +29,12 @@ const MiniMapHotspots = ({
 }) => {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0, cssWidth: 200, cssHeight: 200 });
+  const [dimensions, setDimensions] = useState({
+    width: 0,
+    height: 0,
+    cssWidth: 200,
+    cssHeight: 200,
+  });
   const [hoveredPanorama, setHoveredPanorama] = useState(null);
 
   // ============================================================================
@@ -35,19 +46,25 @@ const MiniMapHotspots = ({
     console.group('🗺️ MiniMapHotspots: Props Debug');
     console.log('📦 projectId:', projectId);
     console.log('🎯 currentPanoramaId:', currentPanoramaId);
-    console.log('📸 projectPanoramas:', projectPanoramas.map(p => ({
-      id: p.id,
-      filename: p.filename,
-      original_filename: p.original_filename,
-      yaw: p.yaw ?? p.position_yaw ?? 'N/A',
-    })));
-    console.log('🔗 hotspots:', hotspots.map(h => ({
-      id: h.id,
-      type: h.type,
-      target_filename: h.target_filename,
-      targetProjectId: h.targetProjectId,
-      position: h.position,
-    })));
+    console.log(
+      '📸 projectPanoramas:',
+      projectPanoramas.map((p) => ({
+        id: p.id,
+        filename: p.filename,
+        original_filename: p.original_filename,
+        yaw: p.yaw ?? p.position_yaw ?? 'N/A',
+      })),
+    );
+    console.log(
+      '🔗 hotspots:',
+      hotspots.map((h) => ({
+        id: h.id,
+        type: h.type,
+        target_filename: h.target_filename,
+        targetProjectId: h.targetProjectId,
+        position: h.position,
+      })),
+    );
     console.groupEnd();
   }, [projectPanoramas, hotspots, currentPanoramaId, projectId, debug]);
 
@@ -76,38 +93,44 @@ const MiniMapHotspots = ({
   // ============================================================================
   // 🔹 Вспомогательная: поиск панорамы по filename (исправление основной проблемы)
   // ============================================================================
-  const findPanoramaByFilename = useCallback((targetFilename) => {
-    if (!targetFilename) return null;
+  const findPanoramaByFilename = useCallback(
+    (targetFilename) => {
+      if (!targetFilename) return null;
 
-    // Извлекаем чистое имя файла (убираем путь, если есть)
-    const cleanTarget = targetFilename.split('/').pop();
+      // Извлекаем чистое имя файла (убираем путь, если есть)
+      const cleanTarget = targetFilename.split('/').pop();
 
-    return projectPanoramas.find((p) => {
-      const pFilename = p.filename?.split('/').pop();
-      const pOriginal = p.original_filename?.split('/').pop();
+      return projectPanoramas.find((p) => {
+        const pFilename = p.filename?.split('/').pop();
+        const pOriginal = p.original_filename?.split('/').pop();
 
-      // Прямое совпадение
-      if (pFilename === cleanTarget || pOriginal === cleanTarget) {
-        return true;
-      }
+        // Прямое совпадение
+        if (pFilename === cleanTarget || pOriginal === cleanTarget) {
+          return true;
+        }
 
-      // Совпадение без расширения (на случай различий в формате)
-      const targetBase = cleanTarget?.replace(/\.[^/.]+$/, '');
-      const pFilenameBase = pFilename?.replace(/\.[^/.]+$/, '');
-      const pOriginalBase = pOriginal?.replace(/\.[^/.]+$/, '');
+        // Совпадение без расширения (на случай различий в формате)
+        const targetBase = cleanTarget?.replace(/\.[^/.]+$/, '');
+        const pFilenameBase = pFilename?.replace(/\.[^/.]+$/, '');
+        const pOriginalBase = pOriginal?.replace(/\.[^/.]+$/, '');
 
-      if (targetBase && (pFilenameBase === targetBase || pOriginalBase === targetBase)) {
-        return true;
-      }
+        if (
+          targetBase &&
+          (pFilenameBase === targetBase || pOriginalBase === targetBase)
+        ) {
+          return true;
+        }
 
-      // Содержит ли filename целевое имя (для случаев с префиксами UUID)
-      if (cleanTarget && pFilename?.includes(cleanTarget)) {
-        return true;
-      }
+        // Содержит ли filename целевое имя (для случаев с префиксами UUID)
+        if (cleanTarget && pFilename?.includes(cleanTarget)) {
+          return true;
+        }
 
-      return false;
-    });
-  }, [projectPanoramas]);
+        return false;
+      });
+    },
+    [projectPanoramas],
+  );
 
   // ============================================================================
   // 🔹 Построение графа связей (ИСПРАВЛЕНО: поиск по target_filename)
@@ -123,7 +146,11 @@ const MiniMapHotspots = ({
     hotspots.forEach((hotspot) => {
       // Обрабатываем только хотспоты-переходы с целевым файлом
       if (hotspot.type !== 'transition' || !hotspot.target_filename) {
-        if (debug) console.log('⏭️ Skip hotspot (not transition or no filename):', hotspot.id);
+        if (debug)
+          console.log(
+            '⏭️ Skip hotspot (not transition or no filename):',
+            hotspot.id,
+          );
         return;
       }
 
@@ -131,8 +158,12 @@ const MiniMapHotspots = ({
       const targetPanorama = findPanoramaByFilename(hotspot.target_filename);
 
       if (debug) {
-        console.log(`🔍 Looking for "${hotspot.target_filename}":`, 
-          targetPanorama ? `✅ Found (id: ${targetPanorama.id})` : '❌ Not found');
+        console.log(
+          `🔍 Looking for "${hotspot.target_filename}":`,
+          targetPanorama
+            ? `✅ Found (id: ${targetPanorama.id})`
+            : '❌ Not found',
+        );
       }
 
       // Если нашли целевую панораму И есть текущая панорама
@@ -202,7 +233,7 @@ const MiniMapHotspots = ({
     ctx.strokeStyle = 'rgba(148, 163, 184, 0.5)';
     ctx.lineWidth = 2;
     ctx.stroke();
-    
+
     ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
     ctx.font = `${10 * (window.devicePixelRatio || 1)}px sans-serif`;
     ctx.textAlign = 'center';
@@ -245,10 +276,12 @@ const MiniMapHotspots = ({
     projectPanoramas.forEach((panorama) => {
       const yaw = panorama.yaw ?? panorama.position_yaw ?? 0;
       const pos = yawToCoords(yaw, radius, centerX, centerY);
-      
+
       const isCurrent = panorama.id === currentPanoramaId;
       const isHovered = hoveredPanorama === panorama.id;
-      const isConnected = connections.some(c => c.to === panorama.id || c.from === panorama.id);
+      const isConnected = connections.some(
+        (c) => c.to === panorama.id || c.from === panorama.id,
+      );
 
       // Радиус точки
       const baseRadius = 5;
@@ -256,10 +289,20 @@ const MiniMapHotspots = ({
 
       // 🔹 Внешнее свечение для текущей/наведённой
       if (isCurrent || isHovered) {
-        const gradient = ctx.createRadialGradient(pos.x, pos.y, pointRadius, pos.x, pos.y, pointRadius + 12);
-        gradient.addColorStop(0, isCurrent ? 'rgba(34, 197, 94, 0.4)' : 'rgba(59, 130, 246, 0.3)');
+        const gradient = ctx.createRadialGradient(
+          pos.x,
+          pos.y,
+          pointRadius,
+          pos.x,
+          pos.y,
+          pointRadius + 12,
+        );
+        gradient.addColorStop(
+          0,
+          isCurrent ? 'rgba(34, 197, 94, 0.4)' : 'rgba(59, 130, 246, 0.3)',
+        );
         gradient.addColorStop(1, 'transparent');
-        
+
         ctx.beginPath();
         ctx.arc(pos.x, pos.y, pointRadius + 12, 0, 2 * Math.PI);
         ctx.fillStyle = gradient;
@@ -269,10 +312,10 @@ const MiniMapHotspots = ({
       // 🔹 Основная точка
       ctx.beginPath();
       ctx.arc(pos.x, pos.y, pointRadius, 0, 2 * Math.PI);
-      ctx.fillStyle = isCurrent 
-        ? '#22c55e'  // зелёная для текущей
-        : isConnected 
-          ? '#3b82f6'  // синяя для связанной
+      ctx.fillStyle = isCurrent
+        ? '#22c55e' // зелёная для текущей
+        : isConnected
+          ? '#3b82f6' // синяя для связанной
           : '#64748b'; // серая для изолированной
       ctx.fill();
 
@@ -287,16 +330,26 @@ const MiniMapHotspots = ({
         ctx.font = `${11 * (window.devicePixelRatio || 1)}px Inter, system-ui, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
-        
-        const fullName = panorama.original_filename || panorama.filename || `Панорама #${panorama.id?.slice(0, 8)}`;
-        const shortName = fullName.length > 18 ? fullName.substring(0, 15) + '…' : fullName;
-        
+
+        const fullName =
+          panorama.original_filename ||
+          panorama.filename ||
+          `Панорама #${panorama.id?.slice(0, 8)}`;
+        const shortName =
+          fullName.length > 18 ? fullName.substring(0, 15) + '…' : fullName;
+
         // Фон для текста
         const textWidth = ctx.measureText(shortName).width;
         ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-        ctx.roundRect?.(pos.x - textWidth/2 - 4, pos.y - pointRadius - 22, textWidth + 8, 18, 4);
+        ctx.roundRect?.(
+          pos.x - textWidth / 2 - 4,
+          pos.y - pointRadius - 22,
+          textWidth + 8,
+          18,
+          4,
+        );
         ctx.fill();
-        
+
         // Текст
         ctx.fillStyle = '#f1f5f9';
         ctx.fillText(shortName, pos.x, pos.y - pointRadius - 8);
@@ -307,14 +360,16 @@ const MiniMapHotspots = ({
     // 🔹 Пульсирующий эффект для текущей панорамы
     // ========================================================================
     if (currentPanoramaId) {
-      const currentPanorama = projectPanoramas.find(p => p.id === currentPanoramaId);
+      const currentPanorama = projectPanoramas.find(
+        (p) => p.id === currentPanoramaId,
+      );
       if (currentPanorama) {
         const yaw = currentPanorama.yaw ?? currentPanorama.position_yaw ?? 0;
         const pos = yawToCoords(yaw, radius, centerX, centerY);
 
         // Пульсация через sin
         const pulse = 8 + Math.sin(Date.now() / 300) * 4;
-        
+
         ctx.beginPath();
         ctx.arc(pos.x, pos.y, pulse, 0, 2 * Math.PI);
         ctx.strokeStyle = `rgba(34, 197, 94, ${0.6 - Math.sin(Date.now() / 300) * 0.3})`;
@@ -339,97 +394,117 @@ const MiniMapHotspots = ({
           ctx.moveTo(centerX + 10, centerY - 10);
           ctx.lineTo(centerX - 10, centerY + 10);
           ctx.stroke();
-          
+
           ctx.fillStyle = '#ef4444';
           ctx.font = `${9 * (window.devicePixelRatio || 1)}px monospace`;
           ctx.fillText('no yaw', centerX, centerY + 25);
         }
       });
     }
-
-  }, [dimensions, projectPanoramas, connections, currentPanoramaId, hoveredPanorama, yawToCoords, debug]);
+  }, [
+    dimensions,
+    projectPanoramas,
+    connections,
+    currentPanoramaId,
+    hoveredPanorama,
+    yawToCoords,
+    debug,
+  ]);
 
   // ============================================================================
   // 🔹 Обработка клика по карте
   // ============================================================================
-  const handleCanvasClick = useCallback((e) => {
-    if (!canvasRef.current || !onPanoramaSelect) return;
+  const handleCanvasClick = useCallback(
+    (e) => {
+      if (!canvasRef.current || !onPanoramaSelect) return;
 
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
+      const canvas = canvasRef.current;
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
 
-    const clickX = (e.clientX - rect.left) * dpr;
-    const clickY = (e.clientY - rect.top) * dpr;
+      const clickX = (e.clientX - rect.left) * dpr;
+      const clickY = (e.clientY - rect.top) * dpr;
 
-    const { width, height } = dimensions;
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const radius = Math.min(width, height) / 2 - 20;
-    const clickThreshold = 18 * dpr; // радиус захвата клика
+      const { width, height } = dimensions;
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const radius = Math.min(width, height) / 2 - 20;
+      const clickThreshold = 18 * dpr; // радиус захвата клика
 
-    let clickedPanorama = null;
+      let clickedPanorama = null;
 
-    projectPanoramas.forEach((panorama) => {
-      const yaw = panorama.yaw ?? panorama.position_yaw ?? 0;
-      const pos = yawToCoords(yaw, radius, centerX, centerY);
+      projectPanoramas.forEach((panorama) => {
+        const yaw = panorama.yaw ?? panorama.position_yaw ?? 0;
+        const pos = yawToCoords(yaw, radius, centerX, centerY);
 
-      const distance = Math.sqrt(
-        Math.pow(clickX - pos.x, 2) + Math.pow(clickY - pos.y, 2)
-      );
+        const distance = Math.sqrt(
+          Math.pow(clickX - pos.x, 2) + Math.pow(clickY - pos.y, 2),
+        );
 
-      if (distance < clickThreshold && panorama.id !== currentPanoramaId) {
-        clickedPanorama = panorama;
+        if (distance < clickThreshold && panorama.id !== currentPanoramaId) {
+          clickedPanorama = panorama;
+        }
+      });
+
+      if (clickedPanorama) {
+        if (debug) {
+          console.log('🖱️ Clicked panorama:', {
+            id: clickedPanorama.id,
+            filename: clickedPanorama.filename,
+          });
+        }
+        onPanoramaSelect(clickedPanorama);
       }
-    });
-
-    if (clickedPanorama) {
-      if (debug) {
-        console.log('🖱️ Clicked panorama:', {
-          id: clickedPanorama.id,
-          filename: clickedPanorama.filename,
-        });
-      }
-      onPanoramaSelect(clickedPanorama);
-    }
-  }, [dimensions, projectPanoramas, currentPanoramaId, onPanoramaSelect, yawToCoords, debug]);
+    },
+    [
+      dimensions,
+      projectPanoramas,
+      currentPanoramaId,
+      onPanoramaSelect,
+      yawToCoords,
+      debug,
+    ],
+  );
 
   // ============================================================================
   // 🔹 Обработка наведения мыши
   // ============================================================================
-  const handleCanvasMouseMove = useCallback((e) => {
-    if (!canvasRef.current) return;
+  const handleCanvasMouseMove = useCallback(
+    (e) => {
+      if (!canvasRef.current) return;
 
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
+      const canvas = canvasRef.current;
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
 
-    const mouseX = (e.clientX - rect.left) * dpr;
-    const mouseY = (e.clientY - rect.top) * dpr;
+      const mouseX = (e.clientX - rect.left) * dpr;
+      const mouseY = (e.clientY - rect.top) * dpr;
 
-    const { width, height } = dimensions;
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const radius = Math.min(width, height) / 2 - 20;
-    const hoverThreshold = 20 * dpr;
+      const { width, height } = dimensions;
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const radius = Math.min(width, height) / 2 - 20;
+      const hoverThreshold = 20 * dpr;
 
-    let foundPanorama = null;
+      let foundPanorama = null;
 
-    projectPanoramas.forEach((panorama) => {
-      const yaw = panorama.yaw ?? panorama.position_yaw ?? 0;
-      const pos = yawToCoords(yaw, radius, centerX, centerY);
+      projectPanoramas.forEach((panorama) => {
+        const yaw = panorama.yaw ?? panorama.position_yaw ?? 0;
+        const pos = yawToCoords(yaw, radius, centerX, centerY);
 
-      const distance = Math.sqrt(
-        Math.pow(mouseX - pos.x, 2) + Math.pow(mouseY - pos.y, 2)
-      );
+        const distance = Math.sqrt(
+          Math.pow(mouseX - pos.x, 2) + Math.pow(mouseY - pos.y, 2),
+        );
 
-      if (distance < hoverThreshold) {
-        foundPanorama = panorama.id;
-      }
-    });
+        if (distance < hoverThreshold) {
+          foundPanorama = panorama.id;
+        }
+      });
 
-    setHoveredPanorama(foundPanorama);
-  }, [dimensions, projectPanoramas, yawToCoords]);
+      setHoveredPanorama(foundPanorama);
+    },
+    [dimensions, projectPanoramas, yawToCoords],
+  );
 
   const handleCanvasMouseLeave = () => {
     setHoveredPanorama(null);
@@ -440,7 +515,8 @@ const MiniMapHotspots = ({
   // ============================================================================
   const totalPanoramas = projectPanoramas.length;
   const totalConnections = connections.length;
-  const connectedPanoramas = new Set(connections.flatMap(c => [c.from, c.to])).size;
+  const connectedPanoramas = new Set(connections.flatMap((c) => [c.from, c.to]))
+    .size;
 
   // ============================================================================
   // 🔹 Рендер компонента
@@ -479,13 +555,9 @@ const MiniMapHotspots = ({
           }}
           aria-label="Интерактивная карта переходов между панорамами"
         />
-        
+
         {/* 🔹 Индикатор отладки */}
-        {debug && (
-          <div className="mini-map-debug-badge">
-            DEBUG
-          </div>
-        )}
+        {debug && <div className="mini-map-debug-badge">DEBUG</div>}
       </div>
 
       {/* 🔹 Легенда */}
@@ -519,9 +591,10 @@ const MiniMapHotspots = ({
           projectPanoramas.map((panorama) => {
             const isCurrent = panorama.id === currentPanoramaId;
             const isConnected = connections.some(
-              c => (c.from === panorama.id || c.to === panorama.id)
+              (c) => c.from === panorama.id || c.to === panorama.id,
             );
-            const hasNoYaw = (panorama.yaw ?? panorama.position_yaw) === undefined;
+            const hasNoYaw =
+              (panorama.yaw ?? panorama.position_yaw) === undefined;
 
             return (
               <button
@@ -533,20 +606,30 @@ const MiniMapHotspots = ({
                   ${hasNoYaw ? 'no-coords' : ''}`}
                 disabled={isCurrent || !onPanoramaSelect}
                 title={
-                  hasNoYaw 
-                    ? '⚠️ Нет координат yaw — отображается в центре' 
-                    : panorama.original_filename || panorama.filename || `Панорама ${panorama.id}`
+                  hasNoYaw
+                    ? '⚠️ Нет координат yaw — отображается в центре'
+                    : panorama.original_filename ||
+                      panorama.filename ||
+                      `Панорама ${panorama.id}`
                 }
               >
-                <span className={`list-item-dot 
-                  ${isCurrent ? 'current' : isConnected ? 'connected' : 'isolated'}`} 
+                <span
+                  className={`list-item-dot 
+                  ${isCurrent ? 'current' : isConnected ? 'connected' : 'isolated'}`}
                 />
-                
+
                 <span className="list-item-name">
-                  {(panorama.original_filename || panorama.filename || `Панорама #${panorama.id?.slice(0, 8)}`).slice(0, 22)}
-                  {(panorama.original_filename || panorama.filename || '').length > 22 ? '…' : ''}
+                  {(
+                    panorama.original_filename ||
+                    panorama.filename ||
+                    `Панорама #${panorama.id?.slice(0, 8)}`
+                  ).slice(0, 22)}
+                  {(panorama.original_filename || panorama.filename || '')
+                    .length > 22
+                    ? '…'
+                    : ''}
                 </span>
-                
+
                 {isCurrent && <span className="list-item-badge active">✓</span>}
                 {hasNoYaw && <span className="list-item-badge warn">!</span>}
               </button>
@@ -560,12 +643,14 @@ const MiniMapHotspots = ({
         <details className="mini-map-debug-panel">
           <summary>🔧 Отладочная информация</summary>
           <div className="debug-content">
-            <p><strong>Связи найдены:</strong> {connections.length}</p>
+            <p>
+              <strong>Связи найдены:</strong> {connections.length}
+            </p>
             {connections.length > 0 && (
               <ul className="debug-connections">
                 {connections.map((conn, i) => (
                   <li key={i}>
-                    <code>{conn.from?.slice(0, 8)}</code> → 
+                    <code>{conn.from?.slice(0, 8)}</code> →
                     <code>{conn.to?.slice(0, 8)}</code>
                     <small> via {conn.targetFilename?.slice(0, 20)}</small>
                   </li>
@@ -574,8 +659,10 @@ const MiniMapHotspots = ({
             )}
             {connections.length === 0 && hotspots.length > 0 && (
               <p className="debug-warning">
-                ⚠️ Хотспоты есть, но связи не найдены.<br/>
-                Проверьте: <code>target_filename</code> в хотспотах совпадает с <code>filename</code> в панорамах?
+                ⚠️ Хотспоты есть, но связи не найдены.
+                <br />
+                Проверьте: <code>target_filename</code> в хотспотах совпадает с{' '}
+                <code>filename</code> в панорамах?
               </p>
             )}
           </div>

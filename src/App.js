@@ -42,7 +42,10 @@ const AppContent = () => {
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/project/:id" element={<ProjectView mode="private" />} />
-          <Route path="/project/public/:id" element={<ProjectView mode="public" />} />
+          <Route
+            path="/project/public/:id"
+            element={<ProjectView mode="public" />}
+          />
           <Route path="/editor/:id" element={<EditorPage />} />
         </Routes>
       </div>

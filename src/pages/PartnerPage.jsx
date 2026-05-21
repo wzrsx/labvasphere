@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import partnerService from '../services/partnerService';
 import styles from './PartnerPage.css';
-import { useTranslation } from 'react-i18next'; 
+import { useTranslation } from 'react-i18next';
 // SVG иконки (встроены, без внешних зависимостей)
 const Icons = {
   Wallet: () => (
@@ -74,7 +74,7 @@ const Icons = {
 };
 
 const PartnerPage = () => {
-  const { t } = useTranslation(); 
+  const { t } = useTranslation();
   const [stats, setStats] = useState(null);
   const [referralLink, setReferralLink] = useState('');
   const [loading, setLoading] = useState(true);
@@ -145,16 +145,15 @@ const PartnerPage = () => {
       const updatedStats = await partnerService.getStats();
       setStats(updatedStats);
     } catch (err) {
-      showNotification(err.message || t('partner.notifications.withdraw_error'), 'error');
+      showNotification(
+        err.message || t('partner.notifications.withdraw_error'),
+        'error',
+      );
     }
   };
 
   if (loading) {
-    return (
-      <div className={styles.loading}>
-         {t('partner.loading')}
-      </div>
-    );
+    return <div className={styles.loading}>{t('partner.loading')}</div>;
   }
 
   if (!stats) {
@@ -203,12 +202,16 @@ const PartnerPage = () => {
             <div className="stat-value">
               {stats?.balance_net?.toFixed(2) || '0.00'} ₽
             </div>
-            <div className="stat-subtitle">{t('partner.stats.balance_note')}</div>
+            <div className="stat-subtitle">
+              {t('partner.stats.balance_note')}
+            </div>
           </div>
 
           {[1, 2, 3].map((level) => (
             <div className="stat-card" key={level}>
-              <div className="stat-icon"><Icons.Users /></div>
+              <div className="stat-icon">
+                <Icons.Users />
+              </div>
               <div className="stat-title">
                 {t(`partner.stats.referrals_level_${level}_title`)}
               </div>
@@ -220,7 +223,7 @@ const PartnerPage = () => {
               </div>
             </div>
           ))}
-          </div>
+        </div>
         {/* Реферальная ссылка */}
         <section className="referral-section">
           <h3 className="section-title">
@@ -250,7 +253,9 @@ const PartnerPage = () => {
           </h3>
           <form onSubmit={handleWithdraw} className="withdraw-form">
             <div className="form-group">
-              <label className="form-label">{t('partner.withdraw.amount_label')}</label>
+              <label className="form-label">
+                {t('partner.withdraw.amount_label')}
+              </label>
               <input
                 type="number"
                 step="0.01"
@@ -261,15 +266,17 @@ const PartnerPage = () => {
                   setWithdrawForm({ ...withdrawForm, amount: e.target.value })
                 }
                 className="form-input"
-                placeholder={t('partner.withdraw.amount_placeholder', { 
-                  max: stats?.balance_net?.toFixed(2) || '0.00' 
+                placeholder={t('partner.withdraw.amount_placeholder', {
+                  max: stats?.balance_net?.toFixed(2) || '0.00',
                 })}
                 required
               />
             </div>
 
             <div className="form-group">
-              <label className="form-label">{t('partner.withdraw.method_label')}</label>
+              <label className="form-label">
+                {t('partner.withdraw.method_label')}
+              </label>
               <select
                 value={withdrawForm.method}
                 onChange={(e) =>
@@ -282,22 +289,35 @@ const PartnerPage = () => {
                 }
                 className="form-select"
               >
-                <option value="card">{t('partner.withdraw.methods.card')}</option>
-                <option value="crypto_usdt">{t('partner.withdraw.methods.usdt')}</option>
-                <option value="crypto_btc">{t('partner.withdraw.methods.btc')}</option>
-                <option value="crypto_eth">{t('partner.withdraw.methods.eth')}</option>
+                <option value="card">
+                  {t('partner.withdraw.methods.card')}
+                </option>
+                <option value="crypto_usdt">
+                  {t('partner.withdraw.methods.usdt')}
+                </option>
+                <option value="crypto_btc">
+                  {t('partner.withdraw.methods.btc')}
+                </option>
+                <option value="crypto_eth">
+                  {t('partner.withdraw.methods.eth')}
+                </option>
               </select>
             </div>
 
             {withdrawForm.method === 'card' ? (
               <div className="form-group">
-                <label className="form-label">{t('partner.withdraw.card_label')}</label>
+                <label className="form-label">
+                  {t('partner.withdraw.card_label')}
+                </label>
                 <input
                   type="text"
                   placeholder={t('partner.withdraw.card_placeholder')}
                   value={withdrawForm.cardNumber}
                   onChange={(e) =>
-                    setWithdrawForm({ ...withdrawForm, cardNumber: e.target.value })
+                    setWithdrawForm({
+                      ...withdrawForm,
+                      cardNumber: e.target.value,
+                    })
                   }
                   className="form-input"
                   pattern="[0-9\s]{13,19}"
@@ -306,15 +326,22 @@ const PartnerPage = () => {
               </div>
             ) : (
               <div className="form-group">
-                <label className="form-label">{t('partner.withdraw.wallet_label')}</label>
+                <label className="form-label">
+                  {t('partner.withdraw.wallet_label')}
+                </label>
                 <input
                   type="text"
                   placeholder={t('partner.withdraw.wallet_placeholder', {
-                    crypto: withdrawForm.method.replace('crypto_', '').toUpperCase()
+                    crypto: withdrawForm.method
+                      .replace('crypto_', '')
+                      .toUpperCase(),
                   })}
                   value={withdrawForm.walletAddress}
                   onChange={(e) =>
-                    setWithdrawForm({ ...withdrawForm, walletAddress: e.target.value })
+                    setWithdrawForm({
+                      ...withdrawForm,
+                      walletAddress: e.target.value,
+                    })
                   }
                   className="form-input"
                   required
