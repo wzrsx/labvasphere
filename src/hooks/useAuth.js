@@ -14,9 +14,8 @@ export const useAuth = () => {
   const isAuthenticated = !!token && !!user;
   const role = user?.role;
 
-  const hasRole = (roles) => Array.isArray(roles) 
-    ? roles.includes(role) 
-    : role === roles;
+  const hasRole = (roles) =>
+    Array.isArray(roles) ? roles.includes(role) : role === roles;
 
   const canAccessProjects = hasRole(['designer', 'admin']);
   const canAccessSettings = hasRole(['designer', 'admin']);
@@ -34,6 +33,6 @@ export const useAuth = () => {
     hasRole,
     canAccessProjects,
     canAccessSettings,
-    logout
+    logout,
   };
 };

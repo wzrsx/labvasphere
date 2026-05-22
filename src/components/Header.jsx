@@ -12,7 +12,13 @@ const Header = () => {
   const { isDark } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, role, canAccessProjects, canAccessSettings, logout } = useAuth();
+  const {
+    isAuthenticated,
+    role,
+    canAccessProjects,
+    canAccessSettings,
+    logout,
+  } = useAuth();
 
   // Получаем имя пользователя (второе слово из ФИО)
   const getUserName = () => {
@@ -48,7 +54,10 @@ const Header = () => {
             {t('nav.projects')}
           </Link>
         ) : (
-          <Link to="/main-client" className={isActive('/main-client') ? 'active' : ''}>
+          <Link
+            to="/main-client"
+            className={isActive('/main-client') ? 'active' : ''}
+          >
             {t('nav.projects_client')}
           </Link>
         )}
@@ -59,7 +68,10 @@ const Header = () => {
           {t('nav.guide')}
         </Link>
         {canAccessSettings && (
-          <Link to="/settings" className={isActive('/settings') ? 'active' : ''}>
+          <Link
+            to="/settings"
+            className={isActive('/settings') ? 'active' : ''}
+          >
             {t('nav.settings')}
           </Link>
         )}

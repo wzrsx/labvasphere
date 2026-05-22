@@ -8,6 +8,9 @@ import {
   updateDefaultColor,
   getDefaultSettings,
 } from '../services/userSettingsService.js';
+import { getProjects } from '../services/projectService';
+import { exportPortfolioToPdf } from '../services/pdfExportService';
+import { CONFIG } from '../config.js'
 
 const SettingsPage = () => {
   const { t } = useTranslation(); // 🔥 Инициализируем
@@ -161,15 +164,133 @@ const SettingsPage = () => {
     );
   };
 
-  // 🔹 Имитация загрузки (для демо)
   const handleDownload = async () => {
-    setIsDownloading(true);
-    setTimeout(() => {
-      setIsDownloading(false);
-      showNotification(t('settings.notifications.download_ready'), 'success');
-    }, 1500);
-  };
+  showNotification(`Функция в доработке`, 'false');
+  return;
+  console.log('🚀 [Download] === handleDownload START ===');
+  console.log('[Download] CONFIG at handleDownload:', {
+    MEDIA_BASE_URL: CONFIG?.MEDIA_BASE_URL,
+    isDefined: CONFIG !== undefined,
+    type: typeof CONFIG,
+  });
 
+  if (isDownloading) {
+    console.log('[Download] Already downloading, skipping');
+    return;
+  }
+  
+  setIsDownloading(true);
+
+  try {
+    console.log('[Download] Step 1: Fetching projects...');
+    const projectsResponse = await getProjects();
+    
+    console.log('[Download] Step 2: Response received:', {
+      success: projectsResponse?.success,
+      error: projectsResponse?.error,
+      projectsCount: projectsResponse?.projects?.length,
+    });
+    
+    if (!projectsResponse?.success) {
+      const errMsg = projectsResponse?.error || 'Не удалось загрузить проекты';
+      console.error('[Download] ❌ API error:', errMsg);
+      throw new Error(errMsg);
+    }
+
+    console.log('[Download] Step 3: All projects:', projectsResponse.projects.map(p => ({
+      id: p?.id?.slice(0, 8) + '...',
+      title: p?.title,
+      status: p?.status,
+      cover: p?.cover_image_url,
+    })));
+    
+    // 🔹 Проверка структуры первого проекта
+    if (projectsResponse.projects?.[0]) {
+      console.log('[Download] First project FULL structure:', JSON.stringify(projectsResponse.projects[0], null, 2));
+    }
+
+    // 🔹 Данные автора
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const authorName = currentUser?.name || currentUser?.email || 'Дизайнер';
+    const authorAvatar = currentUser?.avatar_url || null;
+
+    console.log('[Download] Author data:', {
+      name: authorName,
+      avatar: authorAvatar,
+      currentUserKeys: Object.keys(currentUser || {}),
+    });
+
+    // 🔹 Фильтрация проектов
+    console.log('[Download] Step 4: Filtering published projects...');
+    const publishedProjects = projectsResponse.projects.filter(p => {
+      const isPublished = p?.status === 'published';
+      console.log(`  • "${p?.title || 'No title'}" [${p?.status}] → ${isPublished ? '✅ INCLUDED' : '❌ EXCLUDED'}`);
+      return isPublished;
+    });
+
+    console.log('[Download] Published projects count:', publishedProjects.length);
+    console.log('[Download] Published projects details:', publishedProjects.map(p => ({
+      title: p.title,
+      cover_image_url: p.cover_image_url,
+      status: p.status,
+    })));
+
+    if (publishedProjects.length === 0) {
+      console.error('[Download] ❌ No published projects!');
+      throw new Error('Нет опубликованных проектов. Измените статус проектов на "published" или установите includeDrafts: true');
+    }
+
+    // 🔹 ФИНАЛЬНАЯ ПРОВЕРКА ПЕРЕД ЭКСПОРТОМ
+    console.log('[Download] Step 5: Pre-export checks...');
+    console.log('[Download] CONFIG.MEDIA_BASE_URL:', CONFIG?.MEDIA_BASE_URL);
+    
+    // Тест getMediaUrl вручную
+    const testCover = publishedProjects[0]?.cover_image_url;
+    const testUrl = testCover 
+      ? (testCover.startsWith('http') ? testCover : `${CONFIG?.MEDIA_BASE_URL || ''}/${testCover}`)
+      : null;
+    console.log('[Download] Test URL generation:', {
+      original: testCover,
+      generated: testUrl,
+      isAbsolute: testUrl?.startsWith('http'),
+    });
+
+    // 🔹 Проверка функции экспорта
+    console.log('[Download] exportPortfolioToPdf type:', typeof exportPortfolioToPdf);
+
+    // 🔹 Вызов экспорта
+    console.log('[Download] Step 6: Calling exportPortfolioToPdf...');
+    const result = await exportPortfolioToPdf(publishedProjects, {
+      title: `Портфолио ${authorName}`,
+      author: authorName,
+      authorAvatar: authorAvatar,
+      includeDrafts: false,
+      pageSize: 'a4',
+      orientation: 'portrait',
+    });
+
+    console.log('[Download] Export result:', result);
+
+    if (result?.success) {
+      console.log('[Download] ✅ SUCCESS');
+      showNotification(`✅ PDF создан: ${result.fileName}`, 'success');
+    } else {
+      console.error('[Download] ❌ Export returned error:', result?.error);
+      throw new Error(result?.error || 'Ошибка генерации PDF');
+    }
+
+  } catch (err) {
+    console.error('❌ [Download] CATCH ERROR:', {
+      message: err?.message,
+      stack: err?.stack,
+      name: err?.name,
+    });
+    showNotification(err?.message || 'Не удалось создать PDF', 'error');
+  } finally {
+    console.log('[Download] === handleDownload END (finally) ===');
+    setIsDownloading(false);
+  }
+};
   const handleClearCache = async () => {
     setIsClearing(true);
     setTimeout(() => {
@@ -314,11 +435,14 @@ const SettingsPage = () => {
                 type="button"
               >
                 {isDownloading
-                  ? t('settings.data.download.loading')
-                  : t('settings.data.download.button')}
+                  ? t('settings.export.button_loading')
+                  : t('settings.export.button')}
               </button>
               <span className="action-desc">
-                {t('settings.data.download.desc')}
+                {t('settings.export.description', {
+                  defaultValue:
+                    'Соберёт все проекты в один архив для офлайн-презентации',
+                })}
               </span>
             </div>
 
