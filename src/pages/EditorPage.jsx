@@ -288,7 +288,7 @@ const EditorPage = () => {
       const response = await deleteProject(id);
       if (response.success) {
         alert('Проект успешно удален');
-        navigate('/projects');
+        navigate('/main');
       } else {
         throw new Error(response.error);
       }
@@ -299,7 +299,7 @@ const EditorPage = () => {
   };
 
   const handlePreview = () => {
-    window.open(`/preview/${id}`, '_blank');
+    window.open(`/project/${id}`);
   };
 
   const handleToolClick = (tool) => {

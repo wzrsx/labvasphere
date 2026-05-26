@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getPublishedProjects } from '../services/projectService';
 import './MainPage.css';
 import { useTranslation } from 'react-i18next';
+import ShareModal from '../components/ShareModal';
 import { CONFIG } from '../config';
 
 const MainPageClient = () => {
@@ -100,7 +101,6 @@ const MainPageClient = () => {
               <div
                 key={project.id}
                 className="project-card project-card-client"
-                onClick={() => navigate(`/project/${project.id}`)}
                 style={{ cursor: 'pointer' }}
               >
                 <div className="project-thumbnail">
@@ -201,6 +201,12 @@ const MainPageClient = () => {
           </div>
         )}
       </main>
+      <ShareModal
+        isOpen={shareModal.isOpen}
+        onClose={handleCloseShareModal}
+        projectId={shareModal.projectId}
+        projectTitle={shareModal.projectTitle}
+      />
     </div>
   );
 };

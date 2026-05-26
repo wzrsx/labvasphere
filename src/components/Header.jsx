@@ -17,6 +17,8 @@ const Header = () => {
     role,
     canAccessProjects,
     canAccessSettings,
+    canAccessRef,
+    canAccessGuide,
     logout,
   } = useAuth();
 
@@ -61,12 +63,16 @@ const Header = () => {
             {t('nav.projects_client')}
           </Link>
         )}
-        <Link to="/partner" className={isActive('/partner') ? 'active' : ''}>
+        {canAccessRef && (
+          <Link to="/partner" className={isActive('/partner') ? 'active' : ''}>
           {t('nav.partner')}
         </Link>
-        <Link to="/guide" className={isActive('/guide') ? 'active' : ''}>
-          {t('nav.guide')}
-        </Link>
+        )}
+        {canAccessGuide &&(
+          <Link to="/guide" className={isActive('/guide') ? 'active' : ''}>
+            {t('nav.guide')}
+          </Link>
+        )}
         {canAccessSettings && (
           <Link
             to="/settings"
