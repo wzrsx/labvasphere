@@ -159,7 +159,6 @@
 /* Сообщение об ошибке */
 .error-message {
   background: rgba(153, 42, 42, 0.3);
-  color: #ffcc80;
   padding: 12px 20px;
   border-radius: 12px;
   margin: 20px auto;
@@ -171,7 +170,10 @@
   font-weight: 500;
   animation: shake 0.5s;
 }
-
+.error-message-form{
+  background: rgba(153, 42, 42, 0.3);
+  color: #ffcc80 !important;
+}
 @keyframes shake {
   0%,
   100% {

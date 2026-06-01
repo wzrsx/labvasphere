@@ -97,6 +97,8 @@ const RegisterForm = ({ onSwitchToLogin }) => {
             : getRedirectPath(result.user.role);
 
         navigate(finalRedirect);
+      } else {
+        setError(result.error || 'Ошибка при регистрации. Попробуйте снова.');
       }
     } catch (err) {
       setIsLoading(false);
@@ -110,13 +112,13 @@ const RegisterForm = ({ onSwitchToLogin }) => {
       <h1>Регистрация</h1>
       <p className="subtitle">Создайте аккаунт для начала работы</p>
 
-      {error && <div className="error-message">{error}</div>}
+      {error && <div className="error-message-form error-message">{error}</div>}
 
       {/* 🔹 Индикация, куда вернётся пользователь */}
       {redirectPath && redirectPath !== '/project' && (
         <p
           className="redirect-hint"
-          style={{ fontSize: '0.85rem', color: '#666', marginBottom: '1rem' }}
+          style={{ fontSize: '0.85rem', color: '#999999', marginBottom: '1rem' }}
         >
           После регистрации вы вернётесь на: <strong>{redirectPath}</strong>
         </p>

@@ -146,7 +146,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.userRepo.VerifyPassword(req.Email, req.Password)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "Неверный email или пароль")
+		writeError(w, http.StatusBadRequest, "Неверный email или пароль")
 		return
 	}
 

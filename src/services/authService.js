@@ -51,7 +51,7 @@ export const login = async (email, password) => {
     };
   } catch (error) {
     const message =
-      error.response?.data?.error || 'Ошибка при входе. Проверьте данные.';
+      error.response?.data?.error || 'Сервер недоступен. Проверьте подключение к интернету или попробуйте позже.';
     return {
       success: false,
       error: message,
@@ -60,31 +60,22 @@ export const login = async (email, password) => {
 };
 
 // Регистрация
-export const register = async (
-  fullName,
-  email,
-  password,
-  role = 'user',
-  refCode,
-) => {
+export const register = async (fullName, email, password, role = 'user', refCode) => {
   try {
-    // Формируем базовый payload
     const payload = {
       full_name: fullName,
       email,
       password,
       role,
     };
-
-    // 👇 Добавляем ref_code только если он передан
-    if (refCode) {
-      payload.ref_code = refCode;
-    }
+    if (refCode) payload.ref_code = refCode;
 
     const response = await api.post('/auth/register', payload);
-
-    if (response.data.token) {
-      setAuthToken(response.data.token);
+console.log('🔍 DEBUG response:', response);
+console.log('🔍 DEBUG response type:', typeof response);
+console.log('🔍 DEBUG response.data:', response?.data);
+    if (response.data?.token) {
+      localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
     }
 
@@ -95,15 +86,15 @@ export const register = async (
     };
   } catch (error) {
     console.error('Registration error:', error);
-
-    const message =
-      error.response?.data?.error ||
+    
+    // Теперь error.response гарантированно существует для ошибок сервера
+    const message = 
+      error.response?.data?.error || 
+      error.response?.data?.message ||
+      error.message || 
       'Ошибка при регистрации. Попробуйте снова.';
 
-    return {
-      success: false,
-      error: message,
-    };
+    return { success: false, error: message };
   }
 };
 //Восстановление пароля
