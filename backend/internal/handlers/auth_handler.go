@@ -50,7 +50,7 @@ type RegisterRequest struct {
 	FullName string `json:"full_name"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
-	Role     string `json:"role"` // "user" или "designer"
+	Role     string `json:"role"`
 	RefCode  string `json:"ref_code,omitempty"`
 }
 
@@ -98,7 +98,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		Role:     req.Role,
 	}
 
-	// 👇 Используем транзакцию: пользователь + рефералы
+	// Используем транзакцию: пользователь + рефералы
 	err := h.userRepo.CreateUserWithReferral(r.Context(), user, refUUID)
 	if err != nil {
 		// Различаем ошибки: пользователь уже есть / реферал не найден
@@ -210,7 +210,6 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
-	// ✅ Правильное получение claims из контекста
 	claims := middleware.GetUserFromContext(r.Context())
 	if claims == nil {
 		writeError(w, http.StatusUnauthorized, "Требуется авторизация")

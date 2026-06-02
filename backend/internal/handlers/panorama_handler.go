@@ -117,11 +117,7 @@ func (h *PanoramaHandler) GetByProject(w http.ResponseWriter, r *http.Request) {
 
 	panoramas, err := h.repo.GetByProject(r.Context(), projectID)
 	if err != nil {
-		// 🔹 ВАЖНО: Пишем полную ошибку в консоль сервера
-		// Смотрите в терминал, где запущен go run ...
 		fmt.Printf("❌ DB ERROR GetByProject: %v\n", err)
-
-		// И возвращаем детальную ошибку клиенту (для отладки)
 		writeError(w, http.StatusInternalServerError, "Ошибка БД: "+err.Error())
 		return
 	}

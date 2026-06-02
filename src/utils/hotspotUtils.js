@@ -40,13 +40,7 @@ export const convertHotspotToEditor = (h, projectId) => {
   };
 };
 
-/**
- * Конвертирует хотспот из формата редактора в формат для SphereViewer
- * @param {Object} hotspot - Хотспот из редактора
- * @returns {Object} - Маркер для photo-sphere-viewer
- */
 export const convertHotspotToMarker = (hotspot) => {
-  // 🔹 Определяем URL изображения маркера
   const isCustomImage = hotspot.media_url && hotspot.media_url.trim() !== '';
   const iconUrl = isCustomImage
     ? `${CONFIG.MEDIA_BASE_URL}/${hotspot.media_url}`
@@ -71,21 +65,15 @@ export const convertHotspotToMarker = (hotspot) => {
   };
 };
 
-/**
- * Загружает и конвертирует хотспоты для указанной панорамы
- * @param {string} panoramaId - ID панорамы
- * @param {string} projectId - ID проекта
- * @returns {Promise<Object>} - { success: boolean, hotspots: Array, error?: string }
- */
 export const loadHotspotsForPanorama = async (panoramaId, projectId) => {
-  // 🔹 1. Лог входа в функцию
+  // 1. Лог входа в функцию
   console.log('[hotspotUtils] 🚀 loadHotspotsForPanorama called:', {
     panoramaId,
     projectId,
     timestamp: new Date().toISOString(),
   });
 
-  // 🔹 2. Валидация параметров
+  // 2. Валидация параметров
   if (!panoramaId || !projectId) {
     console.warn('[hotspotUtils] ⚠️ Validation failed:', {
       panoramaId: panoramaId || 'MISSING',
@@ -99,7 +87,7 @@ export const loadHotspotsForPanorama = async (panoramaId, projectId) => {
   }
 
   try {
-    // 🔹 3. Перед вызовом API
+    // 3. Перед вызовом API
     console.log(
       '[hotspotUtils] 📡 Calling getHotspots API for panorama:',
       panoramaId,
@@ -107,8 +95,8 @@ export const loadHotspotsForPanorama = async (panoramaId, projectId) => {
 
     const response = await getHotspots(panoramaId);
 
-    // 🔹 4. Лог ответа от API
-    console.log('[hotspotUtils] 🔹 API response:', {
+    //  4. Лог ответа от API
+    console.log('[hotspotUtils]  API response:', {
       success: response?.success,
       error: response?.error,
       hotspotsCount: response?.hotspots?.length || 0,
@@ -120,7 +108,7 @@ export const loadHotspotsForPanorama = async (panoramaId, projectId) => {
       })),
     });
 
-    // 🔹 5. Проверка успеха
+    //  5. Проверка успеха
     if (!response?.success) {
       console.warn('[hotspotUtils] ⚠️ API returned error:', response?.error);
       return {
@@ -130,7 +118,7 @@ export const loadHotspotsForPanorama = async (panoramaId, projectId) => {
       };
     }
 
-    // 🔹 6. Конвертация хотспотов
+    //  6. Конвертация хотспотов
     console.log('[hotspotUtils] 🎨 Converting hotspots to editor format...');
 
     const editorHotspots = (response.hotspots || []).map((h, index) => {
@@ -151,7 +139,7 @@ export const loadHotspotsForPanorama = async (panoramaId, projectId) => {
       return converted;
     });
 
-    // 🔹 7. Итоговый лог
+    //  7. Итоговый лог
     console.log(
       '[hotspotUtils] ✅ Successfully loaded and converted hotspots:',
       {
@@ -165,7 +153,7 @@ export const loadHotspotsForPanorama = async (panoramaId, projectId) => {
 
     return { success: true, hotspots: editorHotspots };
   } catch (err) {
-    // 🔹 8. Обработка ошибок
+    //  8. Обработка ошибок
     console.error('[hotspotUtils] ❌ Error in loadHotspotsForPanorama:', {
       message: err?.message,
       stack: err?.stack,
@@ -225,7 +213,7 @@ export const prepareHotspotForApi = (hotspot, panoramaId) => {
   };
 };
 
-// 🔹 Генерация SVG-иконки с цветом как Data URL
+// Генерация SVG-иконки с цветом как Data URL
 export const getColoredIconUrl = (iconName, color) => {
   // Пути к иконкам (если не нужно перекрашивать)
   const ALLOWED_ICONS = ['pin', 'dot', 'star', 'camera'];

@@ -19,11 +19,9 @@ const RegisterForm = ({ onSwitchToLogin }) => {
 
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
-  // 🔹 Состояние для редиректа
   const [redirectPath, setRedirectPath] = useState(null);
 
-  // 👇 Читаем реферал из localStorage
+  // Читаем реферал из localStorage
   useEffect(() => {
     const savedRef = localStorage.getItem('pending_ref');
     if (savedRef) {
@@ -43,7 +41,6 @@ const RegisterForm = ({ onSwitchToLogin }) => {
     }
   }, []);
 
-  // 🔹 Читаем ?redirect= из URL
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const redirect = urlParams.get('redirect');
@@ -90,7 +87,6 @@ const RegisterForm = ({ onSwitchToLogin }) => {
         localStorage.removeItem('pending_ref');
         localStorage.removeItem('referral_click_time');
 
-        // 🔹 Явная проверка на null
         const finalRedirect =
           redirectPath !== null
             ? redirectPath
@@ -114,7 +110,6 @@ const RegisterForm = ({ onSwitchToLogin }) => {
 
       {error && <div className="error-message-form error-message">{error}</div>}
 
-      {/* 🔹 Индикация, куда вернётся пользователь */}
       {redirectPath && redirectPath !== '/project' && (
         <p
           className="redirect-hint"
@@ -142,7 +137,6 @@ const RegisterForm = ({ onSwitchToLogin }) => {
         </div>
       )}
 
-      {/* ... остальные поля формы (без изменений) ... */}
       <input
         name="fullName"
         type="text"

@@ -12,15 +12,12 @@ const LoginForm = ({ onSwitchToRegister, onSwitchToResetPass }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // 🔹 ИСПРАВЛЕНИЕ: начальное значение null (не '/projects'!)
   const [redirectPath, setRedirectPath] = useState(null);
 
-  // 🔹 Читаем ?redirect= из URL
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const redirect = urlParams.get('redirect');
 
-    // 🔹 Валидация: только безопасные внутренние пути
     if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
       setRedirectPath(redirect);
     }
@@ -51,7 +48,6 @@ const LoginForm = ({ onSwitchToRegister, onSwitchToResetPass }) => {
         localStorage.setItem('token', result.token);
         localStorage.setItem('user', JSON.stringify(result.user));
 
-        // 🔹 ИСПРАВЛЕНИЕ: явная проверка на null
         const finalRedirect =
           redirectPath !== null
             ? redirectPath
@@ -85,7 +81,6 @@ const LoginForm = ({ onSwitchToRegister, onSwitchToResetPass }) => {
         </p>
       )}
 
-      {/* ... остальные поля формы без изменений ... */}
       <input
         name="email"
         type="email"
@@ -126,7 +121,6 @@ const LoginForm = ({ onSwitchToRegister, onSwitchToResetPass }) => {
           Восстановить
         </button>
       </div>
-      {/* ... кнопки ... */}
       <button type="submit" className="login-button" disabled={isLoading}>
         {isLoading ? 'Вход...' : 'Войти'}
       </button>

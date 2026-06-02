@@ -52,7 +52,7 @@ type HotspotUpdateRequest struct {
 	Title            *string    `json:"title,omitempty"`
 	Tooltip          *string    `json:"tooltip,omitempty"`
 	ContentText      *string    `json:"content_text,omitempty"`
-	MediaURL         *string    `json:"media_url,omitempty"` // ← Можно обновлять
+	MediaURL         *string    `json:"media_url,omitempty"` 
 	ExternalURL      *string    `json:"external_url,omitempty"`
 	Icon             *string    `json:"icon,omitempty"`
 	Color            *string    `json:"color,omitempty"`

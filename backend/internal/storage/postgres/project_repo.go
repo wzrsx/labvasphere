@@ -28,7 +28,6 @@ func NewProjectRepository(db *pgxpool.Pool) *ProjectRepository {
 
 // ListPublished получает опубликованные проекты с основными панорамами
 func (r *ProjectRepository) ListPublished(ctx context.Context, limit, offset int) ([]*models.ProjectWithMainPanorama, error) {
-	// 🔹 Запрос возвращает 22 поля (с author_name и author_role)
 	const query = `
 		SELECT 
 			p.id, p.title, p.description, p.cover_image_url, p.author_id,
@@ -55,20 +54,16 @@ func (r *ProjectRepository) ListPublished(ctx context.Context, limit, offset int
 	for rows.Next() {
 		var proj models.Project
 
-		// Nullable поля панорамы (10 штук)
 		var panID *string
 		var panFilename, panOriginalFilename, panTitle, panDescription *string
 		var panIsMain, panIsActive *bool
 		var panSortOrder *int
 		var panCreatedAt, panUpdatedAt *time.Time
 
-		// 🔹 Scan: ровно 22 поля (12 проект + 10 панорама)
 		err := rows.Scan(
-			// Project (12 полей)
 			&proj.ID, &proj.Title, &proj.Description, &proj.CoverImageURL, &proj.AuthorID,
-			&proj.AuthorName, &proj.AuthorRole, // ← эти два поля ДОЛЖНЫ быть *string в модели
+			&proj.AuthorName, &proj.AuthorRole,
 			&proj.Status, &proj.ViewsCount, &proj.CreatedAt, &proj.PublishedAt, &proj.UpdatedAt,
-			// Panorama (10 полей)
 			&panID, &panFilename, &panOriginalFilename, &panTitle, &panDescription,
 			&panIsMain, &panIsActive, &panSortOrder, &panCreatedAt, &panUpdatedAt,
 		)
@@ -202,12 +197,6 @@ func (r *ProjectRepository) Delete(ctx context.Context, id string) error {
 		}
 	}
 
-	// Опционально: удалить всю папку проекта
-	// projectDir := filepath.Join(r.uploadDir, "projects", id)
-	// if err := os.RemoveAll(projectDir); err != nil {
-	// 	log.Printf("⚠️ Не удалось удалить папку проекта %s: %v", projectDir, err)
-	// }
-
 	return nil
 }
 
@@ -236,7 +225,6 @@ func (r *ProjectRepository) GetByAuthor(ctx context.Context, authorID string) ([
 	for rows.Next() {
 		var proj models.Project
 
-		// Указатели для nullable полей панорамы
 		var panID *string
 		var panFilename, panOriginalFilename, panTitle, panDescription *string
 		var panIsMain, panIsActive *bool
@@ -244,10 +232,8 @@ func (r *ProjectRepository) GetByAuthor(ctx context.Context, authorID string) ([
 		var panCreatedAt, panUpdatedAt *time.Time
 
 		err := rows.Scan(
-			// Project
 			&proj.ID, &proj.Title, &proj.Description, &proj.CoverImageURL, &proj.AuthorID,
 			&proj.Status, &proj.ViewsCount, &proj.CreatedAt, &proj.PublishedAt, &proj.UpdatedAt,
-			// Panorama (nullable)
 			&panID, &panFilename, &panOriginalFilename, &panTitle,
 			&panDescription, &panIsMain, &panIsActive, &panSortOrder, &panCreatedAt, &panUpdatedAt,
 		)
@@ -320,7 +306,6 @@ func (r *ProjectRepository) GetMainPanoramaByProject(ctx context.Context, projec
 
 // GetByID получает только данные проекта (без информации об авторе)
 func (r *ProjectRepository) GetByID(ctx context.Context, id string) (*models.ProjectWithMainPanorama, error) {
-	// 🔹 Запрос возвращает ровно 20 полей (без author_name/author_role)
 	const query = `
 		SELECT 
 			p.id, p.title, p.description, p.cover_image_url, p.author_id,
@@ -343,12 +328,9 @@ func (r *ProjectRepository) GetByID(ctx context.Context, id string) (*models.Pro
 	var panSortOrder *int
 	var panCreatedAt, panUpdatedAt *time.Time
 
-	// 🔹 Scan: ровно 20 полей (10 проект + 10 панорама)
 	err := row.Scan(
-		// Project (10 полей)
 		&proj.ID, &proj.Title, &proj.Description, &proj.CoverImageURL, &proj.AuthorID,
 		&proj.Status, &proj.ViewsCount, &proj.CreatedAt, &proj.PublishedAt, &proj.UpdatedAt,
-		// Panorama (10 полей)
 		&panID, &panFilename, &panOriginalFilename, &panTitle, &panDescription,
 		&panIsMain, &panIsActive, &panSortOrder, &panCreatedAt, &panUpdatedAt,
 	)
@@ -484,7 +466,7 @@ func (r *ProjectRepository) IncrementViews(ctx context.Context, id string) (int,
 	return newCount, nil
 }
 
-// 🔹 Вспомогательные функции для безопасного получения значений
+// Вспомогательные функции для безопасного получения значений
 func ptrStr(s *string) string {
 	if s != nil {
 		return *s

@@ -100,8 +100,6 @@ func (r *UserRepository) CreateUserWithReferral(ctx context.Context, user *model
 		if err != nil {
 			return fmt.Errorf("create referral level 1: %w", err)
 		}
-
-		// 🔁 Рекурсивно добавляем уровни 2 и 3
 		if err := r.createUplineReferrals(ctx, tx, newUserID, 2); err != nil {
 			return fmt.Errorf("create upline referrals: %w", err)
 		}
@@ -156,7 +154,7 @@ func (r *UserRepository) createUplineReferrals(ctx context.Context, tx pgx.Tx, c
 func (r *UserRepository) CreateUser(user *models.User) error {
 	// Валидация ФИО
 	if err := validators.ValidateFullName(user.FullName); err != nil {
-		return err // ← Ошибка возвращается на фронтенд
+		return err 
 	}
 	// Валидация пароля
 	if err := validators.ValidatePassword(user.Password); err != nil {

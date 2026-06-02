@@ -1,13 +1,13 @@
 // src/components/ShareModal.jsx
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { QRCodeSVG } from 'qrcode.react'; // 👈 Импорт QR-кода
+import { QRCodeSVG } from 'qrcode.react'; // Импорт QR-кода
 import './ShareModal.css';
 
 const ShareModal = ({ isOpen, onClose, projectId, projectTitle }) => {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
-  const [showQR, setShowQR] = useState(false); // 👈 Состояние для показа QR
+  const [showQR, setShowQR] = useState(false); // Состояние для показа QR
 
   // Формируем публичную ссылку (без токена!)
   const shareUrl = `${window.location.origin}/project/public/${projectId}`;
@@ -30,7 +30,7 @@ const ShareModal = ({ isOpen, onClose, projectId, projectTitle }) => {
     }
   };
 
-  // 👈 Сброс состояния при закрытии модального окна
+  // Сброс состояния при закрытии модального окна
   const handleClose = () => {
     setShowQR(false);
     setCopied(false);
@@ -56,7 +56,6 @@ const ShareModal = ({ isOpen, onClose, projectId, projectTitle }) => {
         <h3 className="share-modal-h3">{t('share.modal.title')}</h3>
         <p className="share-description">{t('share.modal.description')}</p>
 
-        {/* 👈 Переключатель: Ссылка / QR-код */}
         <div className="share-toggle">
           <button
             className={`toggle-btn ${!showQR ? 'active' : ''}`}
@@ -74,7 +73,6 @@ const ShareModal = ({ isOpen, onClose, projectId, projectTitle }) => {
           </button>
         </div>
 
-        {/* 👈 Контент: Ссылка */}
         {!showQR && (
           <div className="share-link-wrapper">
             <input
@@ -97,7 +95,6 @@ const ShareModal = ({ isOpen, onClose, projectId, projectTitle }) => {
           </div>
         )}
 
-        {/* 👈 Контент: QR-код */}
         {showQR && (
           <div className="qr-wrapper">
             <div className="qr-code-container">
@@ -139,13 +136,9 @@ const ShareModal = ({ isOpen, onClose, projectId, projectTitle }) => {
             </button>
           </div>
         )}
-
-        {/* Разделитель */}
         <div className="share-divider">
           <span>{t('share.modal.or_share')}</span>
         </div>
-
-        {/* Кнопки для мессенджеров — круглые с иконками */}
         <div className="share-social">
           <a
             href={`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(projectTitle)}`}

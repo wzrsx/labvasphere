@@ -27,7 +27,7 @@ func (h *HotspotUploadHandler) UploadFile(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// 🔹 Получаем project_id из формы
+	// Получаем project_id из формы
 	projectIDStr := r.FormValue("project_id")
 	if projectIDStr == "" {
 		writeError(w, http.StatusBadRequest, "project_id обязателен")
@@ -79,7 +79,7 @@ func (h *HotspotUploadHandler) UploadFile(w http.ResponseWriter, r *http.Request
 	extension := filepath.Ext(header.Filename)
 	newFilename := fmt.Sprintf("%s_%d%s", uuid.New().String(), time.Now().Unix(), extension)
 
-	// 🔹 Сохраняем в папку projects/{project_id}/hotspots
+	// Сохраняем в папку projects/{project_id}/hotspots
 	fullDir := filepath.Join(h.baseDir, "projects", projectID.String(), "hotspots")
 	if err := os.MkdirAll(fullDir, 0755); err != nil {
 		writeError(w, http.StatusInternalServerError, "Ошибка создания директории")
@@ -99,7 +99,7 @@ func (h *HotspotUploadHandler) UploadFile(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// 🔹 Возвращаем относительный путь для привязки к проекту
+	// Возвращаем относительный путь для привязки к проекту
 	fileUrl := filepath.Join("projects", projectID.String(), "hotspots", newFilename)
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{

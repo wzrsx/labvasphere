@@ -23,7 +23,7 @@ import (
 )
 
 func main() {
-	// Загружаем .env (только в dev!)
+	// Загружаем .env
 	if os.Getenv("ENV") != "production" {
 		if err := godotenv.Load(); err != nil {
 			log.Println("No .env file found")
@@ -112,7 +112,7 @@ func main() {
 		r.Get("/panoramas/project/{id}", panoramaHandler.ListByProjectPublic)
 		r.Get("/hotspots/panorama/{id}", hotspotHandler.ListByPanoramaPublic)
 		r.Route("/projects", func(r chi.Router) {
-			// ✅ Опциональная авторизация: токен есть → пользователь, нет → аноним
+			//Опциональная авторизация: токен есть → пользователь, нет → аноним
 			r.Get("/{id}/like/status", middleware.OptionalAuth(projectHandler.GetLikeStatus))
 			// === ПУБЛИЧНЫЕ МАРШРУТЫ (без авторизации) ===
 			r.Get("/published", projectHandler.ListPublished)
@@ -121,14 +121,14 @@ func main() {
 
 			// === ПРИВАТНЫЕ МАРШРУТЫ (требуют авторизации) ===
 			r.Group(func(r chi.Router) {
-				r.Use(middleware.AuthMiddleware) // ← 🔐 Только для этой группы
+				r.Use(middleware.AuthMiddleware)
 
 				r.Get("/", projectHandler.List)
 				r.Post("/", projectHandler.CreateProject)
 				r.Get("/{id}", projectHandler.GetByID)
 				r.Put("/{id}", projectHandler.UpdateProject)
 				r.Delete("/{id}", projectHandler.DeleteProject)
-				r.Put("/{id}/like", projectHandler.LikeProject) // ← PUT, с auth
+				r.Put("/{id}/like", projectHandler.LikeProject)
 			})
 		})
 		// Роуты профиля (требуют аутентификации)

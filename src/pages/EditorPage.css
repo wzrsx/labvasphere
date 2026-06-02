@@ -393,7 +393,7 @@
   height: 20px;
 }
 /* ----------------------------------------------------------------------------
-   📸 МЕДИА-ГАЛЕРЕЯ (обновлено)
+   МЕДИА-ГАЛЕРЕЯ 
 ---------------------------------------------------------------------------- */
 .media-panel {
   margin-top: var(--space-lg);
@@ -607,7 +607,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   👁️ РЕЖИМ ПЕРЕХОДОВ / HOTSPOT EDITOR (обновлено)
+   👁️ РЕЖИМ ПЕРЕХОДОВ 
 ---------------------------------------------------------------------------- */
 .hotspot-editor-panel {
   margin-top: var(--space-lg);
@@ -1152,19 +1152,6 @@
   display: block;
   margin-top: var(--space-sm);
 }
-/* ===== Form Elements ===== */
-/*.form-group {
-  margin-bottom: var(--space-md);
-}
-
-.form-label {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  display: block;
-  margin-bottom: var(--space-xs);
-  font-weight: 500;
-}*/
-
 .form-input,
 .form-textarea,
 .form-select {

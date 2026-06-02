@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import partnerService from '../services/partnerService';
 import styles from './PartnerPage.css';
 import { useTranslation } from 'react-i18next';
-// SVG иконки (встроены, без внешних зависимостей)
 const Icons = {
   Wallet: () => (
     <svg

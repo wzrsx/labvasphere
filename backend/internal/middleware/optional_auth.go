@@ -28,8 +28,6 @@ func OptionalAuth(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-
-		// 🔹 ИСПРАВЛЕНИЕ 1: указатель на Claims (чтобы jwt.ParseWithClaims мог записать данные)
 		claims := &security.Claims{}
 
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
@@ -41,10 +39,6 @@ func OptionalAuth(next http.HandlerFunc) http.HandlerFunc {
 			next(w, r)
 			return
 		}
-
-		// 🔹 ИСПРАВЛЕНИЕ 2: кладём ВЕСЬ объект *claims по ключу userContextKey
-		// userContextKey уже объявлен в этом пакете — используем его напрямую!
-		// НЕ claims.UserID, НЕ "user_id" — а именно *claims
 		ctx := context.WithValue(r.Context(), userContextKey, claims)
 
 		next(w, r.WithContext(ctx))

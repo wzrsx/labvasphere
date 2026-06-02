@@ -9,7 +9,7 @@ const AccessDenied = () => {
   const role = getUserRole();
   const [countdown, setCountdown] = useState(5);
 
-  // 🔹 Обратный отсчёт для авто-редиректа
+  // Обратный отсчёт для авто-редиректа
   useEffect(() => {
     const timer = setInterval(() => {
       setCountdown((prev) => {
@@ -30,17 +30,14 @@ const AccessDenied = () => {
   };
 
   const handleContactSupport = () => {
-    // Можно добавить логику открытия модалки или перехода
     navigate('/contact');
   };
 
   return (
     <div className="access-denied">
-      {/* Декоративный фон с градиентом из дизайн-системы */}
       <div className="access-denied__bg" />
 
       <div className="access-denied__content">
-        {/* Иконка блокировки */}
         <div className="access-denied__icon">
           <svg
             viewBox="0 0 100 100"
@@ -79,13 +76,11 @@ const AccessDenied = () => {
           </svg>
         </div>
 
-        {/* Заголовки */}
         <h1 className="access-denied__title">Доступ ограничен</h1>
         <p className="access-denied__subtitle">
           У вас недостаточно прав для просмотра этой страницы
         </p>
 
-        {/* Техническая информация (только в dev) */}
         {process.env.NODE_ENV === 'development' && (
           <details className="access-denied__debug">
             <summary>Техническая информация</summary>
@@ -102,7 +97,6 @@ const AccessDenied = () => {
           </details>
         )}
 
-        {/* Кнопки действий */}
         <div className="access-denied__actions">
           <button
             onClick={handleGoBack}
@@ -119,7 +113,6 @@ const AccessDenied = () => {
           </button>
         </div>
 
-        {/* Подсказка для апгрейда роли */}
         {role === 'user' && (
           <div className="access-denied__hint">
             <p>
@@ -134,7 +127,6 @@ const AccessDenied = () => {
         )}
       </div>
 
-      {/* Футер с таймером */}
       <div className="access-denied__footer">
         <p>
           Перенаправление через{' '}

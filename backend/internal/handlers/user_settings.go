@@ -35,7 +35,7 @@ func NewUserSettingsHandler(repo UserSettingsRepository) *UserSettingsHandler {
 func (h *UserSettingsHandler) Get(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 
-	// 🔹 Получаем пользователя через ваш middleware
+	// Получаем пользователя через ваш middleware
 	claims := middleware.GetUserFromContext(r.Context())
 	if claims == nil {
 		log.Printf("[ERROR] Get user settings: user not found in context")
@@ -70,7 +70,7 @@ func (h *UserSettingsHandler) Get(w http.ResponseWriter, r *http.Request) {
 func (h *UserSettingsHandler) Update(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 
-	// 🔹 Получаем пользователя через ваш middleware
+	// Получаем пользователя через ваш middleware
 	claims := middleware.GetUserFromContext(r.Context())
 	if claims == nil {
 		log.Printf("[ERROR] Update user settings: user not found in context")

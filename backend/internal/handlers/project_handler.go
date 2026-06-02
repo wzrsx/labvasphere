@@ -35,7 +35,7 @@ func NewProjectHandler(projectRepo *postgres.ProjectRepository, panoramaRepo *po
 	}
 }
 
-// 🔹 toProjectResponse работает с ProjectWithMainPanorama
+// toProjectResponse работает с ProjectWithMainPanorama
 func toProjectResponse(p *models.ProjectWithMainPanorama) *dto.ProjectResponse {
 	resp := &dto.ProjectResponse{
 		ID:          p.Project.ID,
@@ -53,7 +53,7 @@ func toProjectResponse(p *models.ProjectWithMainPanorama) *dto.ProjectResponse {
 		resp.CoverImageURL = &coverPath
 	}
 
-	// 🔹 Автор (если загружен)
+	// Автор (если загружен)
 	if p.Project.AuthorName != nil {
 		resp.AuthorName = *p.Project.AuthorName
 	}
@@ -150,7 +150,7 @@ func (h *ProjectHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-// 🔹 CreateProject создаёт проект + основную панораму (если передан файл)
+// CreateProject создаёт проект + основную панораму (если передан файл)
 func (h *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	claims := middleware.GetUserFromContext(r.Context())
 	if claims == nil {
@@ -181,7 +181,7 @@ func (h *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt:     time.Now(),
 	}
 
-	// 🔹 Если передана основная панорама — создаём запись в panoramas
+	// Если передана основная панорама — создаём запись в panoramas
 	var mainPanorama *models.Panorama
 	if req.PanoramaFilename != "" {
 		mainPanorama = &models.Panorama{
@@ -368,7 +368,7 @@ func (h *ProjectHandler) LikeProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 🔹 Парсим ID проекта
+	// Парсим ID проекта
 	projectIDStr := chi.URLParam(r, "id")
 	if projectIDStr == "" {
 		http.Error(w, `{"error":"ID проекта не указан"}`, http.StatusBadRequest)
@@ -380,7 +380,7 @@ func (h *ProjectHandler) LikeProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 🔹 Переключаем лайк
+	// Переключаем лайк
 	liked, count, err := h.projectRepo.ToggleLike(r.Context(), projectID, claims.UserID)
 	if err != nil {
 		log.Printf("ERROR: ToggleLike failed: %v", err)
@@ -388,7 +388,7 @@ func (h *ProjectHandler) LikeProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 🔹 JSON-ответ
+	// JSON-ответ
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success":     true,

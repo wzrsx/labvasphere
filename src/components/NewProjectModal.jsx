@@ -14,7 +14,6 @@ import {
   registerPanorama,
 } from '../services/projectService';
 import { useTranslation } from 'react-i18next';
-import api from '../services/api';
 
 const ASPECT_RATIO = 16 / 9;
 const COVER_WIDTH = 1280;
@@ -63,6 +62,10 @@ const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [viewerStep, setViewerStep] = useState(false);
+
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [createdProjectData, setCreatedProjectData] = useState(null);
+  const [createdProjectName, setCreatedProjectName] = useState('');
 
   const sphereViewerRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -163,6 +166,15 @@ const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
     onClose();
   };
 
+  const handleSuccessClose = () => {
+    setShowSuccessModal(false);
+    if (onCreate && createdProjectData) {
+      onCreate(createdProjectData);
+    }
+    resetForm();
+    onClose();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -185,7 +197,6 @@ const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
     try {
       console.log('🔹 Шаг 1: Создаём проект (без файлов)...');
 
-      // 1. Сначала создаём проект — получаем project_id
       const projectResult = await createProject({
         title: projectName.trim(),
         description: description.trim() || null,
@@ -195,8 +206,6 @@ const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
         status: 'draft',
       });
 
-      console.log('🔹 Ответ от createProject:', projectResult);
-
       if (!projectResult.success) {
         throw new Error(`createProject failed: ${projectResult.error}`);
       }
@@ -204,17 +213,12 @@ const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
       const project = projectResult.project;
       const projectId = project?.id;
 
-      console.log('🔹 Проект создан, ID:', projectId);
-
       if (!projectId) {
         throw new Error('Project ID is missing in response');
       }
 
-      // 2. Загружаем панораму с project_id
       console.log('🔹 Шаг 2: Загружаем панораму...', { projectId });
-
       const panoramaResult = await uploadPanorama(panoramaFile, projectId);
-      console.log('🔹 Ответ от uploadPanorama:', panoramaResult);
 
       if (!panoramaResult.success) {
         throw new Error(`uploadPanorama failed: ${panoramaResult.error}`);
@@ -222,19 +226,14 @@ const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
 
       const panoramaFilename = panoramaResult.filename;
 
-      // 3. Загружаем обложку с project_id
       console.log('🔹 Шаг 3: Загружаем обложку...', { projectId });
-
       const coverResult = await uploadCover(coverFile, projectId);
-      console.log('🔹 Ответ от uploadCover:', coverResult);
 
       if (!coverResult.success) {
         throw new Error(`uploadCover failed: ${coverResult.error}`);
       }
 
-      // 4. Регистрируем основную панораму в БД (is_main: true)
       console.log('🔹 Шаг 4: Регистрируем основную панораму...');
-
       const registerResult = await registerPanorama({
         project_id: projectId,
         filename: panoramaFilename,
@@ -244,35 +243,27 @@ const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
         is_main: true,
       });
 
-      console.log('🔹 Ответ от registerPanorama:', registerResult);
-
       if (!registerResult.success) {
         console.warn(
           '⚠️ Не удалось зарегистрировать панораму:',
           registerResult.error,
         );
-        // Не прерываем — проект создан, панораму можно добавить позже
       }
 
-      // 5. Обновляем проект с cover_image_url
       console.log('🔹 Шаг 5: Обновляем проект...');
-
       const updateResult = await updateProject(projectId, {
         cover_image_url: coverResult.fileUrl,
         status: 'published',
       });
 
-      console.log('🔹 Ответ от updateProject:', updateResult);
-
       if (!updateResult.success) {
         throw new Error(`updateProject failed: ${updateResult.error}`);
       }
 
-      // ✅ Успех
-      if (onCreate) onCreate(updateResult.project);
-      resetForm();
-      onClose();
-      alert(`Проект "${projectName.trim()}" успешно создан!`);
+      setCreatedProjectData(updateResult.project);
+      setCreatedProjectName(projectName.trim());
+      setShowSuccessModal(true);
+
     } catch (err) {
       console.error('❌ Ошибка в handleSubmit:', err);
       setError(err.message || 'Ошибка при создании проекта');
@@ -455,6 +446,37 @@ const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
             </button>
           </div>
         </form>
+
+        {showSuccessModal && (
+          <div className="modal-overlay" onClick={handleSuccessClose} style={{ zIndex: 1000 }}>
+            <div
+              className="delete-modal-content"
+              onClick={(e) => e.stopPropagation()}
+              style={{ maxWidth: '400px' }}
+            >
+              <div className="modal-header">
+                <h2 style={{ color: '#10b981' }}>{t('newProject.modal.title_success')}</h2>
+              </div>
+
+              <div className="modal-body">
+                <p>{t('newProject.modal.success_message')}</p>
+                <p className="project-name">
+                  <strong>"{createdProjectName}"</strong>
+                </p>
+              </div>
+
+              <div className="modal-actions" style={{ justifyContent: 'center' }}>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={handleSuccessClose}
+                >
+                  {t('newProject.modal.success_ok')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

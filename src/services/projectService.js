@@ -42,9 +42,8 @@ export const createProject = async (projectData) => {
       title: projectData.title,
       description: projectData.description,
       cover_image_url: projectData.cover_image_url,
-      // panorama_url удалён
-      panorama_filename: projectData.panorama_filename, // ← новое
-      panorama_original_name: projectData.panorama_original_name, // ← новое
+      panorama_filename: projectData.panorama_filename, 
+      panorama_original_name: projectData.panorama_original_name, 
       status: projectData.status,
     });
 
@@ -145,7 +144,7 @@ export const uploadCover = async (file, projectId) => {
   }
 };
 
-// 🔹 Регистрация панорамы в БД (после загрузки файла)
+// Регистрация панорамы в БД (после загрузки файла)
 export const registerPanorama = async (panoramaData) => {
   try {
     const response = await api.post('/panoramas/register', {
@@ -167,7 +166,7 @@ export const registerPanorama = async (panoramaData) => {
   }
 };
 
-// 🔹 Получить все панорамы проекта
+// Получить все панорамы проекта
 export const getPanoramasByProject = async (projectId) => {
   try {
     const response = await api.get(`/panoramas/project/${projectId}`);
@@ -234,7 +233,6 @@ export const saveHotspotsBatch = async (panoramaId, hotspots) => {
   try {
     const results = await Promise.all(
       hotspots.map(async (h) => {
-        // 🔹 Создаём новый хотспот
         if (h.id && h.id.startsWith('hotspot_')) {
           const payload = {
             panorama_id: panoramaId,
@@ -257,7 +255,6 @@ export const saveHotspotsBatch = async (panoramaId, hotspots) => {
           };
           return await createHotspot(payload);
         }
-        // 🔹 Обновляем существующий
         else {
           const payload = {
             position_yaw: h.position?.yaw || 0,
@@ -383,7 +380,7 @@ export const getLikeStatus = async (projectId) => {
     };
   }
 };
-// ✅ Массовое получение лайков для нескольких проектов (параллельные запросы)
+// Массовое получение лайков для нескольких проектов (параллельные запросы)
 export const getProjectsLikesCounts = async (projectIds) => {
   if (!projectIds?.length) return {};
 
@@ -406,7 +403,7 @@ export const getProjectsLikesCounts = async (projectIds) => {
     return acc;
   }, {});
 };
-// 🔹 Инкремент счетчика просмотров проекта
+// Инкремент счетчика просмотров проекта
 export const incrementProjectViews = async (projectId) => {
   try {
     // Используем PUT запрос для обновления views_count в БД

@@ -1,4 +1,4 @@
-// SphereViewerTest.jsx — ФИНАЛЬНАЯ РАБОЧАЯ ВЕРСИЯ
+// SphereViewerTest.jsx — ТЕСТОВАЯ ВЕРСИЯ
 import React, { useEffect, useRef, useState } from 'react';
 import { Viewer, EquirectangularAdapter } from '@photo-sphere-viewer/core';
 import '@photo-sphere-viewer/core/index.css';

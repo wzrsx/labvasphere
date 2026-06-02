@@ -36,7 +36,7 @@ export const checkRouteAccess = (pathname) => {
     const userStr = localStorage.getItem('user');
     const token = localStorage.getItem('token');
 
-    // 🔹 Нет авторизации
+    // Нет авторизации
     if (!token || !userStr) {
       return {
         allowed: false,
@@ -48,7 +48,7 @@ export const checkRouteAccess = (pathname) => {
     const user = JSON.parse(userStr);
     const role = user?.role;
 
-    // 🔹 Проверка доступа по роли
+    // Проверка доступа по роли
     if (!hasAccessToRoute(pathname, role)) {
       return {
         allowed: false,
@@ -57,7 +57,7 @@ export const checkRouteAccess = (pathname) => {
       };
     }
 
-    // 🔹 Всё ок
+    // Всё ок
     return { allowed: true, reason: null, redirect: null };
   } catch (error) {
     console.error('Ошибка проверки доступа:', error);

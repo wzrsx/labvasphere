@@ -32,7 +32,12 @@ const EditorPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const panoramaContainerRef = useRef(null);
-
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    projectId: null,
+    projectName: '',
+    isLoading: false,
+  });
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -48,7 +53,6 @@ const EditorPage = () => {
   const [transitionError, setTransitionError] = useState(null);
   const [currentPanoramaId, setCurrentPanoramaId] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
-  // Список всех панорам проекта (медиа-галерея)
   const [projectPanoramas, setProjectPanoramas] = useState([]);
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [selectedPanoramaForTransition, setSelectedPanoramaForTransition] =
@@ -84,7 +88,7 @@ const EditorPage = () => {
   useEffect(() => {
     activeToolRef.current = activeTool;
   }, [activeTool]);
-  // 🔹 Загрузка пользовательских настроек
+  //Загрузка пользовательских настроек
   useEffect(() => {
     let isMounted = true;
 
@@ -113,7 +117,6 @@ const EditorPage = () => {
       } catch (err) {
         console.error('❌ [Settings] Error:', err);
       } finally {
-        // 🔹🔹🔹 Гарантированно снимаем флаг загрузки
         if (isMounted) {
           console.log('✅ [Settings] settingsLoaded = true');
           setSettingsLoaded(true);
@@ -125,7 +128,7 @@ const EditorPage = () => {
     return () => {
       isMounted = false;
     };
-  }, []); // ← пустой массив = один раз при монтировании
+  }, []); 
   // Отслеживание изменений
   useEffect(() => {
     if (project) {
@@ -282,21 +285,43 @@ const EditorPage = () => {
     }
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm(t('editor.alerts.delete_confirm'))) return;
-    try {
-      const response = await deleteProject(id);
-      if (response.success) {
-        alert('Проект успешно удален');
-        navigate('/main');
-      } else {
-        throw new Error(response.error);
-      }
-    } catch (err) {
-      console.error('Ошибка удаления:', err);
-      alert(err.message || 'Не удалось удалить проект');
+// Открытие модального окна
+const handleDeleteClick = (projectId, projectName) => {
+  setDeleteModal({
+    isOpen: true,
+    projectId,
+    projectName,
+    isLoading: false,
+  });
+};
+
+// Подтверждение удаления
+const handleConfirmDelete = async () => {
+  if (!deleteModal.projectId) return;
+
+  setDeleteModal((prev) => ({ ...prev, isLoading: true }));
+
+  try {
+    const response = await deleteProject(deleteModal.projectId);
+    
+    if (response.success) {
+      // Закрываем модалку и перенаправляем на главную
+      setDeleteModal({ isOpen: false, projectId: null, projectName: '', isLoading: false });
+      navigate('/main');
+    } else {
+      throw new Error(response.error);
     }
-  };
+  } catch (err) {
+    console.error('Ошибка удаления:', err);
+    alert(err.message || 'Не удалось удалить проект');
+    setDeleteModal((prev) => ({ ...prev, isLoading: false }));
+  }
+};
+
+// Закрытие модального окна
+const handleCloseDeleteModal = () => {
+  setDeleteModal({ isOpen: false, projectId: null, projectName: '', isLoading: false });
+};
 
   const handlePreview = () => {
     window.open(`/project/${id}`);
@@ -399,7 +424,6 @@ const EditorPage = () => {
           return 0;
         };
 
-        // 🔹 ИСПРАВЛЕННО: Добавлено media_url и другие поля
         const hotspotData = {
           panorama_id: panoramaId,
           position_yaw: parseCoord(selectedHotspot.position?.yaw),
@@ -410,7 +434,7 @@ const EditorPage = () => {
           title: selectedHotspot.title || null,
           tooltip: selectedHotspot.tooltip || null,
           content_text: selectedHotspot.content_text || null,
-          media_url: selectedHotspot.media_url || null, // ← 🔹 ТЕПЕРЬ ПЕРЕДАЁТСЯ!
+          media_url: selectedHotspot.media_url || null, 
           external_url: selectedHotspot.external_url || null,
           icon: selectedHotspot.icon || 'default',
           color: selectedHotspot.color || '#3498db',
@@ -430,7 +454,7 @@ const EditorPage = () => {
           targetProjectName: file.name,
           targetFileUrl: fileUrl,
           type: 'transition',
-          media_url: dbHotspot.media_url || selectedHotspot.media_url, // ← Сохраняем
+          media_url: dbHotspot.media_url || selectedHotspot.media_url, 
         };
         setSelectedHotspot(updatedHotspot);
 
@@ -473,7 +497,6 @@ const EditorPage = () => {
         return 0;
       };
 
-      // 🔹 Формируем данные хотспота (аналогично handleFileSelect)
       const hotspotData = {
         panorama_id: panoramaId,
         position_yaw: parseCoord(selectedHotspot.position?.yaw),
@@ -492,7 +515,7 @@ const EditorPage = () => {
         is_active: true,
       };
       console.log('HANDLE_PANORAMA: ', panorama);
-      // 🔹 Проверяем: новый хотспот или существующий
+      // Проверяем: новый хотспот или существующий
       const isNewHotspot = selectedHotspot.id?.startsWith('hotspot_');
 
       let saveResult;
@@ -512,7 +535,7 @@ const EditorPage = () => {
 
       const dbHotspot = saveResult.hotspot;
 
-      // 🔹 Обновляем локальный стейт
+      // Обновляем локальный стейт
       const updatedHotspot = {
         ...selectedHotspot,
         id: dbHotspot.id,
@@ -569,7 +592,7 @@ const EditorPage = () => {
       await handlePanoramaTransition(
         hotspot.targetFileUrl,
         hotspot.targetProjectName || 'Панорама',
-        hotspot.targetProjectId, // ← ← ← КЛЮЧЕВОЕ: ID целевой панорамы
+        hotspot.targetProjectId, 
       );
       return;
     }
@@ -693,7 +716,7 @@ const EditorPage = () => {
     }
   };
 
-  // 🔹 Клик по панораме для добавления хотспота
+  // Клик по панораме для добавления хотспота
   const handlePositionClick = useCallback(
     async (position) => {
       console.log('🎯 [Click] handlePositionClick fired');
@@ -750,7 +773,7 @@ const EditorPage = () => {
 
       // 2. Переключаем в режим редактирования НОВОГО хотспота
       setSelectedHotspot(newHotspot);
-      setActiveTool('hotspot-edit'); // ← ← ← переключаем в режим редактирования!
+      setActiveTool('hotspot-edit'); 
     },
     [userDefaultIcon, userDefaultColor],
   );
@@ -764,7 +787,7 @@ const EditorPage = () => {
       ),
     }));
   };
-  // 🔹 Автосохранение хотспота в БД (при любом изменении)
+  // Автосохранение хотспота в БД (при любом изменении)
   const saveHotspotToApi = async (hotspot) => {
     // Не сохраняем временные хотспоты (ещё не созданные в БД)
     if (!hotspot || hotspot.id?.startsWith('hotspot_')) {
@@ -784,7 +807,7 @@ const EditorPage = () => {
         title: hotspot.title || null,
         tooltip: hotspot.tooltip || null,
         content_text: hotspot.content_text || null,
-        media_url: hotspot.media_url || null, // ← Важно!
+        media_url: hotspot.media_url || null, 
         external_url: hotspot.external_url || null,
         icon: hotspot.icon || 'default',
         color: hotspot.color || '#3498db',
@@ -804,7 +827,7 @@ const EditorPage = () => {
     }
   };
 
-  // 🔹 Debounce для автосохранения (чтобы не спамить API)
+  // Debounce для автосохранения (чтобы не спамить API)
   const debounceSave = useCallback(
     debounce((hotspot) => {
       saveHotspotToApi(hotspot);
@@ -896,12 +919,11 @@ const EditorPage = () => {
 
   return (
     <div className="editor-container">
-      {/* Основная область панорамы */}
       <div className="panorama-viewer">
         {mainPanoramaUrl ? (
           <SphereViewer
             ref={sphereViewerRef}
-            src={mainPanoramaUrl} // ← main_panorama.filename
+            src={mainPanoramaUrl}
             hotspots={editorData.hotspots}
             onHotspotClick={handleHotspotClick}
             onPositionClick={handlePositionClick}
@@ -927,9 +949,8 @@ const EditorPage = () => {
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
           <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
         </svg>
-        <span>Назад</span>
+        <span>{t('back_btn')}</span>
       </button>
-        {/* 🔹 Оверлей перехода между панорамами */}
         {isTransitioning && (
           <div className="transition-overlay">
             <div className="transition-content">
@@ -949,7 +970,7 @@ const EditorPage = () => {
               </p>
             </div>
 
-            {/* Прогресс-бар */}
+
             <div className="transition-progress-bar">
               <div
                 className="transition-progress-fill"
@@ -957,7 +978,6 @@ const EditorPage = () => {
               />
             </div>
 
-            {/* Кнопка отмены */}
             <button
               className="transition-cancel-btn"
               onClick={() => {
@@ -970,7 +990,6 @@ const EditorPage = () => {
           </div>
         )}
 
-        {/* 🔹 Сообщение об ошибке перехода */}
         {transitionError && (
           <div className="transition-error">
             <svg viewBox="0 0 24 24" width="20" height="20">
@@ -985,7 +1004,6 @@ const EditorPage = () => {
         )}
       </div>
 
-      {/* Боковая панель инструментов */}
       <div
         className={`editor-sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}
       >
@@ -1090,7 +1108,6 @@ const EditorPage = () => {
               <span>{t('editor.tools.settings')}</span>
             </button>
           </div>
-          {/* 🔹 Кнопка переключения режима переходов */}
           <div className="mode-toggle">
             <label className="mode-toggle-label">
               <input
@@ -1109,7 +1126,6 @@ const EditorPage = () => {
                 : t('editor.modes.transition_hint_off')}
             </span>
           </div>
-          {/* 🔹 Панель редактирования хотспота */}
           {(activeTool === 'hotspot' || activeTool === 'hotspot-edit') &&
             selectedHotspot && (
               <div className="hotspot-editor-panel">
@@ -1147,7 +1163,7 @@ const EditorPage = () => {
                       };
                       setSelectedHotspot(updated);
                       updateHotspotLocal(selectedHotspot.id, updated);
-                      debounceSave(updated); // ← Добавлено
+                      debounceSave(updated);
                     }}
                     placeholder={t('editor.hotspot_editor.name_placeholder')}
                   />
@@ -1167,7 +1183,7 @@ const EditorPage = () => {
                       };
                       setSelectedHotspot(updated);
                       updateHotspotLocal(selectedHotspot.id, updated);
-                      debounceSave(updated); // ← Добавлено
+                      debounceSave(updated); 
                     }}
                     placeholder={t('editor.hotspot_editor.tooltip_placeholder')}
                     rows={2}
@@ -1187,7 +1203,7 @@ const EditorPage = () => {
                       };
                       setSelectedHotspot(updated);
                       updateHotspotLocal(selectedHotspot.id, updated);
-                      debounceSave(updated); // ← Добавлено
+                      debounceSave(updated); 
                     }}
                     style={{
                       width: '100%',
@@ -1212,14 +1228,12 @@ const EditorPage = () => {
                       {t('editor.hotspot_editor.types.link')}
                     </option>
                   </select>
-                  {/* 🔹 Загрузка кастомного изображения */}
                   <div className="form-group" style={{ marginBottom: '16px' }}>
                     <label className="hotspot-image-label">
                       {t('editor.hotspot_editor.image.label')}
                     </label>
 
                     <div className="image-upload-area">
-                      {/* Превью изображения */}
                       {selectedHotspot.media_url ? (
                         <div className="image-preview-container">
                           <img
@@ -1256,7 +1270,6 @@ const EditorPage = () => {
                         </div>
                       )}
 
-                      {/* Скрытый input и кнопка загрузки */}
                       <input
                         className="image-upload-input"
                         type="file"
@@ -1280,7 +1293,7 @@ const EditorPage = () => {
                             return;
                           }
 
-                          // 🔹 Загрузка через готовую функцию
+                          // Загрузка через готовую функцию
                           setUploadingImage(true);
                           try {
                             const result = await uploadHotspotImage(
@@ -1294,7 +1307,7 @@ const EditorPage = () => {
                               };
                               setSelectedHotspot(updated);
                               updateHotspotLocal(selectedHotspot.id, updated);
-                              debounceSave(updated); // ← Добавлено
+                              debounceSave(updated);
                             } else {
                               alert(
                                 result.error || 'Ошибка загрузки изображения',
@@ -1325,7 +1338,6 @@ const EditorPage = () => {
                       </label>
                     </div>
 
-                    {/* Подсказка о размерах */}
                     <p
                       style={{
                         margin: '6px 0 0 0',
@@ -1344,7 +1356,6 @@ const EditorPage = () => {
                       {t('editor.hotspot_editor.transition.label')}
                     </label>
 
-                    {/* 🔹 Кнопка загрузки нового файла */}
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -1353,7 +1364,6 @@ const EditorPage = () => {
                       disabled={uploadingFile}
                       style={{ display: 'none' }}
                     />
-                    {/* 🔹 Индикатор выбранной панорамы */}
                     {selectedHotspot?.targetFileUrl && (
                       <div className="selected-panorama-indicator">
                         <span>
@@ -1395,12 +1405,10 @@ const EditorPage = () => {
                       )}
                     </button>
 
-                    {/* 🔹 Разделитель */}
                     <div className="panorama-divider">
                       <span>{t('editor.hotspot_editor.transition.or')}</span>
                     </div>
 
-                    {/* 🔹 Список панорам проекта */}
                     <div className="panorama-list">
                       {projectPanoramas.length === 0 ? (
                         <div className="panorama-list-empty">
@@ -1424,7 +1432,7 @@ const EditorPage = () => {
                                   : 'white')
                             }
                           >
-                            {/* 🔹 Иконка статуса */}
+                            
                             <svg
                               width="16"
                               height="16"
@@ -1435,12 +1443,10 @@ const EditorPage = () => {
                               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                             </svg>
 
-                            {/* 🔹 Имя файла (оригинальное!) */}
                             <span className="panorama-name">
                               {panorama.original_filename || panorama.filename}
                             </span>
 
-                            {/* 🔹 Бейдж "Основная" */}
                             {panorama.is_main && (
                               <span className="panorama-badge-main">
                                 {t('editor.media_panel.main')}
@@ -1451,7 +1457,6 @@ const EditorPage = () => {
                       )}
                     </div>
 
-                    {/* 🔹 Кнопка очистки выбора */}
                     {selectedHotspot.targetFileUrl && (
                       <button
                         onClick={() => {
@@ -1515,12 +1520,6 @@ const EditorPage = () => {
 
                 <div className="actions-buttons hotspot-actions">
                   <button
-                    className="action-btn secondary"
-                    onClick={() => goToHotspot(selectedHotspot.id)}
-                  >
-                    {t('editor.hotspot_editor.actions.preview')}
-                  </button>
-                  <button
                     className="action-btn danger"
                     onClick={() => deleteHotspot(selectedHotspot.id)}
                   >
@@ -1530,19 +1529,16 @@ const EditorPage = () => {
               </div>
             )}
 
-          {/* 🔹 Подсказка для режима добавления */}
           {activeTool === 'hotspot' && !selectedHotspot && (
             <div className="hotspot-hint">
               {t('editor.hotspot_hints.add_mode')}
             </div>
           )}
-          {/* 🔹 Панель Медиа-галереи */}
           {activeTool === 'media' && (
             <div className="media-panel">
               <div className="media-panel-header">
                 <h4>{t('editor.media_panel.title')}</h4>
 
-                {/* 🔹 Кнопка загрузки */}
                 <input
                   type="file"
                   accept="image/jpeg, image/jpg, image/png"
@@ -1585,7 +1581,7 @@ const EditorPage = () => {
                         project.id,
                       );
                       if (panoramasResponse.success) {
-                        setProjectPanoramas(panoramasResponse.panoramas); // ← Обновляем стейт!
+                        setProjectPanoramas(panoramasResponse.panoramas); 
                         console.log(
                           '📸 Media list updated:',
                           panoramasResponse.panoramas.length,
@@ -1617,8 +1613,6 @@ const EditorPage = () => {
                     : t('editor.media_panel.add')}
                 </button>
               </div>
-
-              {/* 🔹 Список панорам */}
               <div className="media-panoramas-list">
                 {projectPanoramas.length === 0 ? (
                   <div className="media-empty-state">
@@ -1674,7 +1668,6 @@ const EditorPage = () => {
                 )}
               </div>
 
-              {/* 🔹 Статистика */}
               <div className="media-stats">
                 <strong>{t('editor.media_panel.stats')}:</strong>{' '}
                 {projectPanoramas.length}
@@ -1729,7 +1722,7 @@ const EditorPage = () => {
               <span>{t('editor.actions.preview')}</span>
             </button>
 
-            <button className="action-btn danger" onClick={handleDelete}>
+            <button className="action-btn danger" onClick={() => handleDeleteClick(id, project?.title || 'Этот проект')}>
               <svg className="action-icon" viewBox="0 0 24 24">
                 <path
                   fill="currentColor"
@@ -1766,6 +1759,48 @@ const EditorPage = () => {
           </div>
         </div>
       </div>
+{deleteModal.isOpen && (
+  <div className="modal-overlay" onClick={handleCloseDeleteModal}>
+    <div
+      className="delete-modal-content"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="modal-header">
+        <h2>{t('modal.delete.title')}</h2>
+        <button className="modal-close" onClick={handleCloseDeleteModal}>
+          ×
+        </button>
+      </div>
+
+      <div className="modal-body">
+        <p>{t('modal.delete.confirm')}</p>
+        <p className="project-name">
+          <strong>"{deleteModal.projectName}"</strong>
+        </p>
+        <p className="warning-text">{t('modal.delete.warning')}</p>
+      </div>
+
+      <div className="modal-actions">
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={handleCloseDeleteModal}
+          disabled={deleteModal.isLoading}
+        >
+          {t('modal.delete.cancel')}
+        </button>
+        <button
+          type="button"
+          className="btn-danger"
+          onClick={handleConfirmDelete}
+          disabled={deleteModal.isLoading}
+        >
+          {deleteModal.isLoading ? 'Удаление...' : t('modal.delete.confirm_button')}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };

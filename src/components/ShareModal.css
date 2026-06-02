@@ -168,7 +168,6 @@
   color: #333;
 }
 
-/* 👈 Контейнер QR-кода */
 .qr-wrapper {
   display: flex;
   flex-direction: column;
@@ -224,7 +223,6 @@
   transform: translateY(1px);
 }
 
-/* 👈 Разделитель "Или" */
 .share-divider {
   display: flex;
   align-items: center;
@@ -243,7 +241,6 @@
   padding: 0 12px;
 }
 
-/* 👈 Адаптив для маленьких экранов */
 @media (max-width: 480px) {
   .share-toggle {
     margin-bottom: 16px;
@@ -263,7 +260,6 @@
     height: 180px;
   }
 }
-/* Адаптив для маленьких экранов */
 @media (max-width: 480px) {
   .share-social {
     gap: 12px;

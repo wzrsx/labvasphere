@@ -41,28 +41,26 @@ const SphereViewer = forwardRef((props, ref) => {
   const [loadProgress, setLoadProgress] = useState(0);
   const [initError, setInitError] = useState(null);
 
-  // Конвертация маркеров с правильной очередностью: media_url → icon → fallback
-  // Конвертация маркеров с поддержкой цвета
   const convertToMarkers = useCallback((hotspotsList) => {
     return hotspotsList.map((hotspot) => {
       let iconUrl;
 
-      // 🔹 1. Приоритет №1: кастомное изображение (media_url)
+      // 1. Приоритет №1: кастомное изображение (media_url)
       if (hotspot.media_url && hotspot.media_url.trim() !== '') {
         iconUrl = hotspot.media_url.startsWith('http')
           ? hotspot.media_url
           : `${CONFIG.MEDIA_BASE_URL}/${hotspot.media_url}`;
       }
-      // 🔹 2. Приоритет №2: иконка из настроек с цветом
+      // 2. Приоритет №2: иконка из настроек с цветом
       else if (
         hotspot.icon &&
         ['pin', 'dot', 'star', 'camera'].includes(hotspot.icon)
       ) {
-        // 🔹 Генерируем SVG с цветом на лету
+        // Генерируем SVG с цветом на лету
         const color = hotspot.color || '#99582A';
         iconUrl = getColoredIconUrl(hotspot.icon, color);
       }
-      // 🔹 3. Фолбэк: дефолтный маркер
+      //3. Фолбэк: дефолтный маркер
       else {
         iconUrl = '/finger-32.svg';
       }
@@ -70,7 +68,7 @@ const SphereViewer = forwardRef((props, ref) => {
       return {
         id: hotspot.id,
         position: hotspot.position,
-        image: iconUrl, // ← теперь это Data URL с цветом или обычный URL
+        image: iconUrl, // Data URL с цветом или обычный URL
         size: { width: 32, height: 32 },
         tooltip: hotspot.tooltip
           ? { content: hotspot.tooltip, position: 'top' }
@@ -330,7 +328,7 @@ const SphereViewer = forwardRef((props, ref) => {
           },
         );
       }
-      // 🔹 Горячие клавиши: F — полный экран, Esc — выход
+      // Горячие клавиши: F — полный экран, Esc — выход
       const handleKeyDown = (e) => {
         // Игнорируем, если пользователь печатает в инпуте
         if (e.target.matches('input, textarea, [contenteditable="true"]')) {
@@ -339,7 +337,7 @@ const SphereViewer = forwardRef((props, ref) => {
 
         const container = containerRef.current;
         if (!container) return;
-        // 🔹 F11 — блокируем и показываем подсказку
+        // F11 — блокируем и показываем подсказку
         if (e.key === 'F11') {
           e.preventDefault();
           e.stopPropagation();
@@ -378,8 +376,7 @@ const SphereViewer = forwardRef((props, ref) => {
           }
         }
 
-        // 🔹 Esc — выход из полноэкранного режима
-        // (photo-sphere-viewer обычно обрабатывает это сам, но для надёжности дублируем)
+        // Esc — выход из полноэкранного режима
         if (e.key === 'Escape') {
           if (document.exitFullscreen) {
             document.exitFullscreen();
@@ -430,14 +427,14 @@ const SphereViewer = forwardRef((props, ref) => {
 
   // Рендер
   if (!isViewerReady || !isPanoramaLoaded) {
-    // ✅ Всегда рендерим ОДИН контейнер, лоадер — поверх
+    // Всегда рендерим ОДИН контейнер, лоадер — поверх
     return (
       <div
         ref={containerRef}
         style={{
           width: '100%',
           height: '100%',
-          position: 'relative', // ← Для позиционирования оверлея
+          position: 'relative', // Для позиционирования оверлея
           ...style,
         }}
       ></div>

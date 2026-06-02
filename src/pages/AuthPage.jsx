@@ -7,8 +7,7 @@ import ResetPasswordForm from '../components/auth/ResetPasswordForm';
 import './AuthPage.css';
 
 const AuthPage = () => {
-  const location = useLocation(); // ← хук для чтения URL
-  // 'login' | 'register' | 'reset'
+  const location = useLocation(); 
   const [authMode, setAuthMode] = useState('login');
 
   const handleLogin = (credentials) => {

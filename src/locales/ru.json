@@ -88,7 +88,10 @@
   },
   "newProject": {
     "modal": {
-      "title": "Создать новый проект"
+      "title": "Создать новый проект",
+      "title_success": "Успешно!",
+      "success_message": "Проект успешно создан и опубликован!",
+      "success_ok": "Отлично!"
     },
     "form": {
       "name_placeholder": "Название проекта *",
@@ -272,131 +275,6 @@
       "media": "Медиа-элементы:",
       "project_id": "ID проекта:",
       "status": "Статус:",
-      "status_published": "Опубликован",
-      "status_draft": "Черновик"
-    },
-    "viewer": {
-      "placeholder": "Панорама не загружена"
-    },
-    "transition": {
-      "loading": "Загрузка: {{progress}}%",
-      "cancel": "Отмена",
-      "error": "Ошибка загрузки панорамы"
-    },
-    "alerts": {
-      "saved": "Проект успешно сохранен!",
-      "save_error": "Не удалось сохранить проект",
-      "delete_confirm": "Вы уверены, что хотите удалить этот проект?",
-      "deleted": "Проект успешно удален",
-      "delete_error": "Не удалось удалить проект",
-      "hotspot_delete_confirm": "Удалить эту точку перехода?",
-      "hotspot_deleted": "Точка удалена",
-      "hotspot_delete_error": "Не удалось удалить точку",
-      "file_invalid": "Пожалуйста, выберите изображение (JPG, PNG, WebP)",
-      "file_too_large": "Файл слишком большой. Максимальный размер: 50MB",
-      "project_not_loaded": "❌ Проект или панорама не загружены",
-      "transition_saved": "✅ Точка перехода сохранена!",
-      "upload_error": "❌ {{message}}"
-    }
-  },
-  "editor": {
-    "loading": "Загрузка проекта...",
-    "error": "Не удалось загрузить проект",
-    "not_found": "Проект не найден",
-    "back_to_projects": "Вернуться к проектам",
-    "title": "Редактор проекта",
-    "sidebar": {
-      "collapse": "Свернуть панель",
-      "expand": "Развернуть панель"
-    },
-    "form": {
-      "title_label": "Название",
-      "title_placeholder": "Название проекта",
-      "description_label": "Описание",
-      "description_placeholder": "Описание проекта"
-    },
-    "tools": {
-      "title": "Инструменты",
-      "hotspots": "Точки",
-      "hotspots_title": "Точки перехода",
-      "media": "Медиа",
-      "settings": "Настройки"
-    },
-    "modes": {
-      "transition": "👁️ Режим переходов",
-      "transition_hint_on": "Клик по хотспоту = переход к панораме",
-      "transition_hint_off": "Клик по хотспоту = открыть редактор"
-    },
-    "hotspot_editor": {
-      "title": "✏️ Редактирование точки",
-      "close": "Закрыть",
-      "name_label": "Название",
-      "name_placeholder": "Название точки",
-      "tooltip_label": "Подсказка (tooltip)",
-      "tooltip_placeholder": "Текст подсказки при наведении",
-      "type_label": "Тип точки",
-      "types": {
-        "transition": "🔄 Переход к панораме",
-        "info": "ℹ️ Информационная",
-        "media": "🎬 Медиа-контент",
-        "link": "🔗 Внешняя ссылка"
-      },
-      "image": {
-        "label": "🖼️ Изображение точки",
-        "placeholder": "Изображение не выбрано",
-        "hint": "Будет использоваться иконка по умолчанию",
-        "upload": "📁 Выбрать изображение",
-        "replace": "🔄 Заменить",
-        "uploading": "⏳ Загрузка...",
-        "remove": "Удалить изображение",
-        "size_hint": "Макс. 5MB. Рекомендуется: PNG/SVG с прозрачным фоном, 32x32px"
-      },
-      "transition": {
-        "label": "🔄 Целевая панорама",
-        "upload_new": "Загрузить новую панораму",
-        "or": "или выбрать из загруженных",
-        "empty": "Нет загруженных панорам",
-        "main_badge": "Основная",
-        "clear": "✕ Очистить выбор"
-      },
-      "link": {
-        "url_label": "URL ссылки",
-        "url_placeholder": "https://example.com"
-      },
-      "actions": {
-        "preview": "🔍 Перейти",
-        "delete": "🗑️ Удалить"
-      }
-    },
-    "hotspot_hints": {
-      "add_mode": "💡 Кликните по панораме, чтобы добавить новую точку перехода"
-    },
-    "media_panel": {
-      "title": "📸 Медиа-галерея",
-      "add": "+ Добавить",
-      "uploading": "Загрузка...",
-      "empty": {
-        "title": "Нет загруженных панорам",
-        "hint": "Загрузите файлы через кнопку «Добавить»"
-      },
-      "main": "🏠 Основная",
-      "additional": "📁 Дополнительная",
-      "preview": "Перейти",
-      "stats": "Всего панорам"
-    },
-    "actions": {
-      "title": "Действия",
-      "save": "Сохранить изменения",
-      "saved": "Сохранено",
-      "saving": "Сохранение...",
-      "preview": "Предпросмотр",
-      "delete": "Удалить проект"
-    },
-    "stats": {
-      "hotspots": "Точки перехода",
-      "media": "Медиа-элементы",
-      "project_id": "ID проекта",
-      "status": "Статус",
       "status_published": "Опубликован",
       "status_draft": "Черновик"
     },
@@ -622,5 +500,6 @@
       "button_loading": "Подготовка..."
     }
   },
-  "lang_btn": "🇷🇺 RU"
+  "lang_btn": "🇷🇺 RU",
+  "back_btn": "Назад"
 }

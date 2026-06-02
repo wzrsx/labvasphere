@@ -3,8 +3,8 @@ import SphereViewer from '../components/SphereViewer';
 import { getPublishedProjects } from '../services/projectService';
 import { preloadPanorama } from '../services/preload.js';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import api from '../services/api'; // Добавили импорт api, если понадобится для доп. запросов
-import { CONFIG } from '../config'; // Добавили импорт конфига
+import api from '../services/api'; 
+import { CONFIG } from '../config'; 
 import '../App.css';
 import './LandingPage.css';
 
@@ -28,7 +28,7 @@ const LandingPage = () => {
   const currentIndexRef = useRef(0);
   const autoSwitchTimerRef = useRef(null);
 
-  // 🔹 1. Функция формирования URL (как в ProjectView)
+  // 1. Функция формирования URL (как в ProjectView)
   const getMediaUrl = (relativePath) => {
     if (!relativePath) return null;
     if (relativePath.startsWith('http')) return relativePath;
@@ -77,7 +77,7 @@ const LandingPage = () => {
         const targetIdx = (index + i) % projectsList.length;
         const project = projectsList[targetIdx];
 
-        // 🔹 Формируем URL так же, как для отображения
+        // Формируем URL так же, как для отображения
         let urlToPreload = null;
         if (project.main_panorama?.filename) {
           urlToPreload = getMediaUrl(

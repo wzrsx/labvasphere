@@ -61,7 +61,6 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
     
-    // 🔹 КРИТИЧНО: для всех остальных ошибок — обязательно отклоняем промис!
     return Promise.reject(error);
   },
 );

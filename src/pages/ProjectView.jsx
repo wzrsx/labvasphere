@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import './ProjectView.css';
 import SphereViewer from '../components/SphereViewer';
 import api from '../services/api';
+import { useTranslation } from 'react-i18next';
 import { CONFIG } from '../config';
 import {
   getMainPanorama,
@@ -18,6 +19,7 @@ import { panoramaCache } from '../utils/panoramaCache';
 import { getPublicProfile } from '../services/userService';
 
 const ProjectView = ({ mode = 'public' }) => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const isPublic = mode === 'public';
   const navigate = useNavigate();
@@ -31,22 +33,22 @@ const ProjectView = ({ mode = 'public' }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [preloading, setPreloading] = useState(false);
-  const [preloadProgress, setPreloadProgress] = useState({}); // { url: percent }
+  const [preloadProgress, setPreloadProgress] = useState({}); 
   const [preloadStats, setPreloadStats] = useState({
     total: 0,
     loaded: 0,
     failed: 0,
   });
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [transitionProgress, setTransitionProgress] = useState(0); // ← ← ← ДОЛЖНО БЫТЬ ЗДЕСЬ!
+  const [transitionProgress, setTransitionProgress] = useState(0); 
   const [transitionError, setTransitionError] = useState(null);
   const [showAuthorCard, setShowAuthorCard] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [likesCount, setLikesCount] = useState(project?.likes_count || 0);
-  const [authorData, setAuthorData] = useState(null); // Доп. данные автора
-  const [authorLoading, setAuthorLoading] = useState(false); // Загрузка профиля
-  const [authorError, setAuthorError] = useState(null); // Ошибка загрузки
+  const [authorData, setAuthorData] = useState(null); 
+  const [authorLoading, setAuthorLoading] = useState(false); 
+  const [authorError, setAuthorError] = useState(null); 
   const getMediaUrl = (relativePath) => {
     if (!relativePath) return null;
     if (relativePath.startsWith('http')) return relativePath;
@@ -61,7 +63,7 @@ const ProjectView = ({ mode = 'public' }) => {
     };
     return labels[roleCode] || 'Автор';
   };
-  // 🔹 Загрузка проекта + панорамы + хотспотов
+  // Загрузка проекта + панорамы + хотспотов
   useEffect(() => {
     console.log('[ProjectView] 🚀 Component mounted, project ID:', id);
 
@@ -76,7 +78,7 @@ const ProjectView = ({ mode = 'public' }) => {
         const response = await api.get(apiUrl);
         console.log('[ProjectView] ✅ Project loaded:', response.data?.id);
         const projectData = response.data;
-        // 🔹 Инкремент счетчика просмотров (только для публичных проектов)
+        // Инкремент счетчика просмотров (только для публичных проектов)
         if (isPublic && id) {
           // Проверяем, был ли уже учтен просмотр в этой сессии
           const viewedKey = `viewed_project_${id}`;
@@ -113,7 +115,7 @@ const ProjectView = ({ mode = 'public' }) => {
         }
 
         setProject({ ...projectData, main_panorama: mainPanorama });
-        // 🔹 Загружаем статус лайка текущего пользователя
+        // Загружаем статус лайка текущего пользователя
         if (projectData.id) {
           const likeResult = await getLikeStatus(projectData.id);
           if (likeResult.success) {
@@ -144,7 +146,7 @@ const ProjectView = ({ mode = 'public' }) => {
           console.log('[ProjectView] 🔗 Panorama URL:', panoramaUrl);
           setCurrentPanoramaUrl(panoramaUrl);
 
-          // 🔹 Предзагружаем основную панораму в кэш
+          // Предзагружаем основную панораму в кэш
           try {
             await panoramaCache.preload(panoramaUrl);
           } catch (err) {
@@ -173,7 +175,7 @@ const ProjectView = ({ mode = 'public' }) => {
             'panoramas',
           );
 
-          // 🔹 Предзагружаем ВСЕ панорамы проекта в кэш (фоновая загрузка)
+          // Предзагружаем ВСЕ панорамы проекта в кэш (фоновая загрузка)
           preloadAllPanoramas(panoramasResponse.panoramas, projectData.id);
         }
       } catch (err) {
@@ -188,7 +190,7 @@ const ProjectView = ({ mode = 'public' }) => {
 
     if (id) fetchProject();
   }, [id]);
-  // 🔹 Предзагрузка всех панорам проекта в кэш
+  // Предзагрузка всех панорам проекта в кэш
   const preloadAllPanoramas = async (panoramas, projectId) => {
     if (!panoramas?.length || !projectId) return;
 
@@ -221,7 +223,7 @@ const ProjectView = ({ mode = 'public' }) => {
       setPreloading(false);
     }
   };
-  // 🔹 Загрузка хотспотов для указанной панорамы
+  // Загрузка хотспотов для указанной панорамы
   const loadHotspots = async (panoramaId, projectId) => {
     console.log('[ProjectView] 📍 loadHotspots called:', {
       panoramaId,
@@ -243,7 +245,7 @@ const ProjectView = ({ mode = 'public' }) => {
       });
 
       if (hotspotResponse.success) {
-        // 🔹 Конвертируем хотспоты из БД в формат редактора (с media_url!)
+        // Конвертируем хотспоты из БД в формат редактора (с media_url!)
         const hotspots = hotspotResponse.hotspots.map((h) => {
           console.log('[ProjectView] 🎨 Converting hotspot:', {
             id: h?.id,
@@ -275,7 +277,6 @@ const ProjectView = ({ mode = 'public' }) => {
             targetProjectName: h.target_filename || 'Панорама',
             icon: h.icon,
             color: h.color,
-            // 🔹 КЛЮЧЕВОЕ: добавляем media_url!
             media_url: h.media_url || '',
             content_text: h.content_text || '',
             external_url: h.external_url || '',
@@ -296,7 +297,7 @@ const ProjectView = ({ mode = 'public' }) => {
     }
   };
 
-  // 🔹 Обновление маркеров после изменения хотспотов
+  // Обновление маркеров после изменения хотспотов
   useEffect(() => {
     console.log(
       '[ProjectView] 🔁 useEffect: hotspots changed, count:',
@@ -341,7 +342,7 @@ const ProjectView = ({ mode = 'public' }) => {
     }
   }, [hotspots]);
 
-  // 🔹 Обработка клика по хотспоту
+  //Обработка клика по хотспоту
   const handleHotspotClick = async (hotspot) => {
     console.log('[ProjectView] 👆 Hotspot clicked:', {
       id: hotspot?.id,
@@ -351,7 +352,7 @@ const ProjectView = ({ mode = 'public' }) => {
       media_url: hotspot?.media_url,
     });
 
-    // 🔹 ИСПРАВЛЕНО: обращаемся к свойствам напрямую, не через .data
+    // ИСПРАВЛЕНО: обращаемся к свойствам напрямую, не через .data
     if (hotspot?.type === 'transition' && hotspot?.targetFileUrl) {
       console.log('[ProjectView] 🔄 Transition hotspot, navigating...');
 
@@ -371,7 +372,7 @@ const ProjectView = ({ mode = 'public' }) => {
     }
   };
 
-  // 🔹 Переход к другой панораме (с использованием кэша)
+  // Переход к другой панораме (с использованием кэша)
   const handlePanoramaTransition = async (
     targetUrl,
     targetName,
@@ -399,7 +400,7 @@ const ProjectView = ({ mode = 'public' }) => {
     setIsTransitioning(true);
 
     try {
-      // 🔹 🔥 КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Очищаем хотспоты ДО начала перехода!
+      // Очищаем хотспоты ДО начала перехода!
       // Это предотвратит отображение старых маркеров на новой панораме
       setHotspots([]);
 
@@ -420,7 +421,7 @@ const ProjectView = ({ mode = 'public' }) => {
         console.log('[ProjectView] ⚡ Cache hit!');
       }
 
-      // 🔹 Сначала меняем панораму в SphereViewer
+      //Сначала меняем панораму в SphereViewer
       console.log('[ProjectView] 🎬 Calling changePanorama()...');
       await sphereViewerRef.current?.changePanorama(absoluteUrl, {
         transition: 'fade',
@@ -428,7 +429,7 @@ const ProjectView = ({ mode = 'public' }) => {
       });
       console.log('[ProjectView] ✅ Panorama changed');
 
-      // 🔹 Обновляем ID и URL текущей панорамы
+      // Обновляем ID и URL текущей панорамы
       if (targetPanoramaId && project?.id) {
         console.log(
           '[ProjectView] 🔄 Updating current panorama to:',
@@ -448,11 +449,11 @@ const ProjectView = ({ mode = 'public' }) => {
       setError(err.message || 'Ошибка загрузки панорамы');
       setIsTransitioning(false);
       setTransitionProgress(0);
-      // 🔹 В случае ошибки тоже очищаем хотспоты, чтобы не было рассинхрона
+      // В случае ошибки тоже очищаем хотспоты, чтобы не было рассинхрона
       setHotspots([]);
     }
   };
-  // 🔹 Загрузка профиля автора (с опцией silent для фоновой загрузки)
+  // Загрузка профиля автора (с опцией silent для фоновой загрузки)
   const fetchAuthorProfile = async (authorId, silent = false) => {
     if (!authorId) return;
 
@@ -488,17 +489,17 @@ const ProjectView = ({ mode = 'public' }) => {
   const handleLike = async (e) => {
     e.stopPropagation();
 
-    // 🔹 ПРОВЕРКА: есть ли токен авторизации?
+    // ПРОВЕРКА: есть ли токен авторизации?
     const token = localStorage.getItem('token');
     console.log('TOKEN: ', token);
     if (!token) {
-      // 🔹 Редирект на авторизацию с возвратом на текущую страницу
+      //Редирект на авторизацию с возвратом на текущую страницу
       const redirect = `/project/public/${id}`;
       window.location.href = `/auth?redirect=${encodeURIComponent(redirect)}`;
       return;
     }
 
-    // 🔹 Оптимистичное обновление UI (для мгновенного отклика)
+    // Оптимистичное обновление UI (для мгновенного отклика)
     const previousLiked = isLiked;
     const previousCount = likesCount;
 
@@ -538,7 +539,7 @@ const ProjectView = ({ mode = 'public' }) => {
     }
   };
 
-  // 🔹 Обработчик сохранения в избранное
+  // Обработчик сохранения в избранное
   const handleSave = async (e) => {
     e.stopPropagation();
     try {
@@ -550,7 +551,7 @@ const ProjectView = ({ mode = 'public' }) => {
     }
   };
 
-  // 🔹 Закрытие карточки автора при клике вне
+  // Закрытие карточки автора при клике вне
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (showAuthorCard && !e.target.closest('.author-profile-container')) {
@@ -560,7 +561,7 @@ const ProjectView = ({ mode = 'public' }) => {
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, [showAuthorCard]);
-  // 🔹 Обработчик нажатия клавиш (Esc для выхода)
+  // Обработчик нажатия клавиш (Esc для выхода)
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
@@ -572,7 +573,7 @@ const ProjectView = ({ mode = 'public' }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [navigate]);
 
-  // 🔹 Отладочный лог при рендере
+  // Отладочный лог при рендере
   useEffect(() => {
     console.log('[ProjectView] 🎨 Render:', {
       loading,
@@ -616,7 +617,6 @@ const ProjectView = ({ mode = 'public' }) => {
 
   return (
     <div className="project-view-fullscreen">
-      {/* 🔹 Кнопка назад — левый верхний угол */}
       <button
         className="back-btn-fixed"
         onClick={() => navigate(-1)}
@@ -625,15 +625,13 @@ const ProjectView = ({ mode = 'public' }) => {
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
           <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
         </svg>
-        <span>Назад</span>
+        <span>{t('back_btn')}</span>
       </button>
 
-      {/* 🔹 Заголовок проекта — плавающий */}
       <div className="project-title-overlay">
         <h1>{project.title}</h1>
       </div>
 
-      {/* 🔹 SphereViewer на весь экран */}
       <div className="panorama-container-fullscreen">
         <SphereViewer
           ref={sphereViewerRef}
@@ -644,17 +642,6 @@ const ProjectView = ({ mode = 'public' }) => {
           navbar={false}
         />
       </div>
-
-      {/* 🔹 Оверлей перехода 
-      {isTransitioning && (
-        <div className="transition-overlay-fullscreen">
-          <div className="transition-spinner">
-            <div className="spinner-ring" />
-          </div>
-          <p>Загрузка панорамы...</p>
-        </div>
-      )}*/}
-      {/* 🔹 Левый нижний угол: Лайк и Избранное */}
       <div className="actions-bar">
         <button
           className={`action-btn ${isLiked ? 'liked' : ''}`}
@@ -692,7 +679,6 @@ const ProjectView = ({ mode = 'public' }) => {
         </button>
       </div>
 
-      {/* 🔹 Правый нижний угол: Профиль автора */}
       <div className="author-profile-container">
         <button
           className="author-trigger"
@@ -716,7 +702,6 @@ const ProjectView = ({ mode = 'public' }) => {
           </span>
         </button>
 
-        {/* Выпадающая карточка */}
         {showAuthorCard && (
           <div className="author-card">
             <div className="author-card-header">

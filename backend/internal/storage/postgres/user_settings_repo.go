@@ -59,8 +59,6 @@ func (r *userSettingsRepo) Upsert(ctx context.Context, userID string, preference
 		return fmt.Errorf("marshal preferences: %w", err)
 	}
 
-	// 🔹 PostgreSQL оператор || объединяет JSONB объекты
-	// existing.preferences || new_prefs = merge
 	query := `
 		INSERT INTO user_settings (user_id, preferences, updated_at)
 		VALUES ($1, $2, NOW())
@@ -87,7 +85,7 @@ func (r *userSettingsRepo) Upsert(ctx context.Context, userID string, preference
 	return nil
 }
 
-// 🔹 Вспомогательная: получить ключи мапы для лога (необязательно, но удобно для отладки)
+// Вспомогательная: получить ключи мапы для лога (удобно для отладки)
 func getMapKeys(m map[string]interface{}) []string {
 	keys := make([]string, 0, len(m))
 	for k := range m {

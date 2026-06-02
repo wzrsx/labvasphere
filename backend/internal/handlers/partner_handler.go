@@ -21,9 +21,6 @@ func NewPartnerHandler(repo *postgres.PartnerRepository) *PartnerHandler {
 	return &PartnerHandler{repo: repo}
 }
 
-// ============================================================================
-// GET /api/partner/stats
-// ============================================================================
 func (h *PartnerHandler) GetStats(w http.ResponseWriter, r *http.Request) {
 	claims := middleware.GetUserFromContext(r.Context())
 	if claims == nil {
@@ -43,7 +40,6 @@ func (h *PartnerHandler) GetStats(w http.ResponseWriter, r *http.Request) {
 
 	stats, err := h.repo.GetPartnerStats(r.Context(), userID)
 	if err != nil {
-		// Логируйте ошибку на сервере!
 		log.Printf("GetStats error for user %s: %v", userID, err)
 
 		w.Header().Set("Content-Type", "application/json")
@@ -53,12 +49,9 @@ func (h *PartnerHandler) GetStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(stats) // ← убедитесь, что stats не nil
+	json.NewEncoder(w).Encode(stats) 
 }
 
-// ============================================================================
-// GET /api/partner/link
-// ============================================================================
 func (h *PartnerHandler) GetReferralLink(w http.ResponseWriter, r *http.Request) {
 	claims := middleware.GetUserFromContext(r.Context())
 	if claims == nil {
@@ -80,9 +73,6 @@ func (h *PartnerHandler) GetReferralLink(w http.ResponseWriter, r *http.Request)
 	})
 }
 
-// ============================================================================
-// POST /api/partner/withdraw
-// ============================================================================
 func (h *PartnerHandler) CreateWithdrawal(w http.ResponseWriter, r *http.Request) {
 	claims := middleware.GetUserFromContext(r.Context())
 	if claims == nil {
@@ -153,9 +143,6 @@ func (h *PartnerHandler) CreateWithdrawal(w http.ResponseWriter, r *http.Request
 	})
 }
 
-// ============================================================================
-// GET /api/partner/transactions
-// ============================================================================
 func (h *PartnerHandler) GetTransactions(w http.ResponseWriter, r *http.Request) {
 	claims := middleware.GetUserFromContext(r.Context())
 	if claims == nil {
@@ -191,9 +178,6 @@ func (h *PartnerHandler) GetTransactions(w http.ResponseWriter, r *http.Request)
 	})
 }
 
-// ============================================================================
-// GET /api/partner/referrals
-// ============================================================================
 func (h *PartnerHandler) GetReferrals(w http.ResponseWriter, r *http.Request) {
 	claims := middleware.GetUserFromContext(r.Context())
 	if claims == nil {

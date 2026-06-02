@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useTranslation } from 'react-i18next'; // 🔥 Добавляем
+import { useTranslation } from 'react-i18next'; 
 import './SettingsPage.css';
 import {
   getUserSettings,
@@ -13,9 +13,9 @@ import { exportPortfolioToPdf } from '../services/pdfExportService';
 import { CONFIG } from '../config.js'
 
 const SettingsPage = () => {
-  const { t } = useTranslation(); // 🔥 Инициализируем
+  const { t } = useTranslation(); 
 
-  // 🔹 Состояния
+  //Состояния
   const [showEmail, setShowEmail] = useState(true);
   const [protectDownloads, setProtectDownloads] = useState(false);
   const [markerColor, setMarkerColor] = useState('#99582A');
@@ -25,10 +25,10 @@ const SettingsPage = () => {
   const [notification, setNotification] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 🔹 Ref для debounce цвета
+  // Ref для debounce цвета
   const colorSaveTimeout = useRef(null);
 
-  // 🔹 Данные для выбора
+  // Данные для выбора
   const colorOptions = [
     '#99582A',
     '#6b6358',
@@ -61,7 +61,7 @@ const SettingsPage = () => {
     },
   ];
 
-  // 🔹 Загрузка настроек при монтировании
+  // Загрузка настроек при монтировании
   useEffect(() => {
     const loadSettings = async () => {
       setLoading(true);
@@ -83,16 +83,16 @@ const SettingsPage = () => {
     };
 
     loadSettings();
-  }, [t]); // 🔥 Добавили t в зависимости
+  }, [t]); 
 
-  // 🔹 Очистка таймера при размонтировании
+  // Очистка таймера при размонтировании
   useEffect(() => {
     return () => {
       if (colorSaveTimeout.current) clearTimeout(colorSaveTimeout.current);
     };
   }, []);
 
-  // 🔹 Уведомления
+  // Уведомления
   const showNotification = (text, type = 'success') => {
     setNotification({ text, type });
     setTimeout(() => setNotification(null), 3000);
@@ -106,7 +106,7 @@ const SettingsPage = () => {
     }
   }, [notification]);
 
-  // 🔹 Универсальная функция сохранения настроек
+  // Универсальная функция сохранения настроек
   const saveSettings = async (updates, successKey) => {
     const result = await updateUserSettings(updates);
     if (result.success) {
@@ -119,7 +119,7 @@ const SettingsPage = () => {
     }
   };
 
-  // 🔹 Обработчик смены иконки
+  // Обработчик смены иконки
   const handleIconChange = async (newIcon) => {
     setMarkerIcon(newIcon);
     await saveSettings(
@@ -128,7 +128,7 @@ const SettingsPage = () => {
     );
   };
 
-  // 🔹 Обработчик смены цвета (с debounce 500ms)
+  // Обработчик смены цвета (с debounce 500ms)
   const handleColorChange = (newColor) => {
     setMarkerColor(newColor);
 
@@ -142,7 +142,7 @@ const SettingsPage = () => {
     }, 500);
   };
 
-  // 🔹 Обработчик email-visibility
+  // Обработчик email-visibility
   const handleEmailToggle = async (value) => {
     setShowEmail(value);
     await saveSettings(
@@ -153,7 +153,7 @@ const SettingsPage = () => {
     );
   };
 
-  // 🔹 Обработчик защиты от скачивания
+  // Обработчик защиты от скачивания
   const handleProtectToggle = async (value) => {
     setProtectDownloads(value);
     await saveSettings(
@@ -204,12 +204,12 @@ const SettingsPage = () => {
       cover: p?.cover_image_url,
     })));
     
-    // 🔹 Проверка структуры первого проекта
+    // Проверка структуры первого проекта
     if (projectsResponse.projects?.[0]) {
       console.log('[Download] First project FULL structure:', JSON.stringify(projectsResponse.projects[0], null, 2));
     }
 
-    // 🔹 Данные автора
+    // Данные автора
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
     const authorName = currentUser?.name || currentUser?.email || 'Дизайнер';
     const authorAvatar = currentUser?.avatar_url || null;
@@ -220,7 +220,7 @@ const SettingsPage = () => {
       currentUserKeys: Object.keys(currentUser || {}),
     });
 
-    // 🔹 Фильтрация проектов
+    // Фильтрация проектов
     console.log('[Download] Step 4: Filtering published projects...');
     const publishedProjects = projectsResponse.projects.filter(p => {
       const isPublished = p?.status === 'published';
@@ -240,7 +240,7 @@ const SettingsPage = () => {
       throw new Error('Нет опубликованных проектов. Измените статус проектов на "published" или установите includeDrafts: true');
     }
 
-    // 🔹 ФИНАЛЬНАЯ ПРОВЕРКА ПЕРЕД ЭКСПОРТОМ
+    // ФИНАЛЬНАЯ ПРОВЕРКА ПЕРЕД ЭКСПОРТОМ
     console.log('[Download] Step 5: Pre-export checks...');
     console.log('[Download] CONFIG.MEDIA_BASE_URL:', CONFIG?.MEDIA_BASE_URL);
     
@@ -255,10 +255,10 @@ const SettingsPage = () => {
       isAbsolute: testUrl?.startsWith('http'),
     });
 
-    // 🔹 Проверка функции экспорта
+    // Проверка функции экспорта
     console.log('[Download] exportPortfolioToPdf type:', typeof exportPortfolioToPdf);
 
-    // 🔹 Вызов экспорта
+    // Вызов экспорта
     console.log('[Download] Step 6: Calling exportPortfolioToPdf...');
     const result = await exportPortfolioToPdf(publishedProjects, {
       title: `Портфолио ${authorName}`,
@@ -299,7 +299,7 @@ const SettingsPage = () => {
     }, 1200);
   };
 
-  // 🔹 Показ заглушки при загрузке
+  // Показ заглушки при загрузке
   if (loading) {
     return (
       <div className="settings-page settings-loading">
@@ -311,7 +311,6 @@ const SettingsPage = () => {
 
   return (
     <div className="settings-page">
-      {/* Уведомление */}
       {notification && (
         <div
           className={`settings-toast ${notification.type} animate-slide-down`}
@@ -326,7 +325,6 @@ const SettingsPage = () => {
       </header>
 
       <main className="settings-grid">
-        {/* Контакты */}
         <section className="settings-card hover-lift some-points">
           <div>
             <h2>{t('settings.contacts.title')}</h2>
@@ -374,7 +372,6 @@ const SettingsPage = () => {
           </div>
         </section>
 
-        {/* Метки на панораме */}
         <section className="settings-card hover-lift">
           <h2>{t('settings.markers.title')}</h2>
           <p className="setting-desc">{t('settings.markers.desc')}</p>
@@ -422,8 +419,6 @@ const SettingsPage = () => {
             </div>
           </div>
         </section>
-
-        {/* Данные */}
         <section className="settings-card hover-lift full-column">
           <h2>{t('settings.data.title')}</h2>
           <div className="full-column-flex">

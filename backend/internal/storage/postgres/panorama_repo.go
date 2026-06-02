@@ -102,7 +102,7 @@ func (r *PanoramaRepository) GetByProject(ctx context.Context, projectID uuid.UU
 		"duration_ms", duration,
 	)
 
-	// Логируем предупреждение, если панорам не найдено (опционально)
+	// Логируем предупреждение, если панорам не найдено 
 	if count == 0 {
 		logger.Info("No panoramas found for project", "project_id", projectID.String())
 	}

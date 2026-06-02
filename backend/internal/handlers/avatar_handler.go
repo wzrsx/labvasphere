@@ -97,7 +97,6 @@ func (h *AvatarHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Формируем URL для доступа к аватару
-	// В продакшене здесь может быть URL к S3/CDN
 	avatarURL := "avatars/" + newFilename
 
 	// Обновляем аватар в БД
@@ -108,9 +107,6 @@ func (h *AvatarHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Ошибка при обновлении профиля", http.StatusInternalServerError)
 		return
 	}
-
-	// Удаляем старый аватар, если он был
-	// (опционально, можно реализовать в UpdateAvatar репозитория)
 
 	// Возвращаем ответ
 	w.Header().Set("Content-Type", "application/json")

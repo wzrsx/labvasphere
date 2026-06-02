@@ -164,7 +164,7 @@ const MainPage = () => {
         const projectsList = result.projects || [];
         setProjects(projectsList);
 
-        // 🔹 🔥 ДОБАВЛЕНО: Загружаем актуальные счётчики лайков
+        // Загружаем актуальные счётчики лайков
         if (projectsList.length > 0) {
           const projectIds = projectsList.map((p) => p.id);
           const likesMap = await getProjectsLikesCounts(projectIds);
@@ -296,7 +296,6 @@ const MainPage = () => {
           onCreate={handleCreateProject}
         />
 
-        {/* Модальное окно подтверждения удаления */}
         {deleteModal.isOpen && (
           <div className="modal-overlay" onClick={handleCloseDeleteModal}>
             <div
@@ -337,14 +336,13 @@ const MainPage = () => {
                   disabled={deleteModal.isLoading}
                 >
                   {deleteModal.isLoading
-                    ? t('modal.delete.cancel')
+                    ? 'Удаление...' 
                     : t('modal.delete.confirm_button')}
                 </button>
               </div>
             </div>
           </div>
         )}
-        {/* Модальное окно подтверждения публикации перед шерингом */}
         {publishConfirmModal.isOpen && (
           <div
             className="modal-overlay"
@@ -435,7 +433,6 @@ const MainPage = () => {
             <div className="projects-grid">
               {filteredProjects.map((project) => (
                 <div key={project.id} className="project-card">
-                  {/* ... содержимое карточки проекта без изменений ... */}
                   <div className="project-thumbnail">
                     {project.cover_image_url ? (
                       <img
@@ -744,7 +741,6 @@ l33 33 88 -30 c291 -99 569 -169 823 -206 169 -24 1518 -32 1627 -9 115 24
               ))}
             </div>
           ) : (
-            /* 🔍 Логика пустого состояния */
             <div className="empty-state">
               {projects.length > 0 && searchQuery.trim() !== '' ? (
                 // Случай: проекты есть, но поиск не дал результатов
