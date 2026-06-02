@@ -1,70 +1,48 @@
-# Getting Started with Create React App
+# 🏠 LABVASPHERE
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Платформа для демонстрации портфолио интерьерных дизайнеров и архитекторов в формате интерактивных сферопанорам 360°. 
 
-## Available Scripts
+Проект позволяет специалистам загружать и презентовать свои работы в иммерсивном формате, обеспечивая клиентам эффект полного погружения в пространство.
 
-In the project directory, you can run:
+## ✨ Основные возможности
+- 🌐 **Просмотр 360°**: Интерактивная сферическая панорама на базе `photo-sphere-viewer`.
+- 🎨 **Для профессионалов**: Удобный способ презентации дизайн-проектов и архитектурных решений.
+- ⚡ **Высокая производительность**: Быстрый и легковесный бэкенд на Go.
 
-### `npm start`
+## 🛠 Технологический стек
+- **Frontend**: React, `photo-sphere-viewer`
+- **Backend**: Go (Golang)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+---
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## 🚀 Инструкция по запуску
 
-### `npm test`
+### Предварительные требования
+Убедитесь, что на вашем компьютере установлены:
+- [Node.js](https://nodejs.org/) (и npm)
+- [Go](https://go.dev/dl/)
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### 1. Запуск Backend (Go)
+Откройте терминал и выполните следующие команды из корневой папки проекта:
 
-### `npm run build`
+```bash
+# Переход в папку бэкенда
+cd backend
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+# Сборка сервера
+go build ./cmd/server
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+# Запуск сервера
+go run ./cmd/server
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### 2. Запуск Frontend (React)
+Откройте новый терминал (оставив бэкенд работающим) и выполните команды из корневой папки проекта:
 
-### `npm run eject`
+```bash
+# Установка зависимостей (если делаете это впервые)
+npm install --legacy-peer-deps
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+# Запуск сервера разработки
+npm start
+```
