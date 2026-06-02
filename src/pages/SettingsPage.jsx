@@ -165,7 +165,7 @@ const SettingsPage = () => {
   };
 
   const handleDownload = async () => {
-  showNotification(`Функция в доработке`, 'false');
+  showNotification(t('settings.notifications.feature_in_progress'), 'false');
   return;
   console.log('🚀 [Download] === handleDownload START ===');
   console.log('[Download] CONFIG at handleDownload:', {

@@ -122,6 +122,67 @@
   "user": {
     "default": "User"
   },
+  "profile": {
+    "loading": "Loading profile...",
+    "title": "Profile",
+    "logout": "Log out",
+    "preview": "Preview profile",
+    "save_changes": "Save changes",
+    "saving": "Saving...",
+    "avatar": {
+      "alt": "Avatar",
+      "uploading": "⏳ Uploading...",
+      "choose_photo": "📷 Choose photo",
+      "save": "💾 Save",
+      "cancel": "✕ Cancel",
+      "delete": "🗑️ Delete",
+      "hint": "JPG, PNG or WebP, max 5MB",
+      "confirm_delete": "Delete avatar?"
+    },
+    "form": {
+      "full_name_label": "Full name *",
+      "email_label": "Email",
+      "email_hint": "Email cannot be changed",
+      "bio_label": "About",
+      "bio_placeholder": "Tell us about yourself and your experience...",
+      "role_label": "Role",
+      "role_hint": "Role is assigned at registration and cannot be changed"
+    },
+    "roles": {
+      "designer": "Designer / Architect",
+      "user": "User"
+    },
+    "password": {
+      "change_button": "Change password",
+      "cancel": "Cancel",
+      "current_label": "Current password *",
+      "new_label": "New password *",
+      "new_placeholder": "Minimum 8 characters",
+      "confirm_label": "Confirm new password *",
+      "hint_length": "• Password must contain at least 8 characters",
+      "hint_complexity": "• Use letters, numbers and special characters",
+      "saving": "Saving...",
+      "save_button": "Save new password"
+    },
+    "notifications": {
+      "profile_updated": "Profile updated successfully!",
+      "avatar_updated": "Avatar updated successfully!",
+      "avatar_deleted": "Avatar deleted",
+      "password_changed": "Password changed successfully"
+    },
+    "errors": {
+      "load_failed": "Failed to load profile",
+      "save_failed": "Failed to save changes",
+      "full_name_required": "Full name is required",
+      "avatar_upload_failed": "Failed to upload avatar",
+      "avatar_delete_failed": "Failed to delete avatar",
+      "password_fields_required": "Please fill in all fields",
+      "password_min_length": "New password must contain at least 6 characters",
+      "password_mismatch": "New passwords do not match",
+      "password_same_as_current": "New password must be different from current",
+      "password_change_failed": "Failed to change password. Please try again."
+    }
+  },
   "partner": {
     "loading": "Loading partner program data...",
     "error": "Failed to load data",
@@ -456,7 +517,8 @@
       "download_ready": "Portfolio ready for download",
       "cache_cleared": "Temporary data cleared. Please reload the page.",
       "save_error": "Failed to save settings",
-      "load_error": "Failed to load settings"
+      "load_error": "Failed to load settings",
+      "feature_in_progress": "Feature in development"
     },
     "contacts": {
       "title": "Contact Visibility",
@@ -498,6 +560,11 @@
         "loading": "Clearing...",
         "desc": "Use if panoramas load slowly or display incorrectly"
       }
+    },
+    "export": {
+      "pdf_title": "Portfolio",
+      "button": "Download Portfolio (PDF)",
+      "button_loading": "Preparing..."
     }
   },
   "lang_btn": "🇬🇧 EN",
