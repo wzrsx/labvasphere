@@ -25,7 +25,6 @@ import {
 import SphereViewer from '../components/SphereViewer';
 import './EditorPage.css';
 import { CONFIG } from '../config';
-import MiniMapHotspots from '../components/MiniMap/MiniMapHotspots.jsx';
 console.log('🔍 [Import Debug] getUserSettings =', typeof getUserSettings);
 const EditorPage = () => {
   const { t } = useTranslation();

@@ -33,7 +33,7 @@ export const getProjects = async () => {
   }
 };
 
-// 🔹 Создание проекта (без panorama_url — панорама регистрируется отдельно)
+// Создание проекта (без panorama_url — панорама регистрируется отдельно)
 export const createProject = async (projectData) => {
   try {
     // projectData может содержать:
@@ -327,7 +327,7 @@ export const uploadHotspotImage = async (file, projectId) => {
 
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('project_id', projectId); // 🔹 Добавляем project_id
+  formData.append('project_id', projectId);
 
   try {
     const response = await api.post('/upload/hotspot', formData, {
