@@ -1,211 +1,482 @@
-import React, { useState } from "react";
-import { createProject } from "../services/projectService";
-import api from '../services/api';
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+} from 'react';
+import SphereViewer from './SphereViewer';
+import {
+  createProject,
+  uploadPanorama,
+  uploadCover,
+  updateProject,
+  registerPanorama,
+} from '../services/projectService';
+import { useTranslation } from 'react-i18next';
+
+const ASPECT_RATIO = 16 / 9;
+const COVER_WIDTH = 1280;
+const COVER_HEIGHT = Math.round(COVER_WIDTH / ASPECT_RATIO);
+
+const createPreview = (file) => {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+
+    img.onload = () => {
+      const maxWidth = 2048;
+      const scale = Math.min(1, maxWidth / img.width);
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          } else reject(new Error('Failed to create preview'));
+        },
+        'image/jpeg',
+        0.75,
+      );
+    };
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+};
 
 const NewProjectModal = ({ isOpen, onClose, onCreate }) => {
-  const [projectName, setProjectName] = useState("");
-  const [description, setDescription] = useState("");
-  const [selectedFile, setSelectedFile] = useState(null);
+  const { t } = useTranslation();
+  const [projectName, setProjectName] = useState('');
+  const [description, setDescription] = useState('');
+  const [panoramaFile, setPanoramaFile] = useState(null);
+  const [coverFile, setCoverFile] = useState(null);
+  const [panoramaPreview, setPanoramaPreview] = useState(null);
+  const [coverPreview, setCoverPreview] = useState(null);
   const [dragActive, setDragActive] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [viewerStep, setViewerStep] = useState(false);
+
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [createdProjectData, setCreatedProjectData] = useState(null);
+  const [createdProjectName, setCreatedProjectName] = useState('');
+
+  const sphereViewerRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const isDraggingRef = useRef(false);
+  const dragTimeoutRef = useRef(null);
+
+  const handleViewerReady = useCallback(
+    (viewer) => console.log('✅ Viewer ready'),
+    [],
+  );
+  const handleViewerError = useCallback((err) => {
+    console.error('❌ Viewer error:', err);
+    setError(`Ошибка: ${err.message}`);
+  }, []);
+
+  const viewerStyle = useMemo(
+    () => ({ height: '225px', borderRadius: '8px' }),
+    [],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (coverPreview && coverPreview.startsWith('blob:'))
+        URL.revokeObjectURL(coverPreview);
+    };
+  }, [coverPreview]);
+
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isDraggingRef.current) {
+        dragTimeoutRef.current = setTimeout(() => {
+          isDraggingRef.current = false;
+        }, 200);
+      }
+    };
+    const handleGlobalMouseDown = () => {
+      if (dragTimeoutRef.current) clearTimeout(dragTimeoutRef.current);
+    };
+    document.addEventListener('mouseup', handleGlobalMouseUp);
+    document.addEventListener('mousedown', handleGlobalMouseDown);
+    return () => {
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+      document.removeEventListener('mousedown', handleGlobalMouseDown);
+      if (dragTimeoutRef.current) clearTimeout(dragTimeoutRef.current);
+    };
+  }, []);
+
+  const captureCoverImage = useCallback(async () => {
+    const viewer = sphereViewerRef.current?.getInstance?.();
+    if (!viewer) {
+      setError('Viewer ещё не готов');
+      return;
+    }
+
+    try {
+      const screenshot = await new Promise((resolve, reject) => {
+        const onRender = () => {
+          try {
+            const canvas = viewer.renderer?.renderer?.domElement;
+            if (!canvas) {
+              reject(new Error('Canvas not found'));
+              return;
+            }
+            resolve(canvas.toDataURL('image/jpeg', 0.92));
+          } catch (err) {
+            reject(err);
+          }
+        };
+        viewer.addEventListener('render', onRender, { once: true });
+        viewer.needsUpdate();
+        setTimeout(() => {
+          viewer.removeEventListener('render', onRender);
+          reject(new Error('Render timeout'));
+        }, 3000);
+      });
+
+      const blob = await fetch(screenshot).then((r) => r.blob());
+      const file = new File([blob], `cover_${Date.now()}.jpg`, {
+        type: 'image/jpeg',
+      });
+      setCoverFile(file);
+      setCoverPreview(URL.createObjectURL(file));
+      setError('');
+    } catch (err) {
+      console.error('[Cover] Error:', err);
+      setError('Не удалось создать обложку');
+    }
+  }, []);
 
   if (!isOpen) return null;
 
+  const handleClose = () => {
+    if (isDraggingRef.current) return;
+    if (panoramaPreview) URL.revokeObjectURL(panoramaPreview);
+    if (coverPreview && coverPreview.startsWith('blob:'))
+      URL.revokeObjectURL(coverPreview);
+    resetForm();
+    onClose();
+  };
+
+  const handleSuccessClose = () => {
+    setShowSuccessModal(false);
+    if (onCreate && createdProjectData) {
+      onCreate(createdProjectData);
+    }
+    resetForm();
+    onClose();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
+    setError('');
 
-    // Валидация
     if (!projectName.trim()) {
-      setError("Название проекта обязательно");
+      setError('Название проекта обязательно');
       return;
     }
-
-    if (!selectedFile) {
-      setError("Пожалуйста, выберите файл панорамы");
+    if (!panoramaFile) {
+      setError('Выберите файл панорамы');
       return;
     }
-
-    // Проверка типа файла
-    if (!selectedFile.type.match("image/(jpeg|jpg|png)")) {
-      setError("Поддерживаются только файлы формата JPG или PNG");
-      return;
-    }
-
-    // Ограничение размера файла (например, 50 МБ)
-    const maxSize = 50 * 1024 * 1024; // 50 МБ
-    if (selectedFile.size > maxSize) {
-      setError("Файл слишком большой. Максимальный размер: 50 МБ");
+    if (!coverFile) {
+      setError('Выберите обложку проекта');
       return;
     }
 
     setIsLoading(true);
 
-    // Сначала загружаем файл на сервер
-    const uploadResult = await uploadFile(selectedFile);
-    
-    if (!uploadResult.success) {
-      setError(uploadResult.error || "Ошибка при загрузке файла");
+    try {
+      console.log('🔹 Шаг 1: Создаём проект (без файлов)...');
+
+      const projectResult = await createProject({
+        title: projectName.trim(),
+        description: description.trim() || null,
+        cover_image_url: null,
+        panorama_filename: null,
+        panorama_original_name: null,
+        status: 'draft',
+      });
+
+      if (!projectResult.success) {
+        throw new Error(`createProject failed: ${projectResult.error}`);
+      }
+
+      const project = projectResult.project;
+      const projectId = project?.id;
+
+      if (!projectId) {
+        throw new Error('Project ID is missing in response');
+      }
+
+      console.log('🔹 Шаг 2: Загружаем панораму...', { projectId });
+      const panoramaResult = await uploadPanorama(panoramaFile, projectId);
+
+      if (!panoramaResult.success) {
+        throw new Error(`uploadPanorama failed: ${panoramaResult.error}`);
+      }
+
+      const panoramaFilename = panoramaResult.filename;
+
+      console.log('🔹 Шаг 3: Загружаем обложку...', { projectId });
+      const coverResult = await uploadCover(coverFile, projectId);
+
+      if (!coverResult.success) {
+        throw new Error(`uploadCover failed: ${coverResult.error}`);
+      }
+
+      console.log('🔹 Шаг 4: Регистрируем основную панораму...');
+      const registerResult = await registerPanorama({
+        project_id: projectId,
+        filename: panoramaFilename,
+        original_filename: panoramaFile.name,
+        title: `${projectName.trim()} - Основная панорама`,
+        description: '',
+        is_main: true,
+      });
+
+      if (!registerResult.success) {
+        console.warn(
+          '⚠️ Не удалось зарегистрировать панораму:',
+          registerResult.error,
+        );
+      }
+
+      console.log('🔹 Шаг 5: Обновляем проект...');
+      const updateResult = await updateProject(projectId, {
+        cover_image_url: coverResult.fileUrl,
+        status: 'published',
+      });
+
+      if (!updateResult.success) {
+        throw new Error(`updateProject failed: ${updateResult.error}`);
+      }
+
+      setCreatedProjectData(updateResult.project);
+      setCreatedProjectName(projectName.trim());
+      setShowSuccessModal(true);
+
+    } catch (err) {
+      console.error('❌ Ошибка в handleSubmit:', err);
+      setError(err.message || 'Ошибка при создании проекта');
+    } finally {
       setIsLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setProjectName('');
+    setDescription('');
+    setPanoramaFile(null);
+    setCoverFile(null);
+    setPanoramaPreview(null);
+    setCoverPreview(null);
+    setViewerStep(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const validateAndSetPanorama = async (file) => {
+    if (!file) return;
+    if (!file.type.match('image/(jpeg|jpg|png)')) {
+      setError('Поддерживаются только JPG и PNG');
       return;
     }
-
-    // Затем создаём проект с полученным URL
-    const result = await createProject({
-      title: projectName.trim(),
-      description: description.trim() || null,
-      panorama_url: uploadResult.fileUrl,
-    });
-
-    setIsLoading(false);
-
-    if (result.success) {
-      // Вызываем колбэк для обновления списка проектов
-      if (onCreate) {
-        onCreate(result.project); // Передаём объект проекта
-      }
-      
-      // Закрываем модалку и сбрасываем форму
-      setProjectName("");
-      setDescription("");
-      setSelectedFile(null);
-      onClose();
-      
-      // Показываем уведомление 
-      alert(`Проект "${result.project.title}" успешно создан!`);
-    } else {
-      setError(result.error || "Ошибка при создании проекта");
+    if (file.size > 50 * 1024 * 1024) {
+      setError('Максимальный размер: 50 МБ');
+      return;
+    }
+    try {
+      setError('');
+      setViewerStep(true);
+      const previewUrl = await createPreview(file);
+      setPanoramaFile(file);
+      setPanoramaPreview(previewUrl);
+    } catch (err) {
+      console.error('Error creating preview:', err);
+      setError('Не удалось обработать изображение');
+      setViewerStep(false);
     }
   };
 
-  // Загрузка файла на сервер
-  const uploadFile = async (file) => {
-  const formData = new FormData();
-  formData.append('file', file);
-
-  try {
-    const response = await api.post('/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-
-    return {
-      success: true,
-      fileUrl: response.data.file_url,
-    };
-  } catch (error) {
-    console.error('Ошибка загрузки файла:', error);
-    const message = error.response?.data?.error || 'Ошибка при загрузке файла';
-    return {
-      success: false,
-      error: message,
-    };
-  }
-};
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Опционально: проверка типа
-      if (!file.type.match("image/(jpeg|jpg|png)")) {
-        setError("Пожалуйста, загрузите изображение в формате JPG или PNG.");
-        return;
-      }
-      setSelectedFile(file);
-      setError("");
-    }
-  };
-
+  const handleFileChange = (e) => validateAndSetPanorama(e.target.files[0]);
   const handleDragOver = (e) => {
     e.preventDefault();
-    e.stopPropagation();
     setDragActive(true);
   };
-
-  const handleDragLeave = () => {
-    setDragActive(false);
-  };
-
+  const handleDragLeave = () => setDragActive(false);
   const handleDrop = (e) => {
     e.preventDefault();
-    e.stopPropagation();
     setDragActive(false);
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.match("image/(jpeg|jpg|png)")) {
-      setSelectedFile(file);
-      setError("");
-    } else {
-      setError("Поддерживаются только файлы формата JPG и PNG.");
-    }
+    validateAndSetPanorama(e.dataTransfer.files[0]);
   };
-
-  const handleFileRemove = () => {
-    setSelectedFile(null);
+  const handleViewerMouseDown = (e) => {
+    if (e.button === 0) isDraggingRef.current = true;
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={handleClose}>
       <div
-        className={`modal-content ${dragActive ? "drag-over" : ""}`}
+        className={`modal-content ${dragActive ? 'drag-over' : ''}`}
         onClick={(e) => e.stopPropagation()}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <h2>Создать новый проект</h2>
+        <h2>{t('newProject.modal.title')}</h2>
         <form onSubmit={handleSubmit} className="modal-form">
           {error && <div className="error-message">{error}</div>}
+
           <input
             type="text"
-            placeholder="Название проекта *"
+            placeholder={t('newProject.form.name_placeholder')}
             value={projectName}
             onChange={(e) => setProjectName(e.target.value)}
             className="modal-input"
-            autoFocus
+            disabled={isLoading}
             required
+            autoFocus
+          />
+
+          <textarea
+            placeholder={t('newProject.form.description_placeholder')}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="modal-textarea"
+            rows="3"
             disabled={isLoading}
           />
-          
-            <textarea
-              id="description"
-              placeholder="Опишите ваш проект"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="modal-textarea"
-              rows="3"
-              disabled={isLoading}
-            />
-          
-          {/* Загрузка файла */}
-          <div className="file-upload">
-            <label className="file-upload-label">
-              {selectedFile
-                ? selectedFile.name
-                : "Выберите файл панорамы (JPG/PNG)"}
-              <input
-                type="file"
-                accept=".jpg,.jpeg,.png,image/jpeg,image/png"
-                onChange={handleFileChange}
-                style={{ display: "none" }}
-              />
-            </label>
-          </div>
+
+          {!viewerStep && (
+            <div className="file-upload-section">
+              <label className="file-upload-label">
+                {panoramaFile
+                  ? panoramaFile.name
+                  : t('newProject.form.panorama_placeholder')}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".jpg,.jpeg,.png,image/*"
+                  onChange={handleFileChange}
+                  hidden
+                  aria-label={t('newProject.form.panorama_label')}
+                />
+              </label>
+            </div>
+          )}
+
+          {viewerStep && panoramaPreview && (
+            <div className="viewer-section">
+              <div className="viewer-header">
+                <h4>{t('newProject.viewer.title')}</h4>
+              </div>
+              <div
+                className="viewer-wrapper"
+                onMouseDown={handleViewerMouseDown}
+              >
+                <SphereViewer
+                  key={panoramaPreview}
+                  ref={sphereViewerRef}
+                  src={panoramaPreview}
+                  style={viewerStyle}
+                  navbar={['zoom', 'fullscreen']}
+                  autoRotate={false}
+                  mousemove={true}
+                  onViewerReady={handleViewerReady}
+                  onError={handleViewerError}
+                />
+                <div className="aspect-hint">
+                  <span>16:9</span>
+                </div>
+              </div>
+              <div className="viewer-controls">
+                {!coverFile ? (
+                  <button
+                    type="button"
+                    className="btn-capture"
+                    onClick={captureCoverImage}
+                    disabled={isLoading}
+                  >
+                    {t('newProject.viewer.capture_button')}
+                  </button>
+                ) : (
+                  <div className="cover-preview">
+                    <span>{t('newProject.viewer.cover_selected')}</span>
+                    <button
+                      type="button"
+                      className="btn-remove-cover"
+                      onClick={() => {
+                        setCoverFile(null);
+                        setCoverPreview(null);
+                      }}
+                      disabled={isLoading}
+                    >
+                      {t('newProject.viewer.remove_cover')}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="modal-actions">
-            <button type="button" onClick={onClose} className="modal-cancel">
-              Отмена
+            <button
+              type="button"
+              onClick={handleClose}
+              className="modal-cancel"
+              disabled={isLoading}
+            >
+              {t('modal.cancel')}
             </button>
             <button
               type="submit"
               className="modal-create"
-              disabled={!projectName || !selectedFile}
+              disabled={isLoading || !projectName || !coverFile}
             >
-              Создать
+              {isLoading
+                ? t('newProject.form.creating')
+                : t('newProject.form.create_button')}
             </button>
           </div>
         </form>
+
+        {showSuccessModal && (
+          <div className="modal-overlay" onClick={handleSuccessClose} style={{ zIndex: 1000 }}>
+            <div
+              className="delete-modal-content"
+              onClick={(e) => e.stopPropagation()}
+              style={{ maxWidth: '400px' }}
+            >
+              <div className="modal-header">
+                <h2 style={{ color: '#10b981' }}>{t('newProject.modal.title_success')}</h2>
+              </div>
+
+              <div className="modal-body">
+                <p>{t('newProject.modal.success_message')}</p>
+                <p className="project-name">
+                  <strong>"{createdProjectName}"</strong>
+                </p>
+              </div>
+
+              <div className="modal-actions" style={{ justifyContent: 'center' }}>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={handleSuccessClose}
+                >
+                  {t('newProject.modal.success_ok')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

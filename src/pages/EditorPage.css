@@ -1,0 +1,1555 @@
+/* ===== EditorPage.css ===== */
+/* Стили редактора сферопанорам в единой дизайн-системе LABVASPHERE */
+
+/* ----------------------------------------------------------------------------
+   ОСНОВНОЙ КОНТЕЙНЕР
+---------------------------------------------------------------------------- */
+.editor-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+
+/* ----------------------------------------------------------------------------
+   ПАНОРАМА (тёмная тема для контраста с контентом)
+---------------------------------------------------------------------------- */
+.panorama-viewer {
+  flex: 1;
+  height: 100%;
+  position: relative;
+  background: #1a1a1a;
+  overflow: hidden;
+  transition: opacity var(--transition-normal);
+}
+
+.panorama-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.empty-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto var(--space-lg);
+  opacity: 0.3;
+}
+
+.empty-state p {
+  font-size: 1.2rem;
+  opacity: 0.5;
+}
+
+/* ----------------------------------------------------------------------------
+   БОКОВАЯ ПАНЕЛЬ (тёплая палитра)
+---------------------------------------------------------------------------- */
+.editor-sidebar {
+  width: 320px;
+  height: 100%;
+  background: var(--bg-gradient);
+  border-left: 1.5px solid var(--accent-light);
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-lg);
+  overflow-y: auto;
+  position: relative;
+  transition: all var(--transition-normal) cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: -2px 0 10px rgba(62, 58, 51, 0.08);
+}
+
+/* Полное скрытие панели при сворачивании */
+.editor-sidebar.collapsed {
+  width: 0;
+  padding: 0;
+  border-left: none;
+  box-shadow: none;
+  overflow: visible !important;
+}
+
+/* ----------------------------------------------------------------------------
+   КНОПКА СВОРАЧИВАНИЯ
+---------------------------------------------------------------------------- */
+.collapse-btn {
+  width: 30px;
+  height: 30px;
+  background: var(--bg-card);
+  border: 2px solid var(--accent-light);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  box-shadow: var(--shadow);
+  z-index: 1000;
+  flex-shrink: 0;
+  position: relative;
+  color: var(--text-primary);
+}
+
+.collapse-btn:hover {
+  background: var(--accent-primary);
+  border-color: var(--accent-hover);
+  box-shadow: var(--shadow-hover);
+}
+
+.editor-sidebar:not(.collapsed) .collapse-btn {
+  position: relative;
+}
+
+.editor-sidebar.collapsed .collapse-btn {
+  position: fixed !important;
+  top: 16px !important;
+  right: 16px !important;
+  margin: 0 !important;
+  transform: rotate(180deg);
+  width: 40px !important;
+  height: 40px !important;
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.collapse-btn svg {
+  transition: transform var(--transition-normal);
+  transform: rotate(0deg);
+}
+
+.editor-sidebar.collapsed .collapse-btn svg {
+  transform: rotate(180deg) !important;
+}
+
+.editor-sidebar.collapsed .sidebar-header h3,
+.editor-sidebar.collapsed .project-info,
+.editor-sidebar.collapsed .tools-section,
+.editor-sidebar.collapsed .actions-section,
+.editor-sidebar.collapsed .project-stats,
+.editor-sidebar.collapsed .hotspot-editor-panel,
+.editor-sidebar.collapsed .media-panel,
+.editor-sidebar.collapsed .mode-toggle,
+.editor-sidebar.collapsed .hotspot-hint {
+  display: none !important;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.editor-sidebar.collapsed + .panorama-viewer,
+.editor-container:has(.editor-sidebar.collapsed) .panorama-viewer {
+  width: 100vw;
+  margin-right: 0;
+}
+
+/* ----------------------------------------------------------------------------
+   ЗАГОЛОВОК ПАНЕЛИ
+---------------------------------------------------------------------------- */
+.sidebar-header {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: var(--space-xl);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--border);
+  transition: all var(--transition-normal);
+  opacity: 0;
+  animation: fadeInUp var(--transition-slow) forwards;
+}
+
+.sidebar-header h3 {
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  margin: 0;
+  font-weight: 600;
+  font-family: 'BerlinSansFBCyrillic-Regular', sans-serif;
+  white-space: nowrap;
+  margin-left: var(--space-sm);
+  transition: opacity var(--transition-normal);
+  line-height: 1;
+}
+
+/* ----------------------------------------------------------------------------
+   ПОЛЯ ВВОДА
+---------------------------------------------------------------------------- */
+.project-title-input,
+.project-description-input,
+.hotspot-title-input,
+.hotspot-tooltip-input {
+  width: 100%;
+  border: 1.5px solid var(--accent-light);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  color: var(--text-primary);
+  font-size: 1rem;
+  margin-bottom: var(--space-md);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+  font-family: inherit;
+  background: var(--bg-card);
+  opacity: 0;
+  animation: fadeInUp var(--transition-slow) forwards;
+  animation-delay: 0.1s;
+}
+
+.project-title-input:focus,
+.project-description-input:focus {
+  outline: none;
+  border-color: var(--accent-hover);
+  box-shadow: 0 0 0 3px rgba(153, 88, 42, 0.15);
+}
+
+.project-title-input {
+  font-size: 1.3rem;
+  font-weight: 600;
+  font-family: 'BerlinSansFBCyrillic-Regular', sans-serif;
+}
+
+.project-description-input {
+  min-height: 80px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+/* ----------------------------------------------------------------------------
+   СЕКЦИИ ИНСТРУМЕНТОВ И ДЕЙСТВИЙ
+---------------------------------------------------------------------------- */
+.tools-section,
+.actions-section {
+  margin-bottom: var(--space-xl);
+  opacity: 0;
+  animation: fadeInUp var(--transition-slow) forwards;
+  animation-delay: 0.2s;
+}
+
+.tools-section h4,
+.actions-section h4 {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin-bottom: var(--space-md);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tools-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
+}
+
+/* ----------------------------------------------------------------------------
+   КНОПКИ ИНСТРУМЕНТОВ
+---------------------------------------------------------------------------- */
+.tool-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg) var(--space-md);
+  background: var(--bg-card);
+  border: 1.5px solid var(--accent-light);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  gap: var(--space-sm);
+  font-family: inherit;
+  opacity: 0;
+  animation: fadeInUp var(--transition-slow) forwards;
+}
+
+.tool-btn:nth-child(1) {
+  animation-delay: 0.25s;
+}
+.tool-btn:nth-child(2) {
+  animation-delay: 0.3s;
+}
+.tool-btn:nth-child(3) {
+  animation-delay: 0.35s;
+}
+.tool-btn:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+.tool-btn:hover {
+  background: var(--accent-primary);
+  border-color: var(--accent-hover);
+  color: var(--text-inverse);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+.tool-btn:active {
+  transform: translateY(0);
+}
+
+.tool-btn.active {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: var(--text-inverse);
+  box-shadow: 0 4px 15px rgba(153, 88, 42, 0.4);
+}
+
+.tool-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.tool-btn span {
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-top: var(--space-xs);
+}
+
+/* ----------------------------------------------------------------------------
+   КНОПКИ ДЕЙСТВИЙ
+---------------------------------------------------------------------------- */
+.actions-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.action-btn {
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  border: none;
+  border-radius: var(--radius-full);
+  color: var(--text-inverse);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  width: 100%;
+  font-family: inherit;
+  opacity: 0;
+  animation: fadeInUp var(--transition-slow) forwards;
+}
+
+.action-btn:nth-child(1) {
+  animation-delay: 0.45s;
+}
+.action-btn:nth-child(2) {
+  animation-delay: 0.5s;
+}
+.action-btn:nth-child(3) {
+  animation-delay: 0.55s;
+}
+
+.action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.action-btn.primary {
+  background: var(--accent-primary);
+}
+
+.action-btn.primary:not(:disabled):hover {
+  background: var(--accent-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+.action-btn.primary.loading {
+  background: var(--accent-hover);
+  cursor: wait;
+}
+
+.action-btn.secondary {
+  background: var(--text-muted);
+}
+
+.action-btn.secondary:not(:disabled):hover {
+  background: var(--text-secondary);
+  transform: translateY(-2px);
+}
+
+.action-btn.danger {
+  background: var(--error);
+}
+
+.action-btn.danger:not(:disabled):hover {
+  background: var(--error);
+  filter: brightness(0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(184, 123, 110, 0.4);
+}
+
+.action-icon {
+  width: 20px;
+  height: 20px;
+}
+/* ----------------------------------------------------------------------------
+   МЕДИА-ГАЛЕРЕЯ 
+---------------------------------------------------------------------------- */
+.media-panel {
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border);
+  opacity: 0;
+  animation: fadeInUp var(--transition-slow) forwards;
+  animation-delay: 0.65s;
+}
+
+.media-panel h4 {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin: 0;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.media-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+}
+
+/* Скрытый input для загрузки */
+.media-upload-input {
+  display: none;
+}
+
+/* Кнопка загрузки */
+.media-upload-btn {
+  padding: var(--space-xs) var(--space-md);
+  background: var(--bg-secondary);
+  border: 2px dashed var(--accent-light);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+}
+
+.media-upload-btn:hover:not(:disabled) {
+  background: rgba(153, 88, 42, 0.05);
+  border-color: var(--accent-hover);
+  color: var(--accent-hover);
+}
+
+.media-upload-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: var(--border);
+  border-color: var(--border);
+}
+
+/* Список панорам */
+.media-panoramas-list {
+  max-height: 400px;
+  overflow-y: auto;
+  margin-bottom: var(--space-md);
+}
+
+/* Пустое состояние */
+.media-empty-state {
+  padding: var(--space-xl);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+}
+
+.media-empty-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: var(--space-sm);
+  color: var(--border);
+}
+
+.media-empty-state p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.media-empty-hint {
+  font-size: 0.6875rem !important;
+  margin-top: var(--space-xs) !important;
+  color: var(--text-muted) !important;
+}
+
+/* Сетка панорам */
+.media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-sm);
+}
+
+/* Элемент панорамы */
+.media-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.media-item:hover {
+  border-color: var(--accent-light);
+  background: var(--bg-secondary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.media-item-thumbnail {
+  width: 50px;
+  height: 50px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.media-item-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.media-item-placeholder {
+  font-size: 1.25rem;
+  color: var(--text-muted);
+}
+
+.media-item-info {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.media-item-title {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.media-item-subtitle {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.media-item-btn {
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--accent-primary);
+  color: var(--text-inverse);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.media-item-btn:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+/* Статистика */
+.media-stats {
+  margin-top: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+}
+
+/* Скроллбар для списка */
+.media-panoramas-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.media-panoramas-list::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-full);
+}
+
+.media-panoramas-list::-webkit-scrollbar-thumb {
+  background: var(--accent-light);
+  border-radius: var(--radius-full);
+}
+
+.media-panoramas-list::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-hover);
+}
+
+/* ----------------------------------------------------------------------------
+   👁️ РЕЖИМ ПЕРЕХОДОВ 
+---------------------------------------------------------------------------- */
+.hotspot-editor-panel {
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border);
+  opacity: 0;
+  animation: fadeInUp var(--transition-slow) forwards;
+  animation-delay: 0.7s;
+}
+
+.hotspot-editor-panel h4 {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin-bottom: var(--space-md);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Подсказка для режима переходов */
+.hotspot-hint {
+  background: var(--warning-bg);
+  border: 1px solid var(--warning);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+.hotspot-hint-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.hotspot-hint-text {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.hotspot-hint-text strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Список хотспотов */
+.hotspot-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.hotspot-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.hotspot-item:hover {
+  border-color: var(--accent-light);
+  background: var(--bg-secondary);
+}
+
+.hotspot-item.active {
+  border-color: var(--accent-hover);
+  background: rgba(153, 88, 42, 0.05);
+}
+
+.hotspot-item-icon {
+  width: 24px;
+  height: 24px;
+  color: var(--accent-hover);
+  flex-shrink: 0;
+}
+
+.hotspot-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.hotspot-item-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hotspot-item-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.hotspot-item-actions {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.hotspot-item-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  color: var(--text-secondary);
+}
+
+.hotspot-item-btn:hover {
+  background: var(--accent-light);
+  border-color: var(--accent-hover);
+  color: var(--accent-hover);
+}
+
+.hotspot-item-btn.delete:hover {
+  background: var(--error-bg);
+  border-color: var(--error);
+  color: var(--error);
+}
+.editor-sidebar .hotspot-custom-input {
+  margin-top: var(--space-xs);
+  margin-bottom: 0;
+  padding: var(--space-sm);
+}
+/* Кнопка добавления хотспота */
+.add-hotspot-btn {
+  width: 100%;
+  padding: var(--space-md);
+  background: var(--bg-secondary);
+  border: 2px dashed var(--accent-light);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+}
+
+.add-hotspot-btn:hover {
+  background: rgba(153, 88, 42, 0.05);
+  border-color: var(--accent-hover);
+  color: var(--accent-hover);
+}
+
+/* ----------------------------------------------------------------------------
+   ПЕРЕКЛЮЧАТЕЛЬ РЕЖИМОВ (Mode Toggle)
+---------------------------------------------------------------------------- */
+.mode-toggle {
+  display: flex;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
+  padding: var(--space-xs);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+.mode-btn {
+  flex: 1;
+  padding: var(--space-sm) var(--space-md);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.mode-btn:hover {
+  color: var(--text-primary);
+}
+
+.mode-btn.active {
+  background: var(--bg-card);
+  color: var(--accent-hover);
+  box-shadow: var(--shadow);
+}
+
+/* ----------------------------------------------------------------------------
+   СТАТИСТИКА ПРОЕКТА
+---------------------------------------------------------------------------- */
+.project-stats {
+  margin-top: auto;
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border);
+  opacity: 0;
+  animation: fadeInUp var(--transition-slow) forwards;
+  animation-delay: 0.6s;
+}
+
+.project-stats h4 {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin-bottom: var(--space-md);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-xs) 0;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.stat-label {
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.editor-stat-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.editor-stat-value.status-published {
+  color: var(--success);
+  border-radius: var(--radius-md);
+  padding: 3px;
+}
+
+.editor-stat-value.status-draft {
+  color: var(--warning);
+}
+
+/* ----------------------------------------------------------------------------
+   СПИННЕРЫ И ЗАГРУЗКА
+---------------------------------------------------------------------------- */
+.spinner,
+.spinner-small {
+  border: 3px solid rgba(153, 88, 42, 0.2);
+  border-top-color: var(--accent-hover);
+  border-radius: var(--radius-full);
+  animation: spin 1s linear infinite;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  margin: 0 auto var(--space-lg);
+}
+
+.spinner-small {
+  width: 20px;
+  height: 20px;
+  margin-right: var(--space-sm);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.editor-loading,
+.editor-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.editor-loading p,
+.editor-error p {
+  margin-top: var(--space-lg);
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+}
+
+.error-icon {
+  width: 80px;
+  height: 80px;
+  color: var(--error);
+  margin-bottom: var(--space-lg);
+}
+
+.back-btn {
+  margin-top: var(--space-xl);
+  padding: var(--space-md) var(--space-xl);
+  background: var(--accent-primary);
+  color: var(--text-inverse);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-weight: 600;
+}
+
+.back-btn:hover {
+  background: var(--accent-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+/* ----------------------------------------------------------------------------
+   СКРОЛЛБАР
+---------------------------------------------------------------------------- */
+.editor-sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.editor-sidebar::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+.editor-sidebar::-webkit-scrollbar-thumb {
+  background: var(--accent-light);
+  border-radius: var(--radius-full);
+}
+
+.editor-sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-hover);
+}
+
+/* ----------------------------------------------------------------------------
+   ОВЕРЛЕЙ ПЕРЕХОДА
+---------------------------------------------------------------------------- */
+.transition-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(26, 26, 46, 0.85);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn var(--transition-fast);
+}
+
+.transition-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.transition-spinner {
+  width: 48px;
+  height: 48px;
+  position: relative;
+}
+
+.spinner-ring {
+  width: 100%;
+  height: 100%;
+  border: 3px solid rgba(153, 88, 42, 0.3);
+  border-top-color: var(--accent-hover);
+  border-radius: var(--radius-full);
+  animation: spin 0.8s linear infinite;
+}
+
+.transition-text {
+  color: var(--text-inverse);
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.transition-subtext {
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  margin: 0;
+}
+
+.transition-progress-bar {
+  width: 200px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: var(--space-md);
+}
+
+.transition-progress-fill {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--accent-primary),
+    var(--accent-light)
+  );
+  border-radius: var(--radius-sm);
+  transition: width 0.15s ease-out;
+}
+
+.transition-cancel-btn {
+  padding: var(--space-xs) var(--space-md);
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-inverse);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.transition-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.transition-error {
+  position: absolute;
+  top: var(--space-md);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--error);
+  color: var(--text-inverse);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: 0.8125rem;
+  z-index: 1001;
+  animation: slideDown var(--transition-normal);
+  box-shadow: var(--shadow-hover);
+}
+
+.transition-error button {
+  background: none;
+  border: none;
+  color: var(--text-inverse);
+  cursor: pointer;
+  padding: 0 var(--space-xs);
+  font-size: 1rem;
+  margin-left: var(--space-sm);
+  opacity: 0.8;
+  transition: opacity var(--transition-fast);
+}
+
+.transition-error button:hover {
+  opacity: 1;
+}
+/* ===== Mode Toggle ===== */
+.mode-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-top: var(--space-md);
+  padding: var(--space-sm);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+}
+
+.mode-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.mode-toggle-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--accent-hover);
+}
+
+.mode-toggle-hint {
+  font-size: 0.625rem;
+  color: var(--text-muted);
+  margin-left: var(--space-lg);
+}
+
+/* ===== Hotspot Editor Panel ===== */
+.hotspot-editor-panel {
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  padding-bottom: var(--space-lg);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  opacity: 0;
+  animation: fadeInUp var(--transition-slow) forwards;
+  animation-delay: 0.7s;
+}
+
+.hotspot-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+}
+
+.hotspot-editor-header h4 {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.hotspot-editor-panel.form-input {
+  background-color: aliceblue;
+}
+.hotspot-editor-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: var(--space-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.hotspot-editor-close:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+.hotspot-image-label {
+  display: block;
+  margin-top: var(--space-sm);
+}
+.form-input,
+.form-textarea,
+.form-select {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+  box-sizing: border-box;
+}
+
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
+  outline: none;
+  border-color: var(--accent-hover);
+  box-shadow: 0 0 0 3px rgba(153, 88, 42, 0.15);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 60px;
+  font-family: inherit;
+}
+
+/* ===== Image Upload ===== */
+.hotspot-image-upload .image-upload-area {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  background: var(--bg-secondary);
+  text-align: center;
+}
+
+.image-preview-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-height: 300px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: var(--space-md);
+  margin-top: var(--space-sm);
+}
+
+.image-preview {
+  max-width: 50%;
+  max-height: 300px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.image-remove-btn {
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+  z-index: 10;
+}
+
+.image-remove-btn:hover {
+  background: var(--error);
+  color: var(--text-inverse);
+  border-color: var(--error);
+  transform: scale(1.1);
+}
+
+.image-upload-placeholder {
+  text-align: center;
+  padding: var(--space-md);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.placeholder-icon {
+  font-size: 1.5rem;
+  margin-bottom: var(--space-xs);
+}
+
+.placeholder-text {
+  margin: 0 0 var(--space-xs) 0;
+  font-size: 0.75rem;
+}
+
+.placeholder-hint {
+  margin: 0;
+  font-size: 0.625rem;
+}
+
+.image-upload-input {
+  display: none;
+}
+
+.image-upload-btn {
+  width: 100%;
+  display: inline-block;
+  padding: var(--space-xs) var(--space-md);
+  background: var(--accent-primary);
+  color: var(--text-inverse);
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  cursor: pointer;
+  text-align: center;
+  margin-top: var(--space-sm);
+  transition: all var(--transition-fast);
+}
+
+.image-upload-btn:hover:not(.uploading) {
+  background: var(--accent-hover);
+}
+
+.image-upload-btn.uploading {
+  background: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.image-upload-btn.has-image {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.upload-hint {
+  margin: var(--space-xs) 0 0 0;
+  font-size: 0.625rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* ===== Target Panorama Select ===== */
+.target-panorama-select {
+  display: none;
+}
+
+.panorama-upload-btn {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--accent-primary);
+  color: var(--text-inverse);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-sm);
+  margin-top: var(--space-sm);
+  transition: all var(--transition-fast);
+}
+
+.panorama-upload-btn:hover:not(.uploading) {
+  background: var(--accent-hover);
+}
+
+.panorama-upload-btn.uploading {
+  background: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.spinner-mini {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--text-inverse);
+  border-top-color: transparent;
+  border-radius: var(--radius-full);
+  animation: spin 0.8s linear infinite;
+}
+
+.selected-panorama-indicator {
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--success-bg);
+  border: 1px solid var(--success);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  color: var(--success);
+  margin-bottom: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.panorama-divider {
+  border-top: 1px solid var(--border);
+  position: relative;
+  text-align: center;
+}
+
+.panorama-divider span {
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  padding: 0 var(--space-sm);
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
+.panorama-list {
+  margin-top: var(--space-sm);
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.panorama-list-empty {
+  padding: var(--space-md);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.panorama-list-item {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-card);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  transition: background var(--transition-fast);
+  color: var(--text-primary);
+}
+
+.panorama-list-item:last-child {
+  border-bottom: none;
+}
+
+.panorama-list-item:hover {
+  background: var(--bg-secondary);
+}
+
+.panorama-list-item.selected {
+  background: rgba(153, 88, 42, 0.05);
+  border-color: var(--accent-light);
+}
+
+.panorama-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.panorama-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panorama-badge-main {
+  font-size: 0.5625rem;
+  padding: 2px 6px;
+  background: var(--warning-bg);
+  color: var(--warning);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.panorama-clear-btn {
+  width: 100%;
+  margin-top: var(--space-sm);
+  padding: var(--space-xs) var(--space-md);
+  background: var(--error-bg);
+  color: var(--error);
+  border: 1px solid rgba(184, 123, 110, 0.3);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.panorama-clear-btn:hover {
+  background: var(--error);
+  color: var(--text-inverse);
+}
+
+/* ===== Hotspot Hint ===== */
+.hotspot-hint {
+  margin-top: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--warning-bg);
+  border: 1px solid var(--warning);
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* ===== Hotspot Coordinates ===== */
+.hotspot-coordinates .coordinates-display {
+  font-size: 0.625rem;
+  display: block;
+  background: var(--bg-secondary);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-family: monospace;
+}
+
+/* ===== Hotspot Actions ===== */
+.hotspot-actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.hotspot-actions .action-btn {
+  flex: 1;
+  padding: var(--space-sm) var(--space-md);
+  font-size: 0.75rem;
+}
+/* ----------------------------------------------------------------------------
+   МАРКЕРЫ PANORAMA VIEWER
+---------------------------------------------------------------------------- */
+.psv-marker {
+  pointer-events: auto !important;
+  z-index: 1000 !important;
+}
+
+.psv-marker:hover {
+  filter: drop-shadow(0 0 8px var(--accent-hover));
+}
+
+/* ----------------------------------------------------------------------------
+   АДАПТИВНОСТЬ
+---------------------------------------------------------------------------- */
+@media (max-width: 1200px) {
+  .editor-sidebar {
+    width: 280px;
+  }
+}
+
+@media (max-width: 900px) {
+  .editor-container {
+    flex-direction: column;
+  }
+
+  .editor-sidebar {
+    width: 100%;
+    height: auto;
+    max-height: 400px;
+    border-left: none;
+    border-top: 1.5px solid var(--accent-light);
+  }
+
+  .tools-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .action-btn span {
+    display: none;
+  }
+
+  .action-btn svg {
+    margin: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .editor-sidebar {
+    padding: var(--space-md);
+  }
+
+  .tools-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .sidebar-header h3 {
+    font-size: 1.2rem;
+  }
+
+  .project-title-input {
+    font-size: 1.1rem;
+  }
+
+  .media-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

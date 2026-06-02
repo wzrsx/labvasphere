@@ -1,22 +1,33 @@
 // src/pages/AuthPage.jsx
-import React, { useState } from "react";
-import LoginForm from "../components/auth/LoginForm";
-import RegisterForm from "../components/auth/RegisterForm";
-import "./AuthPage.css";
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import LoginForm from '../components/auth/LoginForm';
+import RegisterForm from '../components/auth/RegisterForm';
+import ResetPasswordForm from '../components/auth/ResetPasswordForm';
+import './AuthPage.css';
 
 const AuthPage = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const location = useLocation(); 
+  const [authMode, setAuthMode] = useState('login');
 
   const handleLogin = (credentials) => {
-    console.log("Логин:", credentials);
-    alert("Вход выполнен (заглушка)");
+    console.log('Логин:', credentials);
+    alert('Вход выполнен (заглушка)');
   };
 
   const handleRegister = (userData) => {
-    console.log("Регистрация:", userData);
-    alert("Регистрация успешна (заглушка)");
+    console.log('Регистрация:', userData);
+    alert('Регистрация успешна (заглушка)');
   };
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const mode = params.get('mode');
+    const role = params.get('role');
 
+    if (mode === 'register') {
+      setAuthMode('register');
+    }
+  }, [location.search]);
   return (
     <div className="auth-page">
       <header className="auth-header">
@@ -25,16 +36,23 @@ const AuthPage = () => {
       </header>
 
       <div className="auth-main">
-        {isLogin ? (
+        {authMode === 'login' && (
           <LoginForm
             onLogin={handleLogin}
-            onSwitchToRegister={() => setIsLogin(false)}
+            onSwitchToRegister={() => setAuthMode('register')}
+            onSwitchToResetPass={() => setAuthMode('reset')}
           />
-        ) : (
+        )}
+
+        {authMode === 'register' && (
           <RegisterForm
             onRegister={handleRegister}
-            onSwitchToLogin={() => setIsLogin(true)}
+            onSwitchToLogin={() => setAuthMode('login')}
           />
+        )}
+
+        {authMode === 'reset' && (
+          <ResetPasswordForm onSwitchToLogin={() => setAuthMode('login')} />
         )}
       </div>
     </div>

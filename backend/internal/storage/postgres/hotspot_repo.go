@@ -1,0 +1,265 @@
+package postgres
+
+import (
+	"context"
+	"fmt"
+	"labvasphere-api/internal/models"
+	"log"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+type HotspotRepository struct {
+	pool *pgxpool.Pool
+}
+
+func NewHotspotRepository(pool *pgxpool.Pool) *HotspotRepository {
+	return &HotspotRepository{pool: pool}
+}
+
+func (r *HotspotRepository) Create(ctx context.Context, req models.HotspotRequest) (*models.HotspotResponse, error) {
+	id := uuid.New()
+	now := time.Now()
+
+	// Обработка указателей: преобразуем *uuid.UUID → uuid.UUID
+	var targetPanoramaID uuid.UUID
+	if req.TargetPanoramaID != nil {
+		targetPanoramaID = *req.TargetPanoramaID
+	}
+
+	query := `
+		INSERT INTO hotspots (
+			id, panorama_id, position_yaw, position_pitch,
+			target_type, target_panorama_id, target_filename,
+			title, tooltip, content_text, media_url, external_url,
+			icon, color, sort_order, is_active, created_at, updated_at
+		) VALUES (
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
+		) RETURNING id, created_at, updated_at
+	`
+
+	isActive := true
+	if req.IsActive != nil {
+		isActive = *req.IsActive
+	}
+
+	sortOrder := 0
+	if req.SortOrder != nil {
+		sortOrder = *req.SortOrder
+	}
+
+	var createdAt, updatedAt time.Time
+
+	err := r.pool.QueryRow(ctx, query,
+		req.PanoramaID,
+		id,
+		req.PositionYaw,
+		req.PositionPitch,
+		req.TargetType,
+		targetPanoramaID,
+		req.TargetFilename,
+		req.Title,
+		req.Tooltip,
+		req.ContentText,
+		req.MediaURL,
+		req.ExternalURL,
+		req.Icon,
+		req.Color,
+		sortOrder,
+		isActive,
+		now,
+		now,
+	).Scan(&id, &createdAt, &updatedAt)
+
+	if err != nil {
+		log.Printf("ERROR: INSERT failed: %v", err)
+		return nil, fmt.Errorf("failed to create hotspot: %w", err)
+	}
+
+	// Формируем ответ
+	hotspot := &models.HotspotResponse{
+		ID:               id,
+		PanoramaID:       req.PanoramaID,
+		PositionYaw:      req.PositionYaw,
+		PositionPitch:    req.PositionPitch,
+		TargetType:       req.TargetType,
+		TargetPanoramaID: targetPanoramaID,
+		TargetFilename:   req.TargetFilename,
+		Title:            req.Title,
+		Tooltip:          req.Tooltip,
+		Icon:             req.Icon,
+		Color:            req.Color,
+		SortOrder:        sortOrder,
+		IsActive:         isActive,
+		CreatedAt:        createdAt.Format(time.RFC3339),
+		UpdatedAt:        updatedAt.Format(time.RFC3339),
+	}
+
+	return hotspot, nil
+}
+
+func (r *HotspotRepository) Update(ctx context.Context, id uuid.UUID, req models.HotspotRequest) (*models.HotspotResponse, error) {
+	now := time.Now()
+
+	var targetPanoramaID *uuid.UUID
+	if req.TargetPanoramaID != nil {
+		val := *req.TargetPanoramaID
+		targetPanoramaID = &val
+	}
+
+	query := `
+		UPDATE hotspots SET
+			position_yaw = $1, position_pitch = $2,
+			target_type = $3, target_panorama_id = $4, target_filename = $5,
+			title = $6, tooltip = $7, content_text = $8, media_url = $9, external_url = $10,
+			icon = $11, color = $12, sort_order = $13, is_active = $14, updated_at = $15
+		WHERE id = $16
+		RETURNING panorama_id, created_at
+	`
+
+	var panoramaID uuid.UUID
+	var createdAt time.Time
+
+	// ИСПРАВЛЕНО: добавлены пропущенные аргументы ($13 и $14)
+	err := r.pool.QueryRow(ctx, query,
+		req.PositionYaw, req.PositionPitch,
+		req.TargetType, targetPanoramaID, req.TargetFilename,
+		req.Title, req.Tooltip, req.ContentText, req.MediaURL, req.ExternalURL,
+		req.Icon, req.Color,
+		req.SortOrder,
+		req.IsActive,
+		now,
+		id,
+	).Scan(&panoramaID, &createdAt)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to update hotspot: %w", err)
+	}
+
+	respTargetPanoramaID := uuid.Nil
+	if req.TargetPanoramaID != nil {
+		respTargetPanoramaID = *req.TargetPanoramaID
+	}
+
+	return &models.HotspotResponse{
+		ID:               id,
+		PanoramaID:       panoramaID,
+		PositionYaw:      req.PositionYaw,
+		PositionPitch:    req.PositionPitch,
+		TargetType:       req.TargetType,
+		TargetPanoramaID: respTargetPanoramaID,
+		TargetFilename:   req.TargetFilename,
+		Title:            req.Title,
+		Tooltip:          req.Tooltip,
+		Icon:             req.Icon,
+		Color:            req.Color,
+		SortOrder: func() int {
+			if req.SortOrder != nil {
+				return *req.SortOrder
+			}
+			return 0
+		}(),
+		IsActive: func() bool {
+			if req.IsActive != nil {
+				return *req.IsActive
+			}
+			return true
+		}(),
+		CreatedAt: createdAt.Format(time.RFC3339),
+		UpdatedAt: now.Format(time.RFC3339),
+	}, nil
+}
+
+func (r *HotspotRepository) GetByPanorama(ctx context.Context, panoramaID uuid.UUID) ([]models.HotspotResponse, error) {
+	query := `
+        SELECT 
+            h.id, h.panorama_id, h.position_yaw, h.position_pitch,
+            h.target_type, h.target_panorama_id, h.target_filename,
+            h.title, h.tooltip, h.content_text, h.media_url, h.external_url,
+            h.icon, h.color,
+            h.sort_order, h.is_active, h.created_at, h.updated_at,
+            p.original_filename as target_original_filename 
+        FROM hotspots h
+        LEFT JOIN panoramas p ON h.target_panorama_id = p.id 
+        WHERE h.panorama_id = $1 AND h.is_active = true
+        ORDER BY h.sort_order
+    `
+
+	log.Printf("DEBUG: Executing query for panorama_id: %s", panoramaID)
+
+	rows, err := r.pool.Query(ctx, query, panoramaID)
+	if err != nil {
+		log.Printf("ERROR: Query failed: %v", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	hotspots := make([]models.HotspotResponse, 0)
+	for rows.Next() {
+		var h models.HotspotResponse
+
+		// Используем указатели для полей, которые могут быть NULL
+		var sortOrder *int32
+		var isActive *bool
+		var createdAt, updatedAt time.Time
+
+		var targetPanoramaID *uuid.UUID
+		var contentText, mediaURL, externalURL *string
+		var targetOriginalFilename *string
+		err := rows.Scan(
+			&h.ID, &h.PanoramaID, &h.PositionYaw, &h.PositionPitch,
+			&h.TargetType, &targetPanoramaID, &h.TargetFilename,
+			&h.Title, &h.Tooltip, &contentText, &mediaURL, &externalURL,
+			&h.Icon, &h.Color,
+			&sortOrder, &isActive, &createdAt, &updatedAt, &targetOriginalFilename,
+		)
+		if err != nil {
+			log.Printf("ERROR: Scan failed: %v", err)
+			return nil, err
+		}
+
+		// Обработка NULL-значений после сканирования
+		if contentText != nil {
+			h.ContentText = *contentText
+		}
+		if mediaURL != nil {
+			h.MediaURL = *mediaURL
+		}
+		if externalURL != nil {
+			h.ExternalURL = *externalURL
+		}
+		if targetPanoramaID != nil {
+			h.TargetPanoramaID = *targetPanoramaID
+		}
+		if targetOriginalFilename != nil {
+			h.TargetOriginalFilename = targetOriginalFilename
+		}
+
+		if sortOrder != nil {
+			h.SortOrder = int(*sortOrder)
+		} else {
+			h.SortOrder = 0 // дефолт, если в БД NULL
+		}
+
+		if isActive != nil {
+			h.IsActive = *isActive
+		} else {
+			h.IsActive = true // дефолт, если в БД NULL
+		}
+
+		h.CreatedAt = createdAt.Format(time.RFC3339)
+		h.UpdatedAt = updatedAt.Format(time.RFC3339)
+
+		hotspots = append(hotspots, h)
+	}
+
+	log.Printf("DEBUG: Scanned %d hotspots", len(hotspots))
+	return hotspots, rows.Err()
+}
+func (r *HotspotRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	query := `UPDATE hotspots SET is_active = false, updated_at = $1 WHERE id = $2`
+	_, err := r.pool.Exec(ctx, query, time.Now(), id)
+	return err
+}

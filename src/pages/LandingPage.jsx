@@ -1,133 +1,311 @@
-import React, { useRef, useEffect } from "react";
-import FeatureCard from "../components/FeatureCard";
-import ConnectionLine from "../utils/ConnectionLine";
-import useFadeInOnScroll from "../hooks/useFadeInOnScroll";
-import logo from "../logo.jpg";
-import "../App.css";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import SphereViewer from '../components/SphereViewer';
+import { getPublishedProjects } from '../services/projectService';
+import { preloadPanorama } from '../services/preload.js';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import api from '../services/api'; 
+import { CONFIG } from '../config'; 
+import '../App.css';
+import './LandingPage.css';
+
+const PRELOAD_AHEAD = 3;
+const TRANSITION_DURATION = 700;
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  const [projects, setProjects] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  const handleTryClick = () => {
-    navigate("/auth");
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [preloading, setPreloading] = useState(false);
+  const [preloadProgress, setPreloadProgress] = useState(0);
+
+  const [error, setError] = useState(null);
+
+  // Refs
+  const viewerRef = useRef(null);
+  const preloadedUrls = useRef(new Set());
+  const currentIndexRef = useRef(0);
+  const autoSwitchTimerRef = useRef(null);
+
+  // 1. Функция формирования URL (как в ProjectView)
+  const getMediaUrl = (relativePath) => {
+    if (!relativePath) return null;
+    if (relativePath.startsWith('http')) return relativePath;
+    return `${CONFIG.MEDIA_BASE_URL}/${relativePath}`;
   };
 
-  const card1Ref = useRef(null);
-  const card2Ref = useRef(null);
-  const card3Ref = useRef(null);
-  const card4Ref = useRef(null);
-  const card5Ref = useRef(null);
-  const card6Ref = useRef(null);
-
-  const cardRefs = [card1Ref, card2Ref, card3Ref, card4Ref, card5Ref, card6Ref];
-  useFadeInOnScroll(cardRefs);
   useEffect(() => {
-    // Удаляем, если уже есть (защита от дублей при hot reload)
-    document.querySelectorAll(".pulse-circle").forEach((el) => el.remove());
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
 
-    const circle = document.createElement("div");
-    circle.className = "pulse-circle";
-    document.body.appendChild(circle);
+  const handleAuthPage = (projectId) => {
+    navigate(`/auth`);
+  };
 
-    // Очистка при размонтировании
-    return () => {
-      circle.remove();
+  // 2. Загрузка списка проектов
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setInitialLoading(true);
+        const result = await getPublishedProjects(10, 0);
+
+        if (result.success && result.projects?.length > 0) {
+          setProjects(result.projects);
+          // Префетчинг для первого элемента
+          handlePreloadForIndex(0, result.projects);
+        } else {
+          setError(result.error || 'Нет проектов');
+        }
+      } catch (err) {
+        setError('Ошибка сети');
+        console.error(err);
+      } finally {
+        setInitialLoading(false);
+      }
     };
+    fetchProjects();
   }, []);
+
+  // 3. Логика предзагрузки (обновлена для работы с новым URL)
+  const handlePreloadForIndex = useCallback(
+    (index, projectsList) => {
+      if (!projectsList || projectsList.length === 0) return;
+
+      const indicesToPreload = [];
+      for (let i = 0; i < PRELOAD_AHEAD + 1; i++) {
+        const targetIdx = (index + i) % projectsList.length;
+        const project = projectsList[targetIdx];
+
+        // Формируем URL так же, как для отображения
+        let urlToPreload = null;
+        if (project.main_panorama?.filename) {
+          urlToPreload = getMediaUrl(
+            `projects/${project.id}/panoramas/${project.main_panorama.filename}`,
+          );
+        } else if (project.panorama_url) {
+          // Фолбэк, если вдруг есть прямая ссылка
+          urlToPreload = project.panorama_url;
+        }
+
+        if (urlToPreload && !preloadedUrls.current.has(urlToPreload)) {
+          indicesToPreload.push({ idx: targetIdx, url: urlToPreload });
+        }
+      }
+
+      if (indicesToPreload.length === 0) return;
+
+      setPreloading(true);
+      let completed = 0;
+      const total = indicesToPreload.length;
+
+      indicesToPreload.forEach(({ url }) => {
+        preloadPanorama(url)
+          .then(() => {
+            preloadedUrls.current.add(url);
+            completed++;
+            setPreloadProgress(Math.round((completed / total) * 100));
+          })
+          .catch((err) => {
+            console.warn(`Preload failed for ${url}`, err);
+            completed++;
+            setPreloadProgress(Math.round((completed / total) * 100));
+          })
+          .finally(() => {
+            if (completed === total) {
+              setPreloading(false);
+            }
+          });
+      });
+    },
+    [getMediaUrl],
+  ); // Добавили зависимость
+
+  useEffect(() => {
+    if (projects.length > 0) {
+      handlePreloadForIndex(currentIndex, projects);
+    }
+  }, [currentIndex, projects, handlePreloadForIndex]);
+
+  // 4. Автопереключение
+  useEffect(() => {
+    if (projects.length === 0) return;
+
+    if (autoSwitchTimerRef.current) {
+      clearInterval(autoSwitchTimerRef.current);
+    }
+
+    autoSwitchTimerRef.current = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % projects.length);
+    }, 5000);
+
+    return () => {
+      if (autoSwitchTimerRef.current) {
+        clearInterval(autoSwitchTimerRef.current);
+      }
+    };
+  }, [projects.length]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      viewerRef.current?.startAutoRotate?.();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [currentIndex]);
+
+  const handleNext = useCallback(() => {
+    setCurrentIndex((prev) => (prev + 1) % (projects.length || 1));
+    if (autoSwitchTimerRef.current) {
+      clearInterval(autoSwitchTimerRef.current);
+    }
+  }, [projects.length]);
+
+  const handlePrev = useCallback(() => {
+    setCurrentIndex(
+      (prev) => (prev - 1 + (projects.length || 1)) % (projects.length || 1),
+    );
+    if (autoSwitchTimerRef.current) {
+      clearInterval(autoSwitchTimerRef.current);
+    }
+  }, [projects.length]);
+
+  const handleDotClick = useCallback((index) => {
+    setCurrentIndex(index);
+    if (autoSwitchTimerRef.current) {
+      clearInterval(autoSwitchTimerRef.current);
+    }
+  }, []);
+
+  const currentProject = projects[currentIndex];
+
+  // 🔹 5. Формирование URL текущей панорамы (как в ProjectView)
+  const mainPanoramaUrl = currentProject?.main_panorama?.filename
+    ? getMediaUrl(
+        `projects/${currentProject.id}/panoramas/${currentProject.main_panorama.filename}`,
+      )
+    : currentProject?.panorama_url; // Фолбэк на старое поле, если вдруг оно есть
+
+  // --- RENDER STATES ---
+  if (initialLoading) {
+    return (
+      <div className="hero-container loading">
+        <div className="loader">
+          <div className="spinner"></div>
+          <p>Загрузка каталога...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="hero-container error">
+        <div className="error-message">
+          <h2>⚠️ {error}</h2>
+          <button onClick={() => window.location.reload()}>Обновить</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (projects.length === 0) {
+    return (
+      <div className="hero-container empty">
+        <p>Нет проектов для показа</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="app">
-      <header className="header">
-        <div className="logo-container">
-          <img src={logo} alt="logo" className="logo-img" />
+    <div className="hero-container">
+      <div className="viewer-container">
+        {/* 🔹 Проверка: рендерим SphereViewer только если есть URL */}
+        {mainPanoramaUrl ? (
+          <SphereViewer
+            ref={viewerRef}
+            src={mainPanoramaUrl}
+            style={{ width: '100%', height: '100%' }}
+            navbar={false}
+            autoRotate={true}
+            mousemove={false}
+            touchmove={false}
+            transitionDuration={TRANSITION_DURATION}
+          />
+        ) : (
+          <div
+            className="panorama-placeholder"
+            style={{
+              width: '100%',
+              height: '100%',
+              background: '#1a1a1a',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#666',
+            }}
+          >
+            Панорама не найдена
+          </div>
+        )}
+      </div>
+
+      <div className="center-title-overlay">
+        <h1 className="center-title">LABVASPHERE</h1>
+      </div>
+
+      <div className="center-button-overlay">
+        <button className="sign-btn" onClick={handleAuthPage}>
+          Войти
+        </button>
+      </div>
+
+      {preloading && !initialLoading && (
+        <div className="preload-overlay">
+          <div className="preload-mini-spinner"></div>
+          <span>{preloadProgress}%</span>
         </div>
-        <button className="lang-button">RU</button>
-      </header>
+      )}
 
-      <main className="main">
-        <div className="hero">
-          <h1>360° Визуализация</h1>
-          <p>Создайте интерьер будущего</p>
-        </div>
-        <div className="features-grid">
-          <FeatureCard
-            ref={card1Ref}
-            title="Что это?"
-            subtitle="360°‑визуализация интерьеров"
-          >
-            Создавайте и показывайте проекты в интерактивной панораме — прямо из
-            профессиональных 3D‑программ, таких как LABVASPHERE.
-          </FeatureCard>
+      <button className="nav-btn prev" onClick={handlePrev} aria-label="Назад">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth="2"
+          fill="none"
+        >
+          <path d="M15 18l-6-6 6-6" />
+        </svg>
+      </button>
 
-          <FeatureCard
-            ref={card2Ref}
-            title="Для кого?"
-            subtitle="Дизайнеры, инженеры, архитекторы"
-          >
-            Идеально подходит тем, кто проектирует интерьеры, вентиляцию или
-            кондиционирование — и хочет наглядно продемонстрировать результат
-            заказчику.
-          </FeatureCard>
+      <button className="nav-btn next" onClick={handleNext} aria-label="Вперед">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth="2"
+          fill="none"
+        >
+          <path d="M9 18l6-6-6-6" />
+        </svg>
+      </button>
 
-          <FeatureCard
-            ref={card3Ref}
-            title="Как это работает?"
-            subtitle="Просто, быстро, без перекодировки"
-          >
-            Загружайте 360°‑изображения напрямую или через бота. Поддержка
-            высокого разрешения, управление жестами (касание, тачпад, мышь).
-            Работает на Windows и macOS, а также на смартфонах и планшетах.
-          </FeatureCard>
+      <div className="info-overlay" key={currentProject?.id}>
+        <h1 className="project-title">{currentProject?.title}</h1>
+        <p className="designer-name">Автор: {currentProject?.author_name}</p>
+      </div>
 
-          <FeatureCard
-            ref={card4Ref}
-            title="Бесплатно и удобно"
-            subtitle="Первая версия — без оплаты"
-          >
-            Полностью на русском и английском языках. Фоновая музыка через
-            Яндекс.Музыку, Deezer и другие сервисы — по желанию.
-          </FeatureCard>
-
-          <FeatureCard
-            ref={card5Ref}
-            title="Зарабатывайте вместе с нами"
-            subtitle="Партнёрская программа до 3 уровней"
-          >
-            1‑й уровень: 7,5%
-            <br />
-            2‑й уровень: 5%
-            <br />
-            3‑й уровень: 2,5%
-            <br />
-            от всех подписок ваших рефералов.
-          </FeatureCard>
-
-          <FeatureCard
-            ref={card6Ref}
-            title="Где скачать?"
-            subtitle="Во всех магазинах приложений"
-          >
-            Скоро в App Store, Google Play и других платформах. Безопасная
-            загрузка, прозрачные условия.
-          </FeatureCard>
-        </div>
-
-        {cardRefs.slice(0, -1).map((_, i) => (
-          <ConnectionLine
-            key={i}
-            fromRef={cardRefs[i]}
-            toRef={cardRefs[i + 1]}
-            fromIndex={i}
+      <div className="indicators">
+        {projects.map((_, index) => (
+          <button
+            key={index}
+            className={`dot ${index === currentIndex ? 'active' : ''}`}
+            onClick={() => handleDotClick(index)}
           />
         ))}
-      </main>
-      <footer>
-        <div>
-          <button className="try-button" onClick={handleTryClick}>
-            Попробовать
-          </button>
-        </div>
-      </footer>
+      </div>
     </div>
   );
 };

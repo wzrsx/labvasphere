@@ -1,0 +1,572 @@
+{
+  "nav": {
+    "projects": "My Projects",
+    "projects_client": "Catalog",
+    "partner": "Partner Program",
+    "guide": "Guide",
+    "settings": "Settings"
+  },
+  "main": {
+    "welcome": "Welcome",
+    "title": "Create your first 360° panorama or continue working on the project.",
+    "new_project": "+ New project"
+  },
+  "projects": {
+    "title": "My Projects",
+    "search_placeholder": "Search projects...",
+    "loading": "Loading projects...",
+    "thumbnail_placeholder": "360°",
+    "description": {
+      "label": "Description: ",
+      "empty": "No description",
+      "read_more": "Read more",
+      "collapse": "Collapse"
+    },
+    "toggle": {
+      "description": "📝 Description",
+      "stats": "📊 Statistics"
+    },
+    "stats": {
+      "likes": "Likes",
+      "views": "Views",
+      "favourites": "Favourites",
+      "updated": "Updated"
+    },
+    "status": {
+      "published": "Published",
+      "draft": "Draft"
+    },
+    "actions": {
+      "view": "View",
+      "share": "Share",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "empty": {
+      "no_projects": "You don't have any projects yet.",
+      "hint": "Click \"+ New Project\" to upload your first 360° panorama.",
+      "no_results": "Project \"{{query}}\" not found."
+    }
+  },
+  "modal": {
+    "delete": {
+      "title": "Confirm Deletion",
+      "confirm": "Do you really want to delete this project?",
+      "warning": "This action cannot be undone.",
+      "cancel": "Cancel",
+      "confirm_button": "Delete",
+      "deleting": "Deleting..."
+    },
+    "publish_before_share": {
+      "title": "Publish project?",
+      "confirm": "The project is in drafts. To allow other users to view it via the link, you need to publish the project.",
+      "warning": "After publishing, the project will be accessible to anyone with the link.",
+      "cancel": "Cancel",
+      "publish_and_share": "Publish and share",
+      "publishing": "Publishing..."
+    },
+    "close": "Close",
+    "cancel": "Cancel"
+  },
+  "share": {
+    "modal": {
+      "title": "Share Project",
+      "description": "Send the link to your client or scan the QR code for quick access",
+      "link_label": "Project link",
+      "copy_button": "Copy",
+      "copied": "Copied!",
+      "link_tab": "🔗 Link",
+      "qr_tab": "📱 QR Code",
+      "qr_description": "Point your smartphone camera at the code to open the project",
+      "download_qr": "⬇ Download QR",
+      "or_share": "or share via"
+    },
+    "social": {
+      "telegram": "Share via Telegram",
+      "whatsapp": "Share via WhatsApp",
+      "email": "Send via email"
+    }
+  },
+  "newProject": {
+    "modal": {
+      "title": "Create New Project",
+      "title_success": "Success!",
+      "success_message": "Project successfully created and published!",
+      "success_ok": "Great!"
+    },
+    "form": {
+      "name_placeholder": "Project name *",
+      "description_placeholder": "Project description",
+      "panorama_placeholder": "Select panorama (JPG/PNG)",
+      "panorama_label": "Upload panorama",
+      "creating": "Creating...",
+      "create_button": "Create Project"
+    },
+    "viewer": {
+      "title": "Adjust angle for cover image",
+      "capture_button": "Save selection",
+      "cover_selected": "Cover selected",
+      "remove_cover": "Remove"
+    },
+    "validation": {
+      "name_required": "Project name is required",
+      "panorama_required": "Please select a panorama file",
+      "cover_required": "Please select a cover image",
+      "invalid_format": "Only JPG and PNG formats are supported",
+      "size_limit": "Maximum file size: 50 MB",
+      "preview_error": "Failed to process image"
+    },
+    "success": "Project \"{{name}}\" created successfully!",
+    "error": "Error creating project"
+  },
+  "user": {
+    "default": "User"
+  },
+  "profile": {
+    "loading": "Loading profile...",
+    "title": "Profile",
+    "logout": "Log out",
+    "preview": "Preview profile",
+    "save_changes": "Save changes",
+    "saving": "Saving...",
+    "avatar": {
+      "alt": "Avatar",
+      "uploading": "⏳ Uploading...",
+      "choose_photo": "📷 Choose photo",
+      "save": "💾 Save",
+      "cancel": "✕ Cancel",
+      "delete": "🗑️ Delete",
+      "hint": "JPG, PNG or WebP, max 5MB",
+      "confirm_delete": "Delete avatar?"
+    },
+    "form": {
+      "full_name_label": "Full name *",
+      "email_label": "Email",
+      "email_hint": "Email cannot be changed",
+      "bio_label": "About",
+      "bio_placeholder": "Tell us about yourself and your experience...",
+      "role_label": "Role",
+      "role_hint": "Role is assigned at registration and cannot be changed"
+    },
+    "roles": {
+      "designer": "Designer / Architect",
+      "user": "User"
+    },
+    "password": {
+      "change_button": "Change password",
+      "cancel": "Cancel",
+      "current_label": "Current password *",
+      "new_label": "New password *",
+      "new_placeholder": "Minimum 8 characters",
+      "confirm_label": "Confirm new password *",
+      "hint_length": "• Password must contain at least 8 characters",
+      "hint_complexity": "• Use letters, numbers and special characters",
+      "saving": "Saving...",
+      "save_button": "Save new password"
+    },
+    "notifications": {
+      "profile_updated": "Profile updated successfully!",
+      "avatar_updated": "Avatar updated successfully!",
+      "avatar_deleted": "Avatar deleted",
+      "password_changed": "Password changed successfully"
+    },
+    "errors": {
+      "load_failed": "Failed to load profile",
+      "save_failed": "Failed to save changes",
+      "full_name_required": "Full name is required",
+      "avatar_upload_failed": "Failed to upload avatar",
+      "avatar_delete_failed": "Failed to delete avatar",
+      "password_fields_required": "Please fill in all fields",
+      "password_min_length": "New password must contain at least 6 characters",
+      "password_mismatch": "New passwords do not match",
+      "password_same_as_current": "New password must be different from current",
+      "password_change_failed": "Failed to change password. Please try again."
+    }
+  },
+  "partner": {
+    "loading": "Loading partner program data...",
+    "error": "Failed to load data",
+    "header": {
+      "title": "Partner Program",
+      "subtitle": "Invite designers and architects — earn a percentage from their subscriptions"
+    },
+    "stats": {
+      "balance_title": "Available for Withdrawal",
+      "balance_note": "After 6% tax deduction",
+      "referrals_level_1_title": "Level 1 Referrals",
+      "referrals_level_1_rate": "7.5% from their subscriptions",
+      "referrals_level_2_title": "Level 2 Referrals",
+      "referrals_level_2_rate": "5% from their subscriptions",
+      "referrals_level_3_title": "Level 3 Referrals",
+      "referrals_level_3_rate": "2.5% from their subscriptions"
+    },
+    "referral": {
+      "title": "Your Referral Link",
+      "copy_button": "Copy",
+      "hint": "A user becomes your referral if they register at any time after clicking your link"
+    },
+    "withdraw": {
+      "title": "Withdraw Funds",
+      "amount_label": "Amount (₽)",
+      "amount_placeholder": "Max: {{max}} ₽",
+      "method_label": "Withdrawal Method",
+      "methods": {
+        "card": "Bank Card (Russia)",
+        "usdt": "USDT (TRC-20)",
+        "btc": "Bitcoin (BTC)",
+        "eth": "Ethereum (ETH)"
+      },
+      "card_label": "Card Number",
+      "card_placeholder": "0000 0000 0000 0000",
+      "wallet_label": "Wallet Address",
+      "wallet_placeholder": "Address for {{crypto}}",
+      "submit_button": "Create Withdrawal Request",
+      "hint": "Withdrawals are processed within 1-3 business days. Crypto withdrawals are positioned as 'Charitable contribution to app development'."
+    },
+    "how_it_works": {
+      "title": "How It Works",
+      "levels": {
+        "direct": "Direct referrals",
+        "second": "Referrals of your referrals",
+        "third": "Third level"
+      }
+    },
+    "notifications": {
+      "load_error": "Failed to load data",
+      "link_copied": "Link copied!",
+      "copy_error": "Failed to copy",
+      "withdraw_success": "Request created! Please wait for processing.",
+      "withdraw_error": "Error creating request"
+    }
+  },
+  "editor": {
+    "loading": "Loading project...",
+    "error": "Failed to load project",
+    "not_found": "Project not found",
+    "back_to_projects": "Back to projects",
+    "title": "Project Editor",
+    "sidebar": {
+      "collapse": "Collapse panel",
+      "expand": "Expand panel"
+    },
+    "form": {
+      "title_label": "Title",
+      "title_placeholder": "Project name",
+      "description_label": "Description",
+      "description_placeholder": "Project description"
+    },
+    "tools": {
+      "title": "Tools",
+      "hotspots": "Hotspots",
+      "hotspots_title": "Transition Points",
+      "media": "Media",
+      "settings": "Settings"
+    },
+    "modes": {
+      "transition": "👁️ Transition Mode",
+      "transition_hint_on": "Click hotspot = navigate to panorama",
+      "transition_hint_off": "Click hotspot = open editor"
+    },
+    "hotspot_editor": {
+      "title": "✏️ Edit Hotspot",
+      "close": "Close",
+      "name_label": "Name",
+      "name_placeholder": "Hotspot name",
+      "tooltip_label": "Tooltip",
+      "tooltip_placeholder": "Hint text on hover",
+      "type_label": "Hotspot Type",
+      "types": {
+        "transition": "🔄 Transition to Panorama",
+        "info": "ℹ️ Information",
+        "media": "🎬 Media Content",
+        "link": "🔗 External Link"
+      },
+      "image": {
+        "label": "🖼️ Hotspot Image",
+        "placeholder": "No image selected",
+        "hint": "Default icon will be used",
+        "upload": "📁 Choose Image",
+        "replace": "🔄 Replace",
+        "uploading": "⏳ Uploading...",
+        "remove": "Remove image",
+        "size_hint": "Max 5MB. Recommended: PNG/SVG with transparent background, 32x32px"
+      },
+      "transition": {
+        "label": "🔄 Target Panorama",
+        "upload_new": "Upload new panorama",
+        "or": "or select from uploaded",
+        "empty": "No panoramas uploaded",
+        "main_badge": "Main",
+        "clear": "✕ Clear selection"
+      },
+      "link": {
+        "url_label": "Link URL",
+        "url_placeholder": "https://example.com"
+      },
+      "actions": {
+        "preview": "🔍 Preview",
+        "delete": "🗑️ Delete"
+      }
+    },
+    "hotspot_hints": {
+      "add_mode": "💡 Click on the panorama to add a new transition point"
+    },
+    "media_panel": {
+      "title": "📸 Media Gallery",
+      "add": "+ Add",
+      "uploading": "Uploading...",
+      "empty": {
+        "title": "No panoramas uploaded",
+        "hint": "Upload files using the \"Add\" button"
+      },
+      "main": "🏠 Main",
+      "additional": "📁 Additional",
+      "preview": "Preview",
+      "stats": "Total panoramas:"
+    },
+    "actions": {
+      "title": "Actions",
+      "save": "Save Changes",
+      "saved": "Saved",
+      "saving": "Saving...",
+      "preview": "Preview",
+      "delete": "Delete Project"
+    },
+    "stats": {
+      "hotspots": "Transition Points:",
+      "media": "Media Items:",
+      "project_id": "Project ID:",
+      "status": "Status:",
+      "status_published": "Published",
+      "status_draft": "Draft"
+    },
+    "viewer": {
+      "placeholder": "No panorama loaded"
+    },
+    "transition": {
+      "loading": "Loading: {{progress}}%",
+      "cancel": "Cancel",
+      "error": "Failed to load panorama"
+    },
+    "alerts": {
+      "saved": "Project saved successfully!",
+      "save_error": "Failed to save project",
+      "delete_confirm": "Are you sure you want to delete this project?",
+      "deleted": "Project deleted successfully",
+      "delete_error": "Failed to delete project",
+      "hotspot_delete_confirm": "Delete this transition point?",
+      "hotspot_deleted": "Hotspot deleted",
+      "hotspot_delete_error": "Failed to delete hotspot",
+      "file_invalid": "Please select an image (JPG, PNG, WebP)",
+      "file_too_large": "File too large. Maximum size: 50MB",
+      "project_not_loaded": "❌ Project or panorama not loaded",
+      "transition_saved": "✅ Transition point saved!",
+      "upload_error": "❌ {{message}}"
+    }
+  },
+  "guide": {
+    "header": {
+      "title": "User Guide",
+      "subtitle": "Simple guide: how to upload and showcase your 360° panoramas to clients"
+    },
+    "tabs": {
+      "prepare": "Preparation",
+      "upload": "Upload",
+      "view": "Viewing",
+      "share": "Share",
+      "faq": "FAQ"
+    },
+    "prepare": {
+      "title": "📸 How to Prepare a Panorama",
+      "step1": {
+        "title": "Take the Panorama",
+        "desc": "Use a 360° camera or smartphone with panorama mode. Shoot in a well-lit room, without people in the frame."
+      },
+      "step2": {
+        "title": "Check the Format",
+        "desc": "The file should be rectangular (2:1 aspect ratio), in JPG, PNG, TIFF, or WEBP format. If unsure — just upload, the system will guide you."
+      },
+      "step3": {
+        "title": "Edit if Needed",
+        "desc": "Remove the tripod from the frame, level the horizon. You can use simple editors: Canva, Photopea, or built-in platform tools."
+      },
+      "tip": {
+        "icon": "💡",
+        "label": "Tip:",
+        "text": "Shoot at the same time of day so all project panoramas have consistent lighting."
+      }
+    },
+    "upload": {
+      "title": "📤 How to Upload a Project",
+      "step1": {
+        "title": "Create a Project",
+        "desc": "Click \"+ New Project\" and enter a name (e.g., \"Apartment on Krasnoprudnaya\")."
+      },
+      "step2": {
+        "title": "Add a Description",
+        "desc": "Specify the room name, materials, features. This helps clients better understand your project."
+      },
+      "step3": {
+        "title": "Upload Panoramas",
+        "desc": "Drag files into the upload window or click \"Select Files\". You can upload multiple panoramas at once."
+      },
+      "step4": {
+        "title": "Choose a Cover Angle",
+        "desc": "View the panorama and pick the best angle — this is the first thing clients will see. Position the camera to highlight the interior's main advantage."
+      },
+      "step5": {
+        "title": "Save and Publish",
+        "desc": "Click \"Create Project\" — the panorama will be automatically processed and become available for viewing (only to you)."
+      },
+      "tip": {
+        "icon": "⏱️",
+        "label": "Processing Time:",
+        "text": "Usually 1-3 minutes. Large files (over 10 MB) may take longer."
+      }
+    },
+    "view": {
+      "title": "👁️ How to View and Adjust a Panorama",
+      "step1": {
+        "title": "Navigation Controls",
+        "desc": "• Mouse: hold left button and drag to rotate.<br/>• Touchscreen: swipe with your finger.<br/>• Scroll wheel: zoom in/out."
+      },
+      "step2": {
+        "title": "Interactive Hotspots",
+        "desc": "Click on hotspots in the panorama to navigate, view information about materials, furniture, or links to floor plans."
+      },
+      "step3": {
+        "title": "Fullscreen Mode",
+        "desc": "Click the icon in the bottom-right corner or press F to immerse in the project. Exit with Esc or click again."
+      },
+      "step4": {
+        "title": "Auto-Rotate (Optional)",
+        "desc": "Click \"Auto-Rotate\" to let the panorama spin smoothly. Great for presentations."
+      },
+      "tip": {
+        "icon": "📱",
+        "label": "On Smartphone:",
+        "text": "you can view the panorama by simply rotating your device — enable gyroscope mode in viewing settings."
+      }
+    },
+    "share": {
+      "title": "🔗 How to Share a Project with a Client",
+      "link": {
+        "title": "📋 Link",
+        "desc": "Copy the unique link from the project card and send it to your client via messenger, email, or social media.",
+        "benefits": [
+          "Works on any device",
+          "No registration required for the client"
+        ]
+      },
+      "qr": {
+        "title": "🧾 QR Code",
+        "desc": "Download the project's QR code and add it to a presentation, business card, or printed brochure.",
+        "benefits": [
+          "Client scans with camera — and lands directly in the panorama",
+          "Perfect for offline meetings"
+        ]
+      }
+    },
+    "faq": {
+      "title": "❓ Frequently Asked Questions",
+      "table": {
+        "headers": ["Question", "Answer"],
+        "rows": [
+          {
+            "q": "Which cameras are compatible?",
+            "a": "Any 360° cameras (Insta360, Ricoh Theta) and smartphones with panorama mode. The key is a 2:1 final image."
+          },
+          {
+            "q": "Can I upload multiple rooms?",
+            "a": "Yes! Create one project and add all panoramas to it. Clients can switch between them."
+          },
+          {
+            "q": "Client can't see the panorama — what to do?",
+            "a": "Check if link access is enabled. Ensure the client uses a modern browser (Chrome, Safari, Firefox)."
+          },
+          {
+            "q": "How do I update a panorama?",
+            "a": "Go to the project → \"Edit\" → upload a new file instead of the old one. The old version will be replaced automatically."
+          },
+          {
+            "q": "Can I download the panorama back?",
+            "a": "Yes, in project settings there's an \"Export Source\" button (available in Pro plan)."
+          }
+        ]
+      }
+    },
+    "footer": {
+      "text": "Still have questions?",
+      "link": "Contact Support",
+      "time": "— we'll help within 15 minutes."
+    }
+  },
+  "settings": {
+    "loading": "Loading settings...",
+    "header": {
+      "title": "Portfolio Settings",
+      "subtitle": "Control how clients see your projects"
+    },
+    "notifications": {
+      "icon_saved": "Hotspot style saved",
+      "color_saved": "Hotspot color saved",
+      "email_shown": "Email will be displayed",
+      "email_hidden": "Email is hidden",
+      "protect_on": "Protection enabled",
+      "protect_off": "Protection disabled",
+      "download_ready": "Portfolio ready for download",
+      "cache_cleared": "Temporary data cleared. Please reload the page.",
+      "save_error": "Failed to save settings",
+      "load_error": "Failed to load settings",
+      "feature_in_progress": "Feature in development"
+    },
+    "contacts": {
+      "title": "Contact Visibility",
+      "email": {
+        "label": "Show email in profile",
+        "desc": "Clients will be able to contact you directly from your portfolio page"
+      }
+    },
+    "protection": {
+      "title": "Work Protection",
+      "downloads": {
+        "label": "Prevent panorama downloads",
+        "desc": "Disables context menu and hides direct image links"
+      }
+    },
+    "markers": {
+      "title": "Hotspot Style on Panoramas",
+      "desc": "Choose the appearance and color of markers you use to highlight details in 360° tours",
+      "custom_image_hint": "On the edit page, you can also add your own custom image",
+      "icon_label": "Icon:",
+      "color_label": "Color:",
+      "icons": {
+        "pin": "Pin",
+        "dot": "Dot",
+        "star": "Star",
+        "camera": "Camera"
+      },
+      "color_aria": "Select color {{color}}"
+    },
+    "data": {
+      "title": "Data & Maintenance",
+      "download": {
+        "button": "Download Portfolio (PDF)",
+        "loading": "Preparing...",
+        "desc": "Collects all projects into one archive for offline presentation"
+      },
+      "cache": {
+        "button": "Clear Cache",
+        "loading": "Clearing...",
+        "desc": "Use if panoramas load slowly or display incorrectly"
+      }
+    },
+    "export": {
+      "pdf_title": "Portfolio",
+      "button": "Download Portfolio (PDF)",
+      "button_loading": "Preparing..."
+    }
+  },
+  "lang_btn": "🇬🇧 EN",
+  "back_btn": "Back"
+}

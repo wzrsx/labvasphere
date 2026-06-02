@@ -2,6 +2,7 @@ package security
 
 import (
 	"errors"
+	"log"
 	"os"
 	"time"
 
@@ -20,6 +21,7 @@ type Claims struct {
 
 // GenerateToken генерирует JWT токен для пользователя
 func GenerateToken(userID, email, role string) (string, error) {
+	log.Printf("[DEBUG] Генерируем токен для user_id=%s, role=%s", userID, role)
 	claims := Claims{
 		UserID: userID,
 		Email:  email,

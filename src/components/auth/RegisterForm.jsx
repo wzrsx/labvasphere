@@ -1,40 +1,64 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+// src/components/auth/RegisterForm.jsx
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom'; // ← добавили useLocation
 import { register } from '../../services/authService';
+import { getRedirectPath } from '../../utils/roleRedirect';
 
 const RegisterForm = ({ onSwitchToLogin }) => {
   const navigate = useNavigate();
-  
-  // Состояние для полей формы
+  const location = useLocation(); // ← для чтения ?redirect=
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'user', // 'user' или 'designer'
+    role: 'user',
+    refCode: '',
   });
-  
-  // Состояние для ошибок и загрузки
+
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [redirectPath, setRedirectPath] = useState(null);
 
-  // Обработчик изменения полей формы
+  // Читаем реферал из localStorage
+  useEffect(() => {
+    const savedRef = localStorage.getItem('pending_ref');
+    if (savedRef) {
+      const clickTime = localStorage.getItem('referral_click_time');
+      if (clickTime) {
+        const daysDiff =
+          (new Date() - new Date(clickTime)) / (1000 * 60 * 60 * 24);
+        if (daysDiff <= 30) {
+          setFormData((prev) => ({ ...prev, refCode: savedRef }));
+        } else {
+          localStorage.removeItem('pending_ref');
+          localStorage.removeItem('referral_click_time');
+        }
+      } else {
+        setFormData((prev) => ({ ...prev, refCode: savedRef }));
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const redirect = urlParams.get('redirect');
+    if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
+      setRedirectPath(redirect);
+    }
+  }, [location.search]);
+
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-    // Очищаем ошибку при изменении
+    setFormData({ ...formData, [e.target.name]: e.target.value });
     setError('');
   };
 
-  // Обработчик отправки формы
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    const { fullName, email, password, confirmPassword, role } = formData;
-    
-    // Базовая валидация на фронтенде
+    const { fullName, email, password, confirmPassword, role, refCode } =
+      formData;
+
     if (!fullName || !email || !password || !confirmPassword) {
       setError('Пожалуйста, заполните все поля');
       return;
@@ -43,21 +67,34 @@ const RegisterForm = ({ onSwitchToLogin }) => {
       setError('Пароли не совпадают');
       return;
     }
+
     setError('');
     setIsLoading(true);
 
     try {
-      const result = await register(fullName, email, password, role);
-      
+      const result = await register(
+        fullName,
+        email,
+        password,
+        role,
+        refCode || undefined,
+      );
       setIsLoading(false);
-      
+
       if (result.success) {
-        // Сохраняем пользователя в localStorage
+        localStorage.setItem('token', result.token);
         localStorage.setItem('user', JSON.stringify(result.user));
-        // Перенаправляем на главную страницу
-        navigate('/main');
+        localStorage.removeItem('pending_ref');
+        localStorage.removeItem('referral_click_time');
+
+        const finalRedirect =
+          redirectPath !== null
+            ? redirectPath
+            : getRedirectPath(result.user.role);
+
+        navigate(finalRedirect);
       } else {
-        setError(result.error);
+        setError(result.error || 'Ошибка при регистрации. Попробуйте снова.');
       }
     } catch (err) {
       setIsLoading(false);
@@ -71,10 +108,32 @@ const RegisterForm = ({ onSwitchToLogin }) => {
       <h1>Регистрация</h1>
       <p className="subtitle">Создайте аккаунт для начала работы</p>
 
-      {/* Отображение ошибки */}
-      {error && (
-        <div className="error-message">
-          {error}
+      {error && <div className="error-message-form error-message">{error}</div>}
+
+      {redirectPath && redirectPath !== '/project' && (
+        <p
+          className="redirect-hint"
+          style={{ fontSize: '0.85rem', color: '#999999', marginBottom: '1rem' }}
+        >
+          После регистрации вы вернётесь на: <strong>{redirectPath}</strong>
+        </p>
+      )}
+
+      {formData.refCode && (
+        <div
+          className="referral-badge"
+          style={{
+            fontSize: '0.8rem',
+            color: '#8B7355',
+            marginTop: '0.5rem',
+            padding: '0.5rem 1rem',
+            background: '#F5F0E6',
+            borderRadius: '8px',
+            display: 'inline-block',
+            border: '1px solid #D4C4B0',
+          }}
+        >
+          🎁 Вы регистрируетесь по приглашению партнёра
         </div>
       )}
 
@@ -86,8 +145,8 @@ const RegisterForm = ({ onSwitchToLogin }) => {
         value={formData.fullName}
         onChange={handleChange}
         disabled={isLoading}
+        required
       />
-      
       <input
         name="email"
         type="email"
@@ -96,8 +155,9 @@ const RegisterForm = ({ onSwitchToLogin }) => {
         value={formData.email}
         onChange={handleChange}
         disabled={isLoading}
+        required
       />
-      
+
       <div className="password-row">
         <input
           name="password"
@@ -107,6 +167,7 @@ const RegisterForm = ({ onSwitchToLogin }) => {
           value={formData.password}
           onChange={handleChange}
           disabled={isLoading}
+          required
         />
         <input
           name="confirmPassword"
@@ -116,10 +177,10 @@ const RegisterForm = ({ onSwitchToLogin }) => {
           value={formData.confirmPassword}
           onChange={handleChange}
           disabled={isLoading}
+          required
         />
       </div>
 
-      {/* Выбор роли */}
       <select
         name="role"
         className="input-field"
@@ -143,11 +204,7 @@ const RegisterForm = ({ onSwitchToLogin }) => {
         </button>
       </div>
 
-      <button 
-        type="submit" 
-        className="login-button"
-        disabled={isLoading}
-      >
+      <button type="submit" className="login-button" disabled={isLoading}>
         {isLoading ? 'Регистрация...' : 'Зарегистрироваться'}
       </button>
     </form>

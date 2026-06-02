@@ -1,13 +1,313 @@
-body {
+/* =============================================================================
+   CSS ПЕРЕМЕННЫЕ (THEMING)
+   ============================================================================= */
+:root {
+  /* 🔹 Фон */
+  --bg-primary: #f9f6ef;
+  --bg-secondary: #ebe0d0;
+  --bg-tertiary: #ffffff;
+  --bg-gradient: linear-gradient(135deg, #f9f7f2 0%, #f5f0e6 100%);
+  --bg-card: #ffffff;
+  --bg-header: #fcfbf9;
+  --bg-input-text: #181512;
+
+  /* 🔹 Текст */
+  --text-primary: #3e3a33;
+  --text-secondary: #6b6358;
+  --text-muted: #9c948a;
+  --text-inverse: #ffffff;
+
+  /* 🔹 Акценты */
+  --accent-primary: rgba(153, 88, 42, 0.85);
+  --accent-hover: rgb(153, 88, 42);
+  --accent-light: #d4c4b0;
+  --accent-lighter: #e8e0d5;
+
+  /* 🔹 Статусы */
+  --success: #7a9b76;
+  --success-bg: rgba(122, 155, 118, 0.5);
+  --warning: #c9a961;
+  --warning-bg: rgba(201, 169, 97, 0.5);
+  --error: #b87b6e;
+  --error-bg: rgba(184, 123, 110, 0.12);
+  --danger: #ef4444;
+  --danger-hover: #dc2626;
+
+  /* 🔹 Границы и тени */
+  --border: #e8e0d5;
+  --border-hover: #d4c4b0;
+  --shadow: 0 2px 12px rgba(62, 58, 51, 0.08);
+  --shadow-hover: 0 4px 20px rgba(62, 58, 51, 0.12);
+
+  /* 🔹 Радиусы */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* 🔹 Отступы */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+
+  /* 🔹 Анимации */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+  --transition-slow: 0.4s ease-in;
+}
+
+/* =============================================================================
+   ТЁМНАЯ ТЕМА
+   ============================================================================= */
+.dark-theme {
+  /* 🔹 Фон */
+  --bg-primary: #181512;
+  --bg-secondary: #211c18;
+  --bg-tertiary: #2c251e;
+  --bg-gradient: linear-gradient(135deg, #181512 0%, #211c18 100%);
+  --bg-card: #1e1914;
+  --bg-header: #201e1c;
+  --bg-input-text: #f9f6ef;
+
+  /* 🔹 Текст */
+  --text-primary: #f0e9df;
+  --text-secondary: #b8ad9e;
+  --text-muted: #7d7266;
+
+  /* 🔹 Акценты */
+  --accent-primary: #c47a4a;
+  --accent-hover: #d68a58;
+  --accent-light: #3a3028;
+  --accent-lighter: #4a3c2f;
+
+  /* 🔹 Границы и тени */
+  --border: #362f27;
+  --border-hover: #4a4035;
+  --shadow: 0 2px 12px rgba(12, 10, 8, 0.4);
+  --shadow-hover: 0 4px 20px rgba(12, 10, 8, 0.6);
+
+  /* 🔹 Статусы */
+  --success: #6a8864;
+  --warning: #d4b56a;
+  --error: #c48274;
+  --danger: #e05c4a;
+  --danger-hover: #c94a38;
+
+  --success-bg: rgba(106, 136, 100, 0.25);
+  --warning-bg: rgba(212, 181, 106, 0.25);
+  --error-bg: rgba(196, 130, 116, 0.25);
+}
+/* =============================================================================
+   СБРОС СТИЛЕЙ (RESET)
+   ============================================================================= */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
+    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition:
+    background-color var(--transition-normal),
+    color var(--transition-normal);
+  overflow-x: hidden;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family:
+    source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+/* =============================================================================
+   АНИМАЦИИ (KEYFRAMES)
+   ============================================================================= */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes zoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* =============================================================================
+   УТИЛИТАРНЫЕ КЛАССЫ АНИМАЦИЙ
+   ============================================================================= */
+.animate-fade-in-up {
+  opacity: 0;
+  animation: fadeInUp var(--transition-slow) ease forwards;
+}
+
+.animate-fade-in-up.delay-1 {
+  animation-delay: 0.1s;
+}
+.animate-fade-in-up.delay-2 {
+  animation-delay: 0.2s;
+}
+.animate-fade-in-up.delay-3 {
+  animation-delay: 0.3s;
+}
+.animate-fade-in-up.delay-4 {
+  animation-delay: 0.4s;
+}
+.animate-fade-in-up.delay-5 {
+  animation-delay: 0.5s;
+}
+
+.animate-slide-down {
+  animation: slideDown var(--transition-normal) ease forwards;
+}
+.animate-fade-in {
+  animation: fadeIn var(--transition-normal) ease forwards;
+}
+.animate-slide-up {
+  animation: slideUp var(--transition-normal) ease forwards;
+}
+.animate-zoom-in {
+  animation: zoomIn var(--transition-normal) ease forwards;
+}
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+.animate-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+.animate-bounce {
+  animation: bounce 1s ease-in-out infinite;
+}
+.animate-shake {
+  animation: shake var(--transition-fast) ease-in-out;
+}
+
+/* Hover эффекты */
+.hover-lift {
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover);
+}
+
+.hover-scale {
+  transition: transform var(--transition-fast);
+}
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+.hover-rotate {
+  transition: transform var(--transition-fast);
+}
+.hover-rotate:hover {
+  transform: rotate(5deg);
 }

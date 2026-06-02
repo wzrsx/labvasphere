@@ -1,19 +1,19 @@
 @font-face {
-  font-family: "Jomolhari";
-  src: url("../fonts/Jomolhari-Regular.ttf") format("truetype");
+  font-family: 'Jomolhari';
+  src: url('../fonts/Jomolhari-Regular.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
 }
 @font-face {
-  font-family: "CMU Demi";
-  src: url("../fonts/cmunssdc.ttf") format("truetype");
+  font-family: 'CMU Demi';
+  src: url('../fonts/cmunssdc.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
 }
 .auth-page {
   width: 100vw;
   height: 100vh;
-  background-image: url("../bg.jpg");
+  background-image: url('../bg.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -24,7 +24,7 @@
 
 .auth-header {
   font-size: 3.5rem;
-  font-family: "Jomolhari";
+  font-family: 'Jomolhari';
   letter-spacing: 0.15rem;
   text-align: center;
   padding-top: 10px;
@@ -46,11 +46,10 @@
   align-items: center;
   padding: 0 20px;
   box-sizing: border-box;
-  font-family: "CMU Demi";
+  font-family: 'CMU Demi';
 }
 .auth-form {
   width: min(700px, calc(100% - 40px));
-  min-height: 525px;
   background: rgba(181, 181, 181, 0.2), rgba(67, 40, 24, 0.25);
   backdrop-filter: blur(5px);
   border-radius: 30px;
@@ -160,7 +159,6 @@
 /* Сообщение об ошибке */
 .error-message {
   background: rgba(153, 42, 42, 0.3);
-  color: #ffcc80;
   padding: 12px 20px;
   border-radius: 12px;
   margin: 20px auto;
@@ -172,11 +170,21 @@
   font-weight: 500;
   animation: shake 0.5s;
 }
-
+.error-message-form{
+  background: rgba(153, 42, 42, 0.3);
+  color: #ffcc80 !important;
+}
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
 }
 
 /* Состояние инпута при загрузке */
@@ -224,8 +232,13 @@
 
 /* Анимация для кнопки при загрузке */
 @keyframes pulse {
-  0%, 100% { opacity: 0.7; }
-  50% { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 .login-button:disabled {
@@ -243,7 +256,6 @@
   padding-left: 20px;
   font-style: italic;
 }
-
 
 /* Стили для валидации пароля */
 .password-requirements {
