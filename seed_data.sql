@@ -20,9 +20,9 @@ SET row_security = off;
 
 --
 -- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: -
---
+--ПАРОЛЬ ЮЗЕРА: Test@1234
 
-INSERT INTO "public"."users" ("id", "full_name", "email", "password_hash", "avatar_url", "bio", "created_at", "updated_at", "role") VALUES ('3787c1cb-91ac-43bd-84fe-9068aca555ea', 'Кулиш Никита Станиславович', 'admin@admin.ru', '$2a$12$y96NfFi5r4ZbrwnMPHI5Nu5ZR2/Q0KbUfyEpCleWPwQCbyIMF.vjC', NULL, NULL, '2026-05-06 14:01:28.591141+00', '2026-05-06 14:01:28.591141+00', 'user');
+INSERT INTO "public"."users" ("id", "full_name", "email", "password_hash", "avatar_url", "bio", "created_at", "updated_at", "role") VALUES ('3787c1cb-91ac-43bd-84fe-9068aca555ea', 'Кулиш Никита Станиславович', 'admin@admin.ru', '$2a$12$9Ws1RC19BuTzweIo/ivj7.HhZxTkGUPl3HAgdk1bF6T6B31t0hgWq', NULL, NULL, '2026-05-06 14:01:28.591141+00', '2026-05-06 14:01:28.591141+00', 'designer');
 
 
 --

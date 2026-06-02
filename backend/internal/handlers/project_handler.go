@@ -18,7 +18,7 @@ import (
 	"github.com/google/uuid"
 )
 
-const mediaBaseURL = "http://localhost:8080"
+const mediaBaseURL = "http://localhost:8081"
 
 type ProjectHandler struct {
 	projectRepo  *postgres.ProjectRepository

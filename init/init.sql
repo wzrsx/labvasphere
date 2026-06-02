@@ -6,7 +6,6 @@
 SET statement_timeout = 0;
 
 -- Расширения (требуется для gen_random_uuid())
--- В PostgreSQL 13+ функция встроена, но для совместимости:
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- ============================================
@@ -115,6 +114,22 @@ CREATE TABLE public.likes (
     PRIMARY KEY (user_id, project_id)
 );
 
+-- Избранное (НОВАЯ ТАБЛИЦА)
+CREATE TABLE public.favorites (
+    user_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    project_id uuid NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
+    created_at timestamp with time zone DEFAULT now(),
+    PRIMARY KEY (user_id, project_id)
+);
+
+-- Настройки пользователей (НОВАЯ ТАБЛИЦА)
+CREATE TABLE public.user_settings (
+    user_id uuid PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
+    preferences jsonb NOT NULL DEFAULT '{}'::jsonb,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
 -- Кошельки пользователей
 CREATE TABLE public.wallets (
     user_id uuid PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
@@ -127,7 +142,7 @@ CREATE TABLE public.wallets (
 -- Выводы средств
 CREATE TABLE public.withdrawals (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id uuid NOT NULL REFERENCES public.users(id),
+    user_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
     amount numeric(10, 2) NOT NULL,
     method character varying(20) NOT NULL,
     details jsonb NOT NULL,
@@ -150,7 +165,7 @@ CREATE TABLE public.referrals (
 -- Клики по реферальным ссылкам
 CREATE TABLE public.referral_clicks (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    partner_id uuid NOT NULL REFERENCES public.users(id),
+    partner_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
     session_id character varying(255),
     ip_address inet,
     user_agent text,
@@ -161,8 +176,8 @@ CREATE TABLE public.referral_clicks (
 -- Логи комиссий
 CREATE TABLE public.commission_logs (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    partner_id uuid NOT NULL REFERENCES public.users(id),
-    payer_id uuid NOT NULL REFERENCES public.users(id),
+    partner_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    payer_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
     subscription_amount numeric(10, 2) NOT NULL,
     commission_rate numeric(5, 2) NOT NULL,
     commission_gross numeric(10, 2) NOT NULL,
@@ -182,6 +197,9 @@ CREATE INDEX idx_hotspots_panorama_id ON public.hotspots(panorama_id);
 CREATE INDEX idx_hotspots_target_panorama ON public.hotspots(target_panorama_id);
 CREATE INDEX idx_analytics_hotspot_id ON public.hotspot_analytics(hotspot_id);
 CREATE INDEX idx_likes_project ON public.likes(project_id);
+CREATE INDEX idx_favorites_user_id ON public.favorites(user_id);
+CREATE INDEX idx_favorites_project_id ON public.favorites(project_id);
+CREATE INDEX idx_user_settings_user_id ON public.user_settings(user_id);
 CREATE INDEX idx_withdrawals_user ON public.withdrawals(user_id);
 CREATE INDEX idx_referrals_partner_id ON public.referrals(partner_id);
 CREATE INDEX idx_referrals_referred_id ON public.referrals(referred_user_id);
@@ -201,42 +219,23 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Триггеры для таблиц с updated_at
-CREATE TRIGGER update_users_updated_at 
-    BEFORE UPDATE ON public.users 
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_projects_updated_at 
-    BEFORE UPDATE ON public.projects 
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_panoramas_updated_at 
-    BEFORE UPDATE ON public.panoramas 
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_hotspots_updated_at 
-    BEFORE UPDATE ON public.hotspots 
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_wallets_updated_at 
-    BEFORE UPDATE ON public.wallets 
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_withdrawals_updated_at 
-    BEFORE UPDATE ON public.withdrawals 
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+-- Триггеры для таблиц с updated_at (включая новую user_settings)
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_projects_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_panoramas_updated_at BEFORE UPDATE ON public.panoramas FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_hotspots_updated_at BEFORE UPDATE ON public.hotspots FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_user_settings_updated_at BEFORE UPDATE ON public.user_settings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_wallets_updated_at BEFORE UPDATE ON public.wallets FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_withdrawals_updated_at BEFORE UPDATE ON public.withdrawals FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================
--- НАЧАЛЬНЫЕ ДАННЫЕ
+-- НАЧАЛЬНЫЕ ДАННЫЕ (SEED)
 -- ============================================
 BEGIN;
 
-SET statement_timeout = 0;
-SET check_function_bodies = false;
-
--- Пользователи
+-- Пользователи (ПАРОЛЬ: Test@1234)
 INSERT INTO "public"."users" ("id", "full_name", "email", "password_hash", "avatar_url", "bio", "created_at", "updated_at", "role") VALUES
-('3787c1cb-91ac-43bd-84fe-9068aca555ea', 'Кулиш Никита Станиславович', 'admin@admin.ru', '$2a$12$y96NfFi5r4ZbrwnMPHI5Nu5ZR2/Q0KbUfyEpCleWPwQCbyIMF.vjC', NULL, NULL, '2026-05-06 14:01:28.591141+00', '2026-05-06 14:01:28.591141+00', 'admin');
+('3787c1cb-91ac-43bd-84fe-9068aca555ea', 'Кулиш Никита Станиславович', 'admin@admin.ru', '$2a$12$9Ws1RC19BuTzweIo/ivj7.HhZxTkGUPl3HAgdk1bF6T6B31t0hgWq', NULL, NULL, '2026-05-06 14:01:28.591141+00', '2026-05-06 14:01:28.591141+00', 'designer');
 
 -- Проекты
 INSERT INTO "public"."projects" ("id", "title", "description", "cover_image_url", "author_id", "views_count", "created_at", "published_at", "updated_at", "status") VALUES
@@ -259,7 +258,7 @@ INSERT INTO "public"."panoramas" ("id", "project_id", "filename", "original_file
 
 -- Хотспоты
 INSERT INTO "public"."hotspots" ("id", "panorama_id", "position_yaw", "position_pitch", "target_type", "target_panorama_id", "target_filename", "title", "tooltip", "content_text", "media_url", "external_url", "icon", "color", "sort_order", "is_active", "created_at", "updated_at") VALUES
-('d19d2eeb-9632-491b-ad32-5b6e80305c87', '62c0eebf-5f16-4a67-9b41-117984c0fa35', 2.8182809616391618, -0.16775280613098142, 'panorama', 'f2921ba7-4817-4b1f-ab63-9329c2d2ce81', '23e35367-8797-4b46-965e-2e6175b8de06_1778077426.jpg', 'Ванна', 'Ванна', NULL, NULL, 'default', '#3498db', NULL, true, '2026-05-06 14:23:46.05578+00', '2026-05-06 14:23:47.498485+00');
+('d19d2eeb-9632-491b-ad32-5b6e80305c87', '62c0eebf-5f16-4a67-9b41-117984c0fa35', 2.8182809616391618, -0.16775280613098142, 'panorama', 'f2921ba7-4817-4b1f-ab63-9329c2d2ce81', '23e35367-8797-4b46-965e-2e6175b8de06_1778077426.jpg', 'Ванна', 'Ванна', NULL, NULL, NULL, 'default', '#3498db', NULL, true, '2026-05-06 14:23:46.05578+00', '2026-05-06 14:23:47.498485+00');
 
 -- Кошельки пользователей
 INSERT INTO "public"."wallets" ("user_id", "balance_gross", "balance_net", "currency", "updated_at") VALUES
