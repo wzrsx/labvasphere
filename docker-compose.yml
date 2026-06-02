@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: q1w2e3
       POSTGRES_DB: labvasphere
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pg:/var/lib/postgresql/data        
       - ./init:/docker-entrypoint-initdb.d
@@ -47,8 +47,12 @@ services:
       DATABASE_URL: postgresql://postgres:q1w2e3@db:5432/labvasphere?sslmode=disable
       PORT: "8080"   
       ENV: "development"
+      UPLOAD_DIR: "/app/uploads" 
+    volumes:
+      - ./uploads:/app/uploads
     depends_on:
-      - db
+      db:
+        condition: service_healthy 
     networks:
       - labvasphere_net
 
