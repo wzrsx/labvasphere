@@ -91,7 +91,7 @@ func (s *EmailService) SendPasswordReset(toEmail, fullName, newPassword string) 
 			<p>Если вы не запрашивали восстановление — проигнорируйте это письмо.</p>
 			
 			<div class="footer">
-				<p>© 2024 LabvaSphere. Все права защищены.</p>
+				<p>© 2026 LabvaSphere. Все права защищены.</p>
 			</div>
 		</div>
 	</div>

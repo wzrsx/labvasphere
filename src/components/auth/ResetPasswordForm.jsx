@@ -57,7 +57,7 @@ const ResetPasswordForm = ({ onSwitchToLogin }) => {
       {error && <div className="error-message">{error}</div>}
 
       {/* Отображение успеха */}
-      {success && <div className="success-message">{success}</div>}
+      {success && <div className="success-message success-message-email">{success}</div>}
 
       {!success ? (
         <>

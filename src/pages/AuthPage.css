@@ -229,7 +229,9 @@
   opacity: 0.7;
   border-color: rgba(255, 230, 167, 0.1);
 }
-
+.success-message-email{
+  color: #ffffff !important;
+}
 /* Анимация для кнопки при загрузке */
 @keyframes pulse {
   0%,
